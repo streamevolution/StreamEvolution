@@ -14,7 +14,7 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* --- ANIMACIONES DEL CARGADOR NUEVO --- */
+        /* --- ANIMACIONES --- */
         .loader-text {
             background: linear-gradient(to right, #1e293b 0%, #475569 50%, #1e293b 100%);
             -webkit-background-clip: text;
@@ -30,7 +30,6 @@
             100% { transform: scale(1.2); opacity: 0; }
         }
 
-        /* Animaciones UI */
         .fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -43,21 +42,11 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        .hover-bounce:hover { animation: bounceSmall 0.6s ease-in-out infinite; }
-        @keyframes bounceSmall {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
-        }
-
         .btn-animate { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         .btn-animate:active { transform: scale(0.95); }
         
         .admin-card { transition: all 0.3s ease; }
         .admin-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08); }
-        
-        /* Estilos específicos para tickets e historial */
-        .history-tab.active { background-color: #F1F5F9; color: #0F172A; border-bottom: 2px solid #F59E0B; }
-        .history-tab { color: #94A3B8; border-bottom: 2px solid transparent; }
     </style>
 </head>
 <body class="text-slate-800 overflow-x-hidden min-h-screen relative bg-slate-50 selection:bg-amber-200">
@@ -158,7 +147,11 @@
             <div class="p-4 space-y-2 overflow-y-auto flex-1 scrollbar-hide">
                 <div id="user-menu-items">
                     <div onclick="switchView('user'); toggleSidebar();" class="flex items-center gap-3 p-3.5 rounded-xl bg-amber-50 text-amber-700 font-semibold cursor-pointer hover:bg-amber-100 transition-all"><i data-lucide="home" class="w-5 h-5"></i><span class="text-sm">Inicio</span></div>
-                    <button onclick="openReportModal(); toggleSidebar();" class="w-full flex items-center gap-3 p-3.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all"><i data-lucide="life-buoy" class="w-5 h-5"></i><span class="text-sm font-medium">Soporte / Reportar</span></button>
+                    <button onclick="openReportModal(); toggleSidebar();" class="w-full flex items-center gap-3 p-3.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all"><i data-lucide="life-buoy" class="w-5 h-5"></i><span class="text-sm font-medium">Reportar Fallo</span></button>
+                    <button onclick="openSupportReplies(); toggleSidebar();" class="w-full flex items-center gap-3 p-3.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all">
+                        <i data-lucide="message-circle-question" class="w-5 h-5"></i>
+                        <span class="text-sm font-medium">Respuestas Soporte</span>
+                    </button>
                     <button onclick="openNotifications(); toggleSidebar();" class="w-full flex items-center gap-3 p-3.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all"><i data-lucide="clock" class="w-5 h-5"></i><span class="text-sm font-medium">Movimientos</span></button>
                 </div>
                 
@@ -346,9 +339,9 @@
         window.globalNotifications = []; 
         window.adminPendingRequests = []; 
         window.adminPendingReports = [];
-        window.adminReportsCache = []; // Restaurado para detalles
+        window.adminReportsCache = []; 
         window.categoriesCache = []; 
-        window.currentUserHistory = []; // Restaurado para historial de usuario
+        window.currentUserHistory = [];
 
         // Audio
         const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
@@ -423,7 +416,8 @@
             let html = '';
             window.categoriesCache.forEach(cat => {
                 const color = cat.color || 'slate';
-                html += `<div onclick="openCategoryModule('${cat.slug || cat.id}', '${cat.name}')" class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-5 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 group h-36"><div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-${color}-100 to-${color}-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-inner"><i data-lucide="${cat.icon || 'box'}" class="w-7 h-7 text-${color}-600"></i></div><span class="font-bold text-slate-600 text-xs text-center group-hover:text-slate-900 transition-colors uppercase tracking-wide">${cat.name}</span></div>`;
+                // USAMOS EL ID DE LA CATEGORIA, NO EL SLUG
+                html += `<div onclick="openCategoryModule('${cat.id}', '${cat.name}')" class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-5 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 group h-36"><div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-${color}-100 to-${color}-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-inner"><i data-lucide="${cat.icon || 'box'}" class="w-7 h-7 text-${color}-600"></i></div><span class="font-bold text-slate-600 text-xs text-center group-hover:text-slate-900 transition-colors uppercase tracking-wide">${cat.name}</span></div>`;
             });
             grid.innerHTML = html; lucide.createIcons();
         }
@@ -433,16 +427,17 @@
             if(!list) return;
             let html = '';
             window.categoriesCache.forEach(cat => {
-                html += `<div class="bg-white p-4 rounded-2xl border border-slate-100 flex flex-col gap-3 relative group"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-${cat.color || 'slate'}-100 flex items-center justify-center text-${cat.color || 'slate'}-600"><i data-lucide="${cat.icon || 'box'}" class="w-5 h-5"></i></div><div><p class="font-bold text-slate-700 text-sm">${cat.name}</p><p class="text-[10px] text-slate-400 font-mono">slug: ${cat.slug}</p></div></div><button onclick="deleteCategory('${cat.id}')" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
+                html += `<div class="bg-white p-4 rounded-2xl border border-slate-100 flex flex-col gap-3 relative group"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-${cat.color || 'slate'}-100 flex items-center justify-center text-${cat.color || 'slate'}-600"><i data-lucide="${cat.icon || 'box'}" class="w-5 h-5"></i></div><div><p class="font-bold text-slate-700 text-sm">${cat.name}</p><p class="text-[10px] text-slate-400 font-mono">ID: ${cat.id.substring(0,6)}...</p></div></div><button onclick="deleteCategory('${cat.id}')" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
             });
             list.innerHTML = html; lucide.createIcons();
         }
 
         window.openAddCategoryModal = () => {
-            openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Nuevo Servicio</h3><form onsubmit="saveCategory(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nombre</label><input type="text" id="cat-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Identificador (Slug)</label><input type="text" id="cat-slug" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required placeholder="ej: streaming"></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="cat-icon" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required placeholder="ej: tv"></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Color</label><select id="cat-color" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm"><option value="amber">Ámbar</option><option value="blue">Azul</option><option value="emerald">Esmeralda</option><option value="rose">Rosa</option><option value="purple">Púrpura</option><option value="indigo">Índigo</option></select></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Crear Categoría</button></form></div>`);
+            // YA NO PEDIMOS SLUG, SOLO NOMBRE, ICONO, COLOR
+            openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Nuevo Servicio</h3><form onsubmit="saveCategory(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nombre</label><input type="text" id="cat-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="cat-icon" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required placeholder="ej: tv"></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Color</label><select id="cat-color" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm"><option value="amber">Ámbar</option><option value="blue">Azul</option><option value="emerald">Esmeralda</option><option value="rose">Rosa</option><option value="purple">Púrpura</option><option value="indigo">Índigo</option></select></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Crear Categoría</button></form></div>`);
         };
 
-        window.saveCategory = async (e) => { e.preventDefault(); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'categories'), { name: document.getElementById('cat-name').value, slug: document.getElementById('cat-slug').value.toLowerCase().trim(), icon: document.getElementById('cat-icon').value, color: document.getElementById('cat-color').value, createdAt: serverTimestamp() }); showToast('Categoría creada', 'success'); closeModal(); } catch(err) { showToast('Error', 'error'); } };
+        window.saveCategory = async (e) => { e.preventDefault(); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'categories'), { name: document.getElementById('cat-name').value, icon: document.getElementById('cat-icon').value, color: document.getElementById('cat-color').value, createdAt: serverTimestamp() }); showToast('Categoría creada', 'success'); closeModal(); } catch(err) { showToast('Error', 'error'); } };
         window.deleteCategory = async (id) => { if(confirm("¿Eliminar categoría?")) try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id)); showToast('Eliminada', 'success'); } catch(err) { showToast('Error', 'error'); } };
 
         // --- DATOS USUARIO ---
@@ -458,21 +453,26 @@
         }
         function updateNotificationDot() { const dot = document.getElementById('notification-dot'); let hasAdmin = (window.adminPendingRequests?.length > 0) || (window.adminPendingReports?.length > 0); if (window.userTransactions.length > 0 || window.globalNotifications.length > 0 || (isAdmin && hasAdmin)) dot.style.display = 'block'; else dot.style.display = 'none'; }
 
-        // --- ADMIN PANEL RESTAURADO ---
+        // --- ADMIN PANEL ---
         function initAdminPanel() {
             // Solicitudes
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
                 window.adminPendingRequests = []; let html = '';
-                snapshot.forEach(doc => { const d = doc.data(); if(d.status === 'pending') { window.adminPendingRequests.push(d); html += `<div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-amber-400 flex flex-col md:flex-row justify-between items-center gap-3 slide-up"><div class="flex-1"><p class="font-bold text-slate-800 text-sm">${d.email}</p><span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-full">Pendiente</span></div><div class="flex items-center gap-3"><span class="font-bold text-lg text-emerald-600">$${d.amount.toLocaleString()}</span><button onclick="window.approveRecharge('${doc.id}', '${d.uid}', ${d.amount}, '${d.userTxId}')" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-700 flex items-center gap-1 btn-animate">Aprobar</button></div></div>`; } });
+                snapshot.forEach(doc => { const d = doc.data(); if(d.status === 'pending') { 
+                    // Asignamos ID para poder aprobar
+                    d.id = doc.id;
+                    window.adminPendingRequests.push(d); 
+                    html += `<div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-amber-400 flex flex-col md:flex-row justify-between items-center gap-3 slide-up"><div class="flex-1"><p class="font-bold text-slate-800 text-sm">${d.email}</p><span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-full">Pendiente</span></div><div class="flex items-center gap-3"><span class="font-bold text-lg text-emerald-600">$${d.amount.toLocaleString()}</span><button onclick="event.stopPropagation(); window.approveRecharge('${doc.id}', '${d.uid}', ${d.amount}, '${d.userTxId}')" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-700 flex items-center gap-1 btn-animate z-10 relative">Aprobar</button></div></div>`; } 
+                });
                 document.getElementById('admin-requests-list').innerHTML = html || '<div class="text-center py-4 text-slate-400">Sin solicitudes</div>';
                 const badge = document.getElementById('badge-requests'); if(window.adminPendingRequests.length>0){badge.textContent=window.adminPendingRequests.length; badge.classList.remove('hidden');} else badge.classList.add('hidden');
             });
-            // Productos (Stock)
+            // Productos
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), (snapshot) => {
-                let html = ''; snapshot.forEach(doc => { const d = doc.data(); html += `<div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-center gap-3 slide-up"><img src="${d.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-slate-100"><div class="flex-1 overflow-hidden"><div class="flex justify-between"><p class="font-bold text-sm text-slate-800 truncate">${d.name}</p><p class="font-bold text-xs text-emerald-600">$${d.price}</p></div><p class="text-[10px] text-slate-400 bg-slate-50 px-1.5 rounded inline-block mt-0.5">${d.category}</p><div class="mt-1 text-[10px]">Stock: <b>${d.stock||0}</b></div></div><div class="flex flex-col gap-1"><button onclick="openEditProductModal('${doc.id}')" class="p-2 text-blue-400 hover:bg-blue-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteProfile('${doc.id}')" class="p-2 text-rose-300 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`; });
+                let html = ''; snapshot.forEach(doc => { const d = doc.data(); html += `<div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-center gap-3 slide-up"><img src="${d.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-slate-100"><div class="flex-1 overflow-hidden"><div class="flex justify-between"><p class="font-bold text-sm text-slate-800 truncate">${d.name}</p><p class="font-bold text-xs text-emerald-600">$${d.price}</p></div><p class="text-[10px] text-slate-400 bg-slate-50 px-1.5 rounded inline-block mt-0.5">${d.categoryName || 'Genérico'}</p><div class="mt-1 text-[10px]">Stock: <b>${d.stock||0}</b></div></div><div class="flex flex-col gap-1"><button onclick="openEditProductModal('${doc.id}')" class="p-2 text-blue-400 hover:bg-blue-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteProfile('${doc.id}')" class="p-2 text-rose-300 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`; });
                 document.getElementById('admin-stock-list').innerHTML = html || '<p class="text-center text-slate-400">Vacío</p>'; lucide.createIcons();
             });
-            // Usuarios (Completo)
+            // Usuarios
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'), (snapshot) => {
                 let html = ''; snapshot.forEach(doc => { const d = doc.data(); const susp = d.suspended === true; html += `<div onclick="openUserHistory('${d.uid}', '${d.email}')" class="bg-white p-3 rounded-xl border border-slate-100 flex flex-col gap-3 relative cursor-pointer hover:shadow-md transition-shadow group slide-up"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">${d.email.substring(0,2).toUpperCase()}</div><div class="overflow-hidden flex-1"><p class="font-bold text-sm text-slate-700 truncate">${d.email}</p><p class="text-[10px] text-slate-400 font-mono">ID: ${d.uid.substring(0,8)}</p></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i></div><div class="flex gap-2 pt-2 border-t border-slate-50" onclick="event.stopPropagation();"><button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="flex-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="dollar-sign" class="w-3 h-3"></i> Cargar</button><button onclick="toggleSuspend('${doc.id}', ${!susp})" class="px-3 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg text-xs font-bold">${susp?'Activar':'Suspender'}</button></div></div>`; });
                 document.getElementById('admin-users-list').innerHTML = html; lucide.createIcons();
@@ -482,7 +482,7 @@
                  let html = ''; snapshot.forEach(doc => { const i = doc.data(); html += `<div class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-2 slide-up"><div class="flex justify-between items-start"><div><p class="font-bold text-slate-800 text-sm">${i.serviceName}</p><p class="text-xs text-slate-500 mt-1">Expira: ${i.expiryDate}</p></div><button onclick="deleteInventoryItem('${doc.id}')" class="text-rose-400 hover:bg-rose-50 p-1.5 rounded-lg"><i data-lucide="trash" class="w-4 h-4"></i></button></div></div>`; });
                  document.getElementById('admin-inventory-list').innerHTML = html || '<p class="text-center text-slate-400">Inventario vacío</p>'; lucide.createIcons();
             });
-            // Soporte (Completo)
+            // Soporte
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), orderBy('timestamp', 'desc')), (s) => {
                  window.adminPendingReports = []; window.adminReportsCache = []; let html = '';
                  s.forEach(doc => { const r = doc.data(); r.id = doc.id; window.adminReportsCache.push(r); if(r.status!=='replied') window.adminPendingReports.push(r);
@@ -495,7 +495,6 @@
 
         // --- FUNCIONES RESTAURADAS ---
         
-        // 1. Agregar Inventario (Completo)
         window.openAddInventoryModal = async () => {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles')); const querySnapshot = await getDocs(q);
             let options = '<option value="">Selecciona un Artículo...</option>';
@@ -505,51 +504,134 @@
         window.saveInventoryItem = async (e) => { e.preventDefault(); try { const select = document.getElementById('inv-product-select'); const productId = select.value; const productName = select.options[select.selectedIndex].text; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), { productId, serviceName: productName, email: document.getElementById('inv-email').value, password: document.getElementById('inv-pass').value, expiryDate: document.getElementById('inv-expiry').value, duration: document.getElementById('inv-duration').value, terms: document.getElementById('inv-terms').value, createdAt: serverTimestamp(), status: 'available' }); const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId); await updateDoc(productRef, { stock: increment(1) }); showToast('Item agregado', 'success'); closeModal(); } catch(e) { showToast('Error', 'error'); } };
         window.deleteInventoryItem = async (id) => { if(confirm("¿Borrar? Reducirá el stock.")) { const itemRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', id); const s = await getDoc(itemRef); if (s.exists()) { await deleteDoc(itemRef); await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', s.data().productId), { stock: increment(-1) }); showToast('Eliminado', 'success'); } } };
 
-        // 2. Soporte y Reportes (Completo)
-        window.openReportModal = () => {
-             localStorage.removeItem('report_evidence');
-             openModal(`<div class="text-left bounce-enter"><div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mb-4 mx-auto"><i data-lucide="alert-triangle" class="w-7 h-7"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2 text-center">Reportar Problema</h3><form onsubmit="submitReport(event)" class="space-y-4"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tipo</label><select id="report-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm"><option value="account">Fallo de Cuenta</option><option value="payment">Pago no reflejado</option><option value="bug">Error de Sistema</option></select></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Descripción</label><textarea id="report-desc" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-24 resize-none"></textarea></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Adjuntar Foto</label><input type="file" accept="image/*" onchange="handleImageUpload(this)" class="w-full text-xs"></div><button type="submit" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl btn-animate">Enviar Reporte</button></form></div>`);
-        };
+        // Soporte
+        window.openReportModal = () => { localStorage.removeItem('report_evidence'); openModal(`<div class="text-left bounce-enter"><div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mb-4 mx-auto"><i data-lucide="alert-triangle" class="w-7 h-7"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2 text-center">Reportar Problema</h3><form onsubmit="submitReport(event)" class="space-y-4"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tipo</label><select id="report-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm"><option value="account">Fallo de Cuenta</option><option value="payment">Pago no reflejado</option><option value="bug">Error de Sistema</option></select></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Descripción</label><textarea id="report-desc" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-24 resize-none"></textarea></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Adjuntar Foto</label><input type="file" accept="image/*" onchange="handleImageUpload(this)" class="w-full text-xs"></div><button type="submit" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl btn-animate">Enviar Reporte</button></form></div>`); };
         window.handleImageUpload = (input) => { if (input.files[0]) { const reader = new FileReader(); reader.onload = (e) => localStorage.setItem('report_evidence', e.target.result); reader.readAsDataURL(input.files[0]); } };
         window.submitReport = async (e) => { e.preventDefault(); const type = document.getElementById('report-type').value; const evidence = localStorage.getItem('report_evidence'); await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), { uid: currentUser.uid, email: currentUser.email, type, description: document.getElementById('report-desc').value, evidenceImage: evidence, timestamp: serverTimestamp(), status: 'unread' }); showToast('Reporte enviado', 'success'); closeModal(); };
         window.openReportDetails = (id) => { const r = window.adminReportsCache.find(x => x.id === id); if(!r) return; openModal(`<div class="text-left bounce-enter"><h3 class="font-bold text-slate-800 text-lg">Detalle Reporte</h3><p class="text-xs text-slate-500 mb-4">${r.email}</p><div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm whitespace-pre-wrap">${r.description}</div>${r.evidenceImage ? `<img src="${r.evidenceImage}" class="mt-4 w-full rounded-lg border border-slate-200">` : ''}<div class="flex gap-2 mt-4"><button onclick="openReplyModal('${id}', '${r.uid}')" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold">Responder</button><button onclick="closeModal()" class="flex-1 bg-slate-200 py-2 rounded-lg font-bold">Cerrar</button></div></div>`); };
         window.openReplyModal = (rid, uid) => { openModal(`<div class="bounce-enter"><h3 class="font-bold mb-2">Responder</h3><textarea id="rep-text" class="w-full border rounded-xl p-2 h-24"></textarea><button onclick="sendAdminReply('${rid}','${uid}')" class="w-full bg-blue-600 text-white font-bold py-2 rounded-xl mt-2">Enviar</button></div>`); };
         window.sendAdminReply = async (rid, uid) => { const msg = document.getElementById('rep-text').value; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', rid), { status: 'replied', adminReply: msg }); await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'), { type: 'support_reply', amount: 0, description: 'Respuesta Soporte', message: msg, timestamp: serverTimestamp() }); showToast('Enviado', 'success'); closeModal(); };
 
-        // 3. Gestión Usuarios y Saldo Manual
+        // Gestión Usuarios
         window.openAddUserModal = () => { openModal(` <div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Usuario</h3><form onsubmit="registerUserByAdmin(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Correo</label><input type="email" id="new-user-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña</label><input type="text" id="new-user-pass" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required minlength="6"></div><button type="submit" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg mt-2 hover:bg-emerald-600 btn-animate">Crear</button></form></div> `); };
         window.registerUserByAdmin = async (e) => { e.preventDefault(); const email = document.getElementById('new-user-email').value; const password = document.getElementById('new-user-pass').value; try { const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp"); const secondaryAuth = getAuth(secondaryApp); const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password); await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'wallet', 'main'), { balance: 0, profit: 0, createdAt: serverTimestamp() }); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', cred.user.uid), { email: email, uid: cred.user.uid, lastLogin: serverTimestamp(), suspended: false }, { merge: true }); await signOut(secondaryAuth); showToast('Usuario creado', 'success'); closeModal(); } catch (error) { showToast('Error: ' + error.message, 'error'); } };
         window.openManualBalanceModal = (uid, email) => { openModal(`<div class="text-center bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-1">Cargar Saldo Manual</h3><p class="text-xs text-slate-400 mb-4">${email}</p><input type="number" id="manual-amount" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold text-center mb-4" placeholder="$0"><button onclick="confirmManualBalance('${uid}')" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg btn-animate">Confirmar Recarga</button></div>`); };
         window.confirmManualBalance = async (uid) => { const amt = Number(document.getElementById('manual-amount').value); if(!amt) return; const wRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'); await runTransaction(db, async (t) => { const s = await t.get(wRef); t.update(wRef, { balance: (s.data().balance||0) + amt }); const txRef = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions')); t.set(txRef, { type: 'deposit', amount: amt, description: 'Carga Manual Admin', timestamp: serverTimestamp(), prevBalance: s.data().balance, newBalance: (s.data().balance||0) + amt }); }); showToast('Saldo cargado', 'success'); closeModal(); };
-        window.openUserHistory = async (uid, email) => { openModal(`<div class="h-[80vh] flex flex-col bounce-enter"><h3 class="font-bold text-lg mb-1">Historial</h3><p class="text-xs text-slate-400 mb-4">${email}</p><div id="usr-hist-list" class="flex-1 overflow-y-auto space-y-2">Cargando...</div></div>`); const q = query(collection(db,'artifacts',appId,'users',uid,'transactions'), orderBy('timestamp','desc')); const s = await getDocs(q); let h=''; s.forEach(d=>{ const t=d.data(); h+=`<div class="p-3 border rounded-xl bg-slate-50 text-xs"><p class="font-bold">${t.description}</p><p class="text-slate-500">${t.timestamp?.toDate().toLocaleString()}</p><p class="font-bold ${t.type==='deposit'?'text-emerald-600':'text-rose-600'}">${t.amount}</p></div>`}); document.getElementById('usr-hist-list').innerHTML=h||'Vacio'; };
+        
+        // --- ADMIN: EXPEDIENTE USUARIO MEJORADO ---
+        window.openUserHistory = async (uid, email) => {
+            // 1. Obtener Billetera y Datos
+            const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'));
+            const balance = walletSnap.exists() ? walletSnap.data().balance : 0;
+            const userSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid));
+            let joinedDate = 'Reciente';
+            // Intentar obtener fecha de creación
+            if(walletSnap.exists() && walletSnap.data().createdAt) joinedDate = walletSnap.data().createdAt.toDate().toLocaleDateString();
+            else if (userSnap.exists() && userSnap.data().lastLogin) joinedDate = userSnap.data().lastLogin.toDate().toLocaleDateString(); // Fallback
+
+            openModal(`
+                <div class="h-[80vh] flex flex-col bounce-enter">
+                    <div class="border-b border-slate-100 pb-4 mb-4">
+                        <h3 class="font-bold text-xl text-slate-800 mb-1">Expediente de Usuario</h3>
+                        <p class="text-sm text-slate-500 font-medium mb-4">${email}</p>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex flex-col items-center justify-center text-center shadow-sm">
+                                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2"><i data-lucide="wallet" class="w-4 h-4"></i></div>
+                                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Saldo Actual</p>
+                                <p class="text-2xl font-black text-emerald-700">$${balance.toLocaleString()}</p>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-center shadow-sm">
+                                <div class="w-8 h-8 rounded-full bg-white text-slate-400 flex items-center justify-center mb-2 border border-slate-100"><i data-lucide="calendar" class="w-4 h-4"></i></div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Miembro desde</p>
+                                <p class="text-sm font-bold text-slate-700">${joinedDate}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto scrollbar-hide space-y-2" id="usr-hist-list">
+                        <div class="text-center py-10"><div class="animate-spin w-6 h-6 border-2 border-slate-800 border-t-transparent rounded-full mx-auto"></div></div>
+                    </div>
+                </div>
+            `);
+            
+            const q = query(collection(db,'artifacts',appId,'users',uid,'transactions'), orderBy('timestamp','desc')); 
+            const s = await getDocs(q); 
+            let h=''; 
+            if(s.empty) h='<div class="text-center text-slate-400 py-10 text-xs">Sin movimientos registrados.</div>';
+            else {
+                s.forEach(d=>{ const t=d.data(); h+=`<div class="p-3 border rounded-xl bg-slate-50 text-xs flex justify-between items-center"><div class="flex-1"><p class="font-bold text-slate-700">${t.description}</p><span class="text-[10px] text-slate-400">${t.timestamp?.toDate().toLocaleString()}</span></div><span class="font-bold ${t.type==='deposit'?'text-emerald-600':'text-rose-600'} ml-2">${t.amount > 0 ? '$'+t.amount : ''}</span></div>`}); 
+            }
+            document.getElementById('usr-hist-list').innerHTML=h; 
+            lucide.createIcons();
+        };
+
         window.toggleSuspend = async (uid, val) => { await updateDoc(doc(db,'artifacts',appId,'public','data','all_users',uid), {suspended: val}); };
 
-        // 4. Agregar Producto (Híbrido: Diseño Nuevo + Select Dinámico)
-        window.openAddProductModal = () => {
-            let optionsHTML = window.categoriesCache.length > 0 ? window.categoriesCache.map(c => `<option value="${c.slug}">${c.name}</option>`).join('') : `<option value="" disabled selected>Crea categorías primero</option>`;
-            openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Artículo</h3><form onsubmit="saveProduct(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría</label><select id="p-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required>${optionsHTML}</select></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Precio</label><input type="number" id="p-price" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label><textarea id="p-desc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20 resize-none"></textarea></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Guardar</button></form></div>`);
+        // Producto
+        window.openAddProductModal = () => { 
+            // USAMOS EL ID DE LA CATEGORÍA COMO VALOR (NO EL SLUG, QUE YA ELIMINAMOS)
+            let optionsHTML = window.categoriesCache.length > 0 
+                ? window.categoriesCache.map(c => `<option value="${c.id}" data-name="${c.name}">${c.name}</option>`).join('') 
+                : `<option value="" disabled selected>¡Crea una categoría primero!</option>`; 
+                
+            openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Artículo</h3><form onsubmit="saveProduct(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría</label><select id="p-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none" required>${optionsHTML}</select></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Precio</label><input type="number" id="p-price" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label><textarea id="p-desc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20 resize-none"></textarea></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Guardar</button></form></div>`); 
         };
-        window.saveProduct = async (e) => { e.preventDefault(); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { category: document.getElementById('p-category').value, name: document.getElementById('p-name').value, imageUrl: document.getElementById('p-image').value, price: Number(document.getElementById('p-price').value), description: document.getElementById('p-desc').value, stock: 0, createdAt: serverTimestamp() }); showToast('Producto agregado', 'success'); closeModal(); } catch(err) { showToast('Error', 'error'); } };
         
-        // 5. Editar Producto (Restaurado)
-        window.openEditProductModal = async (pid) => {
-            const d = (await getDoc(doc(db,'artifacts',appId,'public','data','profiles',pid))).data();
-            let optionsHTML = window.categoriesCache.map(c => `<option value="${c.slug}" ${c.slug===d.category?'selected':''}>${c.name}</option>`).join('');
-            openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Editar</h3><form onsubmit="updateProduct(event, '${pid}')" class="space-y-4"><div><label class="text-xs font-bold uppercase">Nombre</label><input type="text" id="e-name" value="${d.name}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Precio</label><input type="number" id="e-price" value="${d.price}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Categoría</label><select id="e-cat" class="w-full border rounded-xl p-3 text-sm">${optionsHTML}</select></div><div><label class="text-xs font-bold uppercase">Imagen</label><input type="url" id="e-img" value="${d.imageUrl}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Descripción</label><textarea id="e-desc" class="w-full border rounded-xl p-3 h-20">${d.description}</textarea></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">Guardar</button></form></div>`);
-        };
-        window.updateProduct = async (e, pid) => { e.preventDefault(); await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), { name: document.getElementById('e-name').value, price: Number(document.getElementById('e-price').value), category: document.getElementById('e-cat').value, imageUrl: document.getElementById('e-img').value, description: document.getElementById('e-desc').value }); showToast('Actualizado', 'success'); closeModal(); };
+        // --- GUARDADO ESTRICTO (POR ID) ---
+        window.saveProduct = async (e) => { 
+            e.preventDefault(); 
+            const select = document.getElementById('p-category');
+            const catId = select.value; // ID único de Firebase
+            const catName = select.options[select.selectedIndex].text; // Nombre para mostrar
 
-        // --- COMPRA Y NAVEGACIÓN (Nuevo Diseño) ---
-        window.openCategoryModule = (categorySlug, title) => {
+            try { 
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { 
+                    categoryId: catId, // ESTO ES LO QUE FILTRA
+                    categoryName: catName, // ESTO ES LO QUE SE VE EN ADMIN
+                    name: document.getElementById('p-name').value, 
+                    imageUrl: document.getElementById('p-image').value, 
+                    price: Number(document.getElementById('p-price').value), 
+                    description: document.getElementById('p-desc').value, 
+                    stock: 0, 
+                    createdAt: serverTimestamp() 
+                }); 
+                showToast('Producto agregado correctamente', 'success'); 
+                closeModal(); 
+            } catch(err) { showToast('Error al guardar', 'error'); } 
+        };
+        
+        window.openEditProductModal = async (pid) => { const d = (await getDoc(doc(db,'artifacts',appId,'public','data','profiles',pid))).data(); let optionsHTML = window.categoriesCache.map(c => `<option value="${c.id}" ${c.id===d.categoryId?'selected':''}>${c.name}</option>`).join(''); openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Editar</h3><form onsubmit="updateProduct(event, '${pid}')" class="space-y-4"><div><label class="text-xs font-bold uppercase">Nombre</label><input type="text" id="e-name" value="${d.name}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Precio</label><input type="number" id="e-price" value="${d.price}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Categoría</label><select id="e-cat" class="w-full border rounded-xl p-3 text-sm">${optionsHTML}</select></div><div><label class="text-xs font-bold uppercase">Imagen</label><input type="url" id="e-img" value="${d.imageUrl}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Descripción</label><textarea id="e-desc" class="w-full border rounded-xl p-3 h-20">${d.description}</textarea></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">Guardar</button></form></div>`); };
+        window.updateProduct = async (e, pid) => { e.preventDefault(); const catSelect = document.getElementById('e-cat'); await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), { name: document.getElementById('e-name').value, price: Number(document.getElementById('e-price').value), categoryId: catSelect.value, categoryName: catSelect.options[catSelect.selectedIndex].text, imageUrl: document.getElementById('e-img').value, description: document.getElementById('e-desc').value }); showToast('Actualizado', 'success'); closeModal(); };
+
+        // --- COMPRA Y NAVEGACIÓN (FILTRADO POR ID) ---
+        window.openCategoryModule = (categoryId, title) => {
             const html = `<div class="relative h-full flex flex-col bg-slate-50"><div class="flex justify-between items-center mb-4 px-6 pt-6"><div><h3 class="text-2xl font-black text-slate-800 tracking-tight">${title}</h3><p class="text-xs text-slate-400 font-medium">Selecciona tu plan ideal</p></div></div><div class="overflow-y-auto flex-1 pb-24 px-4 scrollbar-hide"><div id="products-grid" class="grid grid-cols-2 gap-4 pb-4"><div class="col-span-full text-center py-20"><div class="inline-block w-8 h-8 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div></div></div></div>`;
             document.getElementById('modal-content').innerHTML = html; const m = document.getElementById('app-modal'); const mc = document.getElementById('modal-card'); m.classList.remove('items-center', 'justify-center', 'p-4'); m.classList.add('items-end', 'justify-center', 'p-0'); mc.className = "bg-white w-full max-w-4xl h-[85vh] rounded-t-[2.5rem] relative shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden slide-up border-t border-slate-100"; m.classList.remove('hidden'); m.classList.add('flex');
-            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), where('category', '==', categorySlug)), (snapshot) => {
-                const grid = document.getElementById('products-grid'); if(!grid) return; if(snapshot.empty) { grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="package-open" class="w-12 h-12 mb-2"></i><p class="text-sm">No hay productos aquí aún.</p></div>`; lucide.createIcons(); return; }
-                grid.innerHTML = ''; snapshot.forEach(doc => { const p = doc.data(); const safeDesc = encodeURIComponent(p.description || ''); let ribbon = ((p.stock||0) <= 0) ? `<div class="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-20 flex items-center justify-center"><span class="bg-rose-500 text-white text-[10px] font-bold px-3 py-1 rounded-full rotate-[-10deg] shadow-lg">AGOTADO</span></div>` : (((p.stock||0) <= 3) ? `<div class="absolute top-2 right-2 bg-amber-400 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-sm z-20">¡Pocos!</div>` : ''); const card = document.createElement('div'); card.className = "bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden cursor-pointer group hover:shadow-xl transition-all duration-300 relative bounce-enter"; card.innerHTML = `${ribbon}<div onclick="buyProduct('${doc.id}', '${p.name}', ${p.price}, ${p.stock||0}, '${safeDesc}')" class="flex flex-col h-full"><div class="aspect-[4/3] overflow-hidden bg-slate-100 relative"><img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy"><div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div></div><div class="p-4 flex-1 flex flex-col justify-between"><div><h4 class="font-bold text-slate-800 text-sm leading-tight mb-1">${p.name}</h4><p class="text-[10px] text-slate-400 line-clamp-2">${p.description || 'Servicio digital premium'}</p></div><div class="flex justify-between items-center mt-3"><span class="bg-emerald-50 text-emerald-700 font-bold text-sm px-2.5 py-1 rounded-lg">$${p.price}</span><div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div></div></div></div>`; grid.appendChild(card); }); lucide.createIcons();
+            
+            // AQUI ESTA LA MAGIA: FILTRA POR ID, NO POR TEXTO
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), where('categoryId', '==', categoryId));
+            
+            onSnapshot(q, (snapshot) => {
+                const grid = document.getElementById('products-grid'); if(!grid) return; if(snapshot.empty) { grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="package-open" class="w-12 h-12 mb-2"></i><p class="text-sm">No hay productos en ${title}.</p></div>`; lucide.createIcons(); return; }
+                grid.innerHTML = ''; snapshot.forEach(doc => { const p = doc.data(); const safeDesc = encodeURIComponent(p.description || ''); let ribbon = ((p.stock||0) <= 0) ? `<div class="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-20 flex items-center justify-center"><span class="bg-rose-500 text-white text-[10px] font-bold px-3 py-1 rounded-full rotate-[-10deg] shadow-lg">AGOTADO</span></div>` : (((p.stock||0) <= 3) ? `<div class="absolute top-2 right-2 bg-amber-400 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-sm z-20">¡Pocos!</div>` : ''); const card = document.createElement('div'); card.className = "bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden cursor-pointer group hover:shadow-xl transition-all duration-300 relative bounce-enter"; card.innerHTML = `${ribbon}<div onclick="buyProduct('${doc.id}', '${p.name}', ${p.price}, ${p.stock||0}, '${safeDesc}', '${p.imageUrl}')" class="flex flex-col h-full"><div class="aspect-[4/3] overflow-hidden bg-slate-100 relative"><img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy"><div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div></div><div class="p-4 flex-1 flex flex-col justify-between"><div><h4 class="font-bold text-slate-800 text-sm leading-tight mb-1">${p.name}</h4><p class="text-[10px] text-slate-400 line-clamp-2">${p.description || 'Servicio digital premium'}</p></div><div class="flex justify-between items-center mt-3"><span class="bg-emerald-50 text-emerald-700 font-bold text-sm px-2.5 py-1 rounded-lg">$${p.price}</span><div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div></div></div></div>`; grid.appendChild(card); }); lucide.createIcons();
             });
         };
 
-        window.buyProduct = (id, name, price, stock, desc) => { openModal(`<div class="text-center bounce-enter"><div class="w-20 h-20 bg-slate-100 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-inner"><i data-lucide="shopping-bag" class="w-8 h-8 text-slate-400"></i></div><h3 class="text-xl font-bold text-slate-800 mb-1">${name}</h3><p class="text-emerald-500 font-bold text-lg mb-6">$${price.toLocaleString()}</p><div class="bg-slate-50 p-4 rounded-2xl text-left mb-6 border border-slate-100"><p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Incluye</p><p class="text-sm text-slate-600 leading-relaxed">${decodeURIComponent(desc)}</p></div><button onclick="processPurchase('${id}', '${name}',${price})" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-xl hover:bg-slate-800 active:scale-95 transition-all btn-animate flex items-center justify-center gap-2" ${stock <= 0 ? 'disabled style="opacity:0.5; pointer-events:none;"' : ''}>${stock <= 0 ? 'Agotado' : `Confirmar Compra <i data-lucide="chevron-right" class="w-4 h-4"></i>`}</button></div>`); };
+        window.buyProduct = (id, name, price, stock, desc, imgUrl) => { 
+            openModal(`
+                <div class="text-center bounce-enter">
+                    <div class="mx-auto mb-4 w-24 h-24 relative">
+                        <img src="${imgUrl}" class="w-full h-full rounded-2xl object-cover shadow-md bg-slate-100">
+                        <div class="absolute -bottom-2 -right-2 bg-slate-900 text-white p-1.5 rounded-xl shadow-lg border-2 border-white"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-1">${name}</h3>
+                    <p class="text-emerald-500 font-bold text-lg mb-6">$${price.toLocaleString()}</p>
+                    <div class="bg-slate-50 p-4 rounded-2xl text-left mb-6 border border-slate-100"><p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Incluye</p><p class="text-sm text-slate-600 leading-relaxed">${decodeURIComponent(desc)}</p></div>
+                    <button onclick="processPurchase('${id}', '${name}',${price})" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-xl hover:bg-slate-800 active:scale-95 transition-all btn-animate flex items-center justify-center gap-2" ${stock <= 0 ? 'disabled style="opacity:0.5; pointer-events:none;"' : ''}>${stock <= 0 ? 'Agotado' : `Confirmar Compra <i data-lucide="chevron-right" class="w-4 h-4"></i>`}</button>
+                </div>
+            `);
+        };
+
         window.processPurchase = async (pid, name, price) => {
             if(!currentUser) return showToast('Inicia sesión', 'error');
             const btn = document.querySelector('button[onclick^="processPurchase"]'); btn.disabled = true; btn.innerHTML = `<span class="animate-spin">⌛</span>`;
@@ -560,20 +642,219 @@
 
                 await runTransaction(db, async (t) => {
                     const wRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main'); const wSnap = await t.get(wRef);
-                    if((wSnap.data().balance || 0) < price) throw new Error("Saldo insuficiente");
+                    // FIX DE SALDO: Asegurar conversión numérica estricta
+                    const currentBalance = Number(wSnap.data().balance) || 0;
+                    const cost = Number(price);
+                    
+                    if(currentBalance < cost) throw new Error("Saldo insuficiente");
+                    
                     const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', pid); const pSnap = await t.get(pRef);
-                    t.update(wRef, { balance: (wSnap.data().balance - price) });
+                    t.update(wRef, { balance: (currentBalance - cost) });
                     t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { status: 'sold', soldTo: currentUser.uid, soldAt: serverTimestamp() });
                     t.update(pRef, { stock: (pSnap.data().stock || 0) - 1 });
-                    t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), { type: 'purchase', amount: price, description: `Compra: ${name}`, details: { serviceName: item.serviceName, email: item.email, password: item.password, expiryDate: item.expiryDate, duration: item.duration || '1 Mes', terms: item.terms || '' }, itemId: itemId, timestamp: serverTimestamp() });
+                    t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), { type: 'purchase', amount: cost, description: `Compra: ${name}`, details: { serviceName: item.serviceName, email: item.email, password: item.password, expiryDate: item.expiryDate, duration: item.duration || '1 Mes', terms: item.terms || '' }, itemId: itemId, timestamp: serverTimestamp() });
                 });
                 showToast('¡Compra exitosa!', 'success'); showTicketModal({...item, serviceName: name});
             } catch (e) { let m = e.message || "Error"; if(m.includes("Saldo")) openChargeModal(); showToast(m, 'error'); closeModal(); }
         };
 
-        window.showTicketModal = (item) => { openModal(`<div class="text-center bounce-enter pt-4"><div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce"><i data-lucide="check" class="w-8 h-8"></i></div><h3 class="text-xl font-bold text-slate-800 mb-6">¡Aquí tienes tu cuenta!</h3><div class="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-5 text-left space-y-4 relative"><div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-3 text-xs font-bold text-slate-400 uppercase tracking-widest">Ticket Digital</div><div><p class="text-[10px] font-bold text-slate-400 uppercase">Correo</p><p class="font-mono text-sm text-slate-800 font-bold select-all bg-white p-2 rounded border border-slate-100">${item.email}</p></div><div><p class="text-[10px] font-bold text-slate-400 uppercase">Contraseña</p><p class="font-mono text-sm text-slate-800 font-bold select-all bg-white p-2 rounded border border-slate-100">${item.password}</p></div><div class="flex justify-between border-t border-slate-200 pt-3"><div><p class="text-[10px] text-slate-400">Expira</p><p class="text-xs font-bold">${item.expiryDate||'N/A'}</p></div><div><p class="text-[10px] text-slate-400">Duración</p><p class="text-xs font-bold">${item.duration||'1 Mes'}</p></div></div></div><button onclick="closeModal()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-4 btn-animate">Entendido</button></div>`); };
+        window.showTicketModal = (item) => {
+            const terms = item.terms || "Sin términos adicionales.";
+            const safeTerms = encodeURIComponent(terms); 
+            
+            openModal(`
+                <div class="text-center bounce-enter pt-4">
+                    <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce"><i data-lucide="check" class="w-8 h-8"></i></div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">¡Compra Exitosa!</h3>
+                    <p class="text-xs text-slate-400 mb-6">Captura o copia tu ticket</p>
+                    
+                    <div class="bg-white border border-slate-200 rounded-2xl p-5 text-left space-y-4 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                        <div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Plataforma</p><p class="text-lg font-black text-slate-800">${item.serviceName}</p></div>
+                        <div class="grid gap-3">
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100"><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Correo</p><p class="font-mono text-sm text-slate-800 font-bold select-all break-all">${item.email}</p></div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100"><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-slate-800 font-bold select-all">${item.password}</p></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 pt-2">
+                            <div><p class="text-[10px] font-bold text-slate-400 uppercase">Expira</p><p class="text-sm font-bold text-slate-700">${item.expiryDate || 'N/A'}</p></div>
+                            <div><p class="text-[10px] font-bold text-slate-400 uppercase">Duración</p><p class="text-sm font-bold text-slate-700">${item.duration || '1 Mes'}</p></div>
+                        </div>
+                        <div class="pt-3 border-t border-dashed border-slate-200"><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Términos y Condiciones</p><p class="text-[10px] text-slate-500 leading-relaxed italic">${terms}</p></div>
+                    </div>
+
+                    <div class="mt-6 space-y-3">
+                        <button onclick="copyTicketData('${item.serviceName}', '${item.email}', '${item.password}', '${item.expiryDate}', '${item.duration || '1 Mes'}', '${safeTerms}')" class="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-lg btn-animate flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar Ticket</button>
+                        <button onclick="closeModal()" class="w-full text-slate-400 font-bold text-xs py-2 hover:text-slate-600">Cerrar</button>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.copyTicketData = (srv, mail, pass, exp, dur, encTerms) => {
+            const terms = decodeURIComponent(encTerms);
+            const text = `📦 *COMPRA EXITOSA - STREAM EVOLUTION*\n\n📌 *Plataforma:* ${srv}\n📧 *Correo:* ${mail}\n🔑 *Contraseña:* ${pass}\n📅 *Expira:* ${exp}\n⏳ *Duración:* ${dur}\n\n📜 *Términos:* ${terms}\n\n¡Gracias por tu preferencia!`;
+            navigator.clipboard.writeText(text).then(() => showToast('¡Ticket copiado!', 'success')).catch(() => showToast('Error al copiar', 'error'));
+        };
         
-        window.openNotifications = () => { const d = document.getElementById('notification-dot'); if(d) d.style.display='none'; let h=`<div class="text-center mb-4"><h3 class="text-xl font-bold text-slate-800">Notificaciones</h3></div><div class="space-y-3">`; let all=[...window.globalNotifications, ...window.userTransactions]; if(isAdmin){all=[...all,...window.adminPendingRequests, ...window.adminPendingReports]} all.sort((a,b)=>(b.timestamp?.toMillis()||0)-(a.timestamp?.toMillis()||0)); if(all.length===0)h+=`<p class="text-center text-slate-400">Sin actividad</p>`; else all.forEach(t=>{ h+=`<div onclick="openTransactionDetail('${t.id}')" class="p-3 border rounded-xl flex justify-between items-center ${t.isGlobal?'bg-indigo-50':''}"><div class="text-xs"><p class="font-bold">${t.title||t.description||t.email}</p><p class="text-slate-400">${t.timestamp?.toDate().toLocaleString()}</p></div></div>`;}); h+=`</div>`; openModal(h); };
+        // --- NOTIFICACIONES Y DETALLES (CORREGIDO) ---
+        window.openNotifications = () => { 
+            const d = document.getElementById('notification-dot'); if(d) d.style.display='none'; 
+            let h=`<div class="text-center mb-4"><h3 class="text-xl font-bold text-slate-800">Notificaciones</h3><p class="text-xs text-slate-400">Actividad Reciente</p></div><div class="space-y-3">`; 
+            let all=[...window.globalNotifications, ...window.userTransactions]; 
+            if(isAdmin){all=[...all,...window.adminPendingRequests, ...window.adminPendingReports]} 
+            all.sort((a,b)=>(b.timestamp?.toMillis()||0)-(a.timestamp?.toMillis()||0)); 
+            
+            if(all.length===0)h+=`<p class="text-center text-slate-400 py-8">Sin actividad reciente</p>`; 
+            else all.forEach(t=>{ 
+                // Lógica visual de estado
+                let icon='circle', color='text-slate-400', bg='bg-slate-50';
+                let desc = t.title||t.description||t.email;
+                
+                if(t.type==='deposit'){
+                    if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){
+                        icon='clock'; color='text-amber-500'; bg='bg-amber-50'; desc = 'Recarga Pendiente';
+                    } else {
+                        icon='check-circle'; color='text-emerald-500'; bg='bg-emerald-50'; desc = 'Recarga Exitosa';
+                    }
+                } else if(t.type==='purchase'){ icon='shopping-bag'; color='text-slate-600'; bg='bg-slate-100'; }
+                else if(t.type==='support_reply'){ icon='message-circle'; color='text-blue-500'; bg='bg-blue-50'; }
+                else if(t.isGlobal){ icon='bell'; color='text-indigo-500'; bg='bg-indigo-50'; }
+
+                h+=`<div onclick="openTransactionDetail('${t.id}')" class="p-3 border border-slate-100 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl ${bg} flex items-center justify-center ${color} shadow-sm group-hover:scale-110 transition-transform"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
+                        <div><p class="font-bold text-xs text-slate-700 line-clamp-1">${desc}</p><p class="text-[10px] text-slate-400">${t.timestamp?.toDate().toLocaleString()}</p></div>
+                    </div>
+                </div>`;
+            }); 
+            h+=`</div>`; 
+            openModal(h); 
+        };
+
+        window.openTransactionDetail = (id) => {
+            // Buscar en todas las listas posibles
+            let t = window.userTransactions.find(x => x.id === id) || 
+                    window.globalNotifications.find(x => x.id === id) || 
+                    window.adminPendingRequests.find(x => x.id === id);
+            
+            if(!t) return;
+
+            if(t.type === 'deposit') {
+                let statusColor = 'text-emerald-500';
+                let statusText = 'Éxito';
+                
+                if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){
+                    statusColor = 'text-amber-500'; statusText = 'Pendiente';
+                } else if (t.status === 'rejected') {
+                    statusColor = 'text-rose-500'; statusText = 'Cancelado';
+                }
+
+                openModal(`
+                    <div class="text-center bounce-enter pt-4">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="dollar-sign" class="w-8 h-8 text-slate-500"></i></div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-1">Detalle de Recarga</h3>
+                        <p class="text-xs text-slate-400 mb-6">${t.timestamp?.toDate().toLocaleString()}</p>
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3 text-left">
+                            <div class="flex justify-between"><span class="text-xs font-bold text-slate-400 uppercase">Monto</span><span class="font-bold text-emerald-600 text-lg">$${t.amount}</span></div>
+                            <div class="flex justify-between"><span class="text-xs font-bold text-slate-400 uppercase">Estado</span><span class="font-bold ${statusColor} uppercase text-sm">${statusText}</span></div>
+                            ${t.prevBalance ? `<div class="flex justify-between border-t border-slate-200 pt-2"><span class="text-xs text-slate-400">Saldo Anterior</span><span class="text-xs font-mono">$${t.prevBalance}</span></div>` : ''}
+                        </div>
+                        <button onclick="openNotifications()" class="mt-4 text-slate-400 text-xs font-bold hover:text-slate-800">Volver</button>
+                    </div>
+                `);
+            } else if (t.type === 'purchase' && t.details) {
+                showTicketModal({...t.details, serviceName: t.description});
+            } else if (t.type === 'support_reply') {
+                openModal(`
+                    <div class="text-left bounce-enter p-2">
+                        <div class="flex items-center gap-2 mb-4"><i data-lucide="message-circle" class="text-blue-500"></i><h3 class="font-bold text-lg">Respuesta de Soporte</h3></div>
+                        <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl text-sm text-slate-700 whitespace-pre-wrap">${t.message}</div>
+                        <div class="mt-4 text-right"><span class="text-[10px] text-slate-400">${t.timestamp?.toDate().toLocaleString()}</span></div>
+                        <button onclick="openNotifications()" class="mt-4 w-full bg-slate-100 py-3 rounded-xl font-bold text-slate-500">Volver</button>
+                    </div>
+                `);
+            } else {
+                 openModal(`<div class="p-4 text-center"><p class="text-slate-500">${t.description || t.message || t.title}</p></div>`);
+            }
+        };
+
+        // --- MODAL DE CARGA DE SALDO (Restaurado con datos bancarios) ---
+        window.openChargeModal = () => { 
+            openModal(`
+                <div class="text-center bounce-enter">
+                    <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="wallet" class="w-8 h-8"></i></div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Cargar Saldo</h3>
+                    <input type="number" id="charge-amount" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold text-center mb-4" placeholder="$0">
+                    <button id="confirm-btn" onclick="processRecharge(document.getElementById('charge-amount').value)" class="w-full bg-amber-400 text-slate-900 font-bold py-3 rounded-xl shadow-lg btn-animate">Solicitar</button>
+                    <div id="payment-info-container"></div>
+                </div>
+            `); 
+        };
+
+        window.processRecharge = async (amt) => { 
+            if(!amt) return;
+            const btn = document.getElementById('confirm-btn');
+            const originalHTML = btn.innerHTML; 
+            btn.innerHTML = `<div class="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>`; 
+            btn.disabled = true; 
+            
+            try { 
+                const txRef = await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), { type: 'deposit', amount: Number(amt), description: 'Recarga Pendiente', timestamp: serverTimestamp(), status: 'Pending' }); 
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), { uid: currentUser.uid, email: currentUser.email, amount: Number(amt), status: 'pending', timestamp: serverTimestamp(), userTxId: txRef.id }); 
+                
+                showToast('Solicitud enviada', 'success'); 
+                
+                // Actualizar UI con datos bancarios
+                const infoContainer = document.getElementById('payment-info-container');
+                infoContainer.innerHTML = `
+                    <div class="mt-6 pt-6 border-t border-dashed border-slate-200 bounce-enter text-left">
+                        <div class="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                            <p class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-3 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Datos para Transferir</p>
+                            <div class="space-y-2 text-sm text-slate-700">
+                                <div class="flex justify-between"><span class="text-slate-500">Cuenta:</span><span class="font-mono font-bold select-all">123456789101</span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Nombre:</span><span class="font-bold">Juan Zamora</span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Concepto:</span><span class="font-bold">Donativo</span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Referencia:</span><span class="bg-white px-2 py-0.5 rounded border border-amber-200 font-mono text-xs font-bold">RW${Math.floor(Math.random()*1000)}</span></div>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-400 text-center mt-3">Tu saldo se verá reflejado una vez validado el pago por el administrador.</p>
+                    </div>`; 
+                lucide.createIcons(); 
+                
+                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Solicitud Enviada`; 
+                btn.className = "w-full bg-emerald-100 text-emerald-700 font-bold py-3 rounded-xl shadow-none cursor-default flex items-center justify-center gap-2"; 
+            } catch(e){ 
+                showToast('Error al procesar', 'error'); 
+                btn.innerHTML = originalHTML; 
+                btn.disabled = false; 
+            } 
+        };
+
+        // --- NUEVO: VER RESPUESTAS DE SOPORTE ---
+        window.openSupportReplies = () => {
+            const replies = window.userTransactions.filter(t => t.type === 'support_reply');
+            let html = `<div class="text-center mb-4"><h3 class="text-xl font-bold text-slate-800">Respuestas de Soporte</h3></div>`;
+            
+            if (replies.length === 0) {
+                html += `<div class="flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="message-circle-off" class="w-12 h-12 mb-2 text-slate-300"></i><p class="text-sm text-slate-400">Sin respuestas nuevas</p></div>`;
+            } else {
+                html += `<div class="space-y-3">`;
+                replies.forEach(r => {
+                    const time = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente';
+                    html += `
+                        <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl text-left">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs font-bold text-blue-600 uppercase bg-blue-100 px-2 py-0.5 rounded">Respuesta Admin</span>
+                                <span class="text-[10px] text-slate-400">${time}</span>
+                            </div>
+                            <p class="text-sm text-slate-700 whitespace-pre-wrap">${r.message}</p>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+            openModal(html);
+        };
 
         // --- UTILIDADES UI ---
         window.toggleSidebar = () => { const s=document.getElementById('sidebar'); const o=document.getElementById('sidebar-overlay'); if(s.classList.contains('-translate-x-full')){s.classList.remove('-translate-x-full');o.classList.remove('opacity-0','pointer-events-none');}else{s.classList.add('-translate-x-full');o.classList.add('opacity-0','pointer-events-none');} } 
@@ -585,9 +866,33 @@
         window.returnToAdminDashboard = () => { document.getElementById('admin-dashboard-grid').classList.remove('hidden'); document.getElementById('admin-modules-container').classList.add('hidden'); };
         window.switchAuthView = (v) => { document.querySelectorAll('.auth-view').forEach(x=>x.classList.add('hidden')); document.getElementById(`${v==='login'?'login':v==='register'?'register':'forgot'}-form`).classList.remove('hidden'); };
         
-        window.openChargeModal = () => { openModal(`<div class="text-center bounce-enter"><div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="wallet" class="w-8 h-8"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">Cargar Saldo</h3><input type="number" id="charge-amount" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold text-center mb-4" placeholder="$0"><button onclick="processRecharge(document.getElementById('charge-amount').value)" class="w-full bg-amber-400 text-slate-900 font-bold py-3 rounded-xl shadow-lg btn-animate">Solicitar</button></div>`); };
-        window.processRecharge = async (amt) => { if(!amt)return; try { const txRef = await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), { type: 'deposit', amount: Number(amt), description: 'Recarga Pendiente', timestamp: serverTimestamp(), status: 'Pending' }); await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), { uid: currentUser.uid, email: currentUser.email, amount: Number(amt), status: 'pending', timestamp: serverTimestamp(), userTxId: txRef.id }); showToast('Solicitud enviada', 'success'); closeModal(); } catch(e){showToast('Error','error');} };
-        window.approveRecharge = async (reqId, uid, amt, txId) => { if(!confirm('¿Aprobar saldo?'))return; const wRef=doc(db,'artifacts',appId,'users',uid,'wallet','main'); await runTransaction(db,async(t)=>{ const s=await t.get(wRef); t.update(wRef,{balance:(s.data().balance||0)+Number(amt)}); }); await updateDoc(doc(db,'artifacts',appId,'public','data','pending_recharges',reqId),{status:'approved'}); if(txId) await updateDoc(doc(db,'artifacts',appId,'users',uid,'transactions',txId),{status:'Aprobado'}); showToast('Saldo cargado','success'); };
+        // APROBAR RECARGA (FUNCIÓN GLOBAL RESTAURADA Y FIX DE CLIC)
+        window.approveRecharge = async (reqId, uid, amt, txId) => { 
+            if(!confirm('¿Aprobar saldo de $' + amt + '?')) return; 
+            
+            const wRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'); 
+            
+            try {
+                await runTransaction(db, async (t) => { 
+                    const s = await t.get(wRef); 
+                    // FIX DE SALDO: asegurar numero en la aprobación también
+                    const currentBal = Number(s.exists() ? s.data().balance : 0) || 0;
+                    t.update(wRef, { balance: currentBal + Number(amt) }); 
+                }); 
+                
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pending_recharges', reqId), { status: 'approved' }); 
+                
+                if(txId) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'transactions', txId), { status: 'Éxito' }); 
+                }
+                
+                showToast('Saldo cargado correctamente', 'success'); 
+            } catch(e) {
+                console.error(e);
+                showToast('Error al aprobar', 'error');
+            }
+        };
+
         window.deleteProfile = async (id) => { if(confirm("¿Borrar producto?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', id)); };
 
         // Listeners
