@@ -3,199 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ecosistema VNHE - Acceso Seguro</title>
+    <title>Stream Evolution</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #F8FAFC; -webkit-tap-highlight-color: transparent; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        .soft-3d-icon {
-            box-shadow: inset 2px 2px 5px rgba(255, 255, 255, 0.7), inset -2px -2px 5px rgba(0, 0, 0, 0.05), 5px 5px 10px rgba(0, 0, 0, 0.05);
-        }
-        /* Animaciones de Entrada */
-        .fade-in { animation: fadeIn 0.5s ease-in-out forwards; }
+        
+        /* Animaciones Base */
+        .fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .auth-switch-enter { animation: slideIn 0.3s ease-out forwards; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        .slide-up { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Estilos de Inputs */
-        .input-group:focus-within label { color: #F59E0B; }
-        .input-group:focus-within i { color: #F59E0B; }
-        .input-group input:focus { border-color: #F59E0B; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
+        /* --- NUEVAS ANIMACIONES Y REBOTES --- */
+        .bounce-enter { animation: bounceIn 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) both; }
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        .floating { animation: float 3s ease-in-out infinite; }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .hover-bounce:hover { animation: bounceSmall 0.6s ease-in-out infinite; }
+        @keyframes bounceSmall {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* Tarjetas */
+        .gift-card {
+            aspect-ratio: 2/3;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .gift-card:hover { transform: scale(1.03) translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+        .gift-card:active { transform: scale(0.95); }
+        
+        .history-tab.active {
+            background-color: #F1F5F9;
+            color: #0F172A;
+            border-bottom: 2px solid #F59E0B;
+        }
+        .history-tab {
+            color: #94A3B8;
+            border-bottom: 2px solid transparent;
+        }
+        .history-item:active { transform: scale(0.98); background-color: #F8FAFC; }
+
+        /* Botones animados */
+        .btn-animate { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-animate:active { transform: scale(0.90); }
     </style>
 </head>
 <body class="text-slate-800 overflow-x-hidden min-h-screen relative bg-slate-50">
 
-    <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- LOADER GLOBAL -->
     <div id="global-loader" class="fixed inset-0 bg-slate-50 z-[90] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="w-16 h-16 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin mb-4"></div>
-        <p class="text-slate-400 font-medium tracking-widest text-sm animate-pulse">CARGANDO ECOSISTEMA...</p>
+        <p class="text-slate-400 font-medium tracking-widest text-sm animate-pulse">CARGANDO STREAM EVOLUTION...</p>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 1. AUTH CONTAINER (LOGIN / REGISTER)       -->
-    <!-- ========================================== -->
     <div id="auth-container" class="min-h-screen flex flex-col items-center justify-center p-6 hidden">
-        
-        <!-- Logo / Branding en Auth -->
-        <div class="mb-8 text-center fade-in">
-            <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-yellow-200 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg text-2xl mx-auto mb-3 transform rotate-3">VN</div>
-            <h1 class="text-2xl font-bold text-slate-800 tracking-wide">ECOSISTEMA <span class="text-amber-500">VNHE</span></h1>
-            <p class="text-slate-400 text-sm mt-1">Gestiona tus servicios digitales</p>
+        <div class="mb-8 text-center bounce-enter">
+            <div class="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-200 rounded-3xl flex items-center justify-center text-white font-bold shadow-xl text-3xl mx-auto mb-4 transform rotate-6 floating">SE</div>
+            <h1 class="text-3xl font-bold text-slate-800 tracking-wide">STREAM <span class="text-amber-500">EVOLUTION</span></h1>
+            <p class="text-slate-400 text-sm mt-2">Tu portal de servicios digitales</p>
         </div>
 
-        <!-- Form Container -->
-        <div class="bg-white w-full max-w-sm rounded-3xl shadow-xl p-8 fade-in" style="animation-delay: 0.1s;">
-            
-            <!-- LOGIN FORM -->
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl shadow-slate-200/50 p-8 slide-up" style="animation-delay: 0.1s;">
             <form id="login-form" class="space-y-5 auth-view">
                 <h2 class="text-xl font-bold text-slate-700 mb-2">Iniciar Sesión</h2>
-                
-                <div class="input-group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Correo Electrónico</label>
+                <div class="input-group group">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1 group-focus-within:text-amber-500 transition-colors">Correo Electrónico</label>
                     <div class="relative">
-                        <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors"></i>
-                        <input type="email" id="login-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none transition-all" placeholder="ejemplo@correo.com" required>
+                        <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors group-focus-within:text-amber-400"></i>
+                        <input type="email" id="login-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-amber-400 focus:bg-white transition-all" placeholder="ejemplo@correo.com" required>
                     </div>
                 </div>
-
-                <div class="input-group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Contraseña</label>
+                <div class="input-group group">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1 group-focus-within:text-amber-500 transition-colors">Contraseña</label>
                     <div class="relative">
-                        <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors"></i>
-                        <input type="password" id="login-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none transition-all" placeholder="••••••••" required>
+                        <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors group-focus-within:text-amber-400"></i>
+                        <input type="password" id="login-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-amber-400 focus:bg-white transition-all" placeholder="••••••••" required>
                     </div>
                     <div class="text-right mt-2">
                         <button type="button" onclick="switchAuthView('forgot')" class="text-xs text-amber-500 font-medium hover:underline">¿Olvidaste tu contraseña?</button>
                     </div>
                 </div>
-
-                <button type="submit" class="w-full bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 active:scale-95 transition-all flex justify-center items-center gap-2">
+                <button type="submit" class="w-full bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg shadow-slate-800/20 hover:bg-slate-700 hover:shadow-xl btn-animate flex justify-center items-center gap-2">
                     <span>Ingresar</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
-
                 <div class="text-center text-sm text-slate-500 mt-4">
-                    ¿No tienes cuenta? <button type="button" onclick="switchAuthView('register')" class="text-amber-500 font-bold hover:underline">Regístrate</button>
+                    ¿No tienes cuenta? <button type="button" onclick="switchAuthView('register')" class="text-amber-500 font-bold hover:underline hover-bounce inline-block">Regístrate</button>
                 </div>
             </form>
 
-            <!-- REGISTER FORM -->
             <form id="register-form" class="space-y-5 hidden auth-view">
                 <h2 class="text-xl font-bold text-slate-700 mb-2">Crear Cuenta</h2>
-                
-                <div class="input-group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Correo Electrónico</label>
+                <div class="input-group group">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1 group-focus-within:text-amber-500 transition-colors">Correo Electrónico</label>
                     <div class="relative">
-                        <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors"></i>
-                        <input type="email" id="reg-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none transition-all" placeholder="tu@correo.com" required>
+                        <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors group-focus-within:text-amber-400"></i>
+                        <input type="email" id="reg-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-amber-400 focus:bg-white transition-all" placeholder="tu@correo.com" required>
                     </div>
                 </div>
-
-                <div class="input-group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Contraseña</label>
+                <div class="input-group group">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1 group-focus-within:text-amber-500 transition-colors">Contraseña</label>
                     <div class="relative">
-                        <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors"></i>
-                        <input type="password" id="reg-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none transition-all" placeholder="Mínimo 6 caracteres" required minlength="6">
+                        <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors group-focus-within:text-amber-400"></i>
+                        <input type="password" id="reg-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-amber-400 focus:bg-white transition-all" placeholder="Mínimo 6 caracteres" required minlength="6">
                     </div>
                 </div>
-
-                <div class="input-group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Confirmar Contraseña</label>
+                <div class="input-group group">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1 group-focus-within:text-amber-500 transition-colors">Confirmar Contraseña</label>
                     <div class="relative">
-                        <i data-lucide="check-circle" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors"></i>
-                        <input type="password" id="reg-confirm-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none transition-all" placeholder="Repite tu contraseña" required>
+                        <i data-lucide="check-circle" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors group-focus-within:text-amber-400"></i>
+                        <input type="password" id="reg-confirm-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-amber-400 focus:bg-white transition-all" placeholder="Repite tu contraseña" required>
                     </div>
                 </div>
-
-                <button type="submit" class="w-full bg-amber-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-amber-200 hover:bg-amber-300 active:scale-95 transition-all flex justify-center items-center gap-2">
+                <button type="submit" class="w-full bg-amber-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-amber-200 hover:bg-amber-300 hover:shadow-amber-300/50 btn-animate flex justify-center items-center gap-2">
                     <i data-lucide="user-plus" class="w-4 h-4"></i> <span>Registrarse</span>
                 </button>
-
                 <div class="text-center text-sm text-slate-500 mt-4">
-                    ¿Ya tienes cuenta? <button type="button" onclick="switchAuthView('login')" class="text-amber-600 font-bold hover:underline">Inicia Sesión</button>
+                    ¿Ya tienes cuenta? <button type="button" onclick="switchAuthView('login')" class="text-amber-600 font-bold hover:underline hover-bounce inline-block">Inicia Sesión</button>
                 </div>
             </form>
 
-            <!-- FORGOT PASSWORD FORM -->
             <form id="forgot-form" class="space-y-5 hidden auth-view">
-                <button type="button" onclick="switchAuthView('login')" class="text-slate-400 hover:text-slate-600 flex items-center gap-1 mb-2 text-sm">
+                <button type="button" onclick="switchAuthView('login')" class="text-slate-400 hover:text-slate-600 flex items-center gap-1 mb-2 text-sm hover-bounce">
                     <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver
                 </button>
                 <h2 class="text-xl font-bold text-slate-700 mb-2">Recuperar Acceso</h2>
-                <p class="text-sm text-slate-500 mb-4">Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
-                
-                <div class="input-group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Correo Registrado</label>
+                <div class="input-group group">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1 group-focus-within:text-amber-500 transition-colors">Correo Registrado</label>
                     <div class="relative">
-                        <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors"></i>
-                        <input type="email" id="forgot-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none transition-all" placeholder="ejemplo@correo.com" required>
+                        <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors group-focus-within:text-amber-400"></i>
+                        <input type="email" id="forgot-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-amber-400 focus:bg-white transition-all" placeholder="ejemplo@correo.com" required>
                     </div>
                 </div>
-
-                <button type="submit" class="w-full bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 active:scale-95 transition-all">
+                <button type="submit" class="w-full bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 btn-animate">
                     Enviar Enlace
                 </button>
             </form>
-
         </div>
-        <p class="mt-8 text-xs text-slate-400 text-center max-w-xs">Al continuar, aceptas los Términos de Servicio y Política de Privacidad de Ecosistema VNHE.</p>
     </div>
 
-
-    <!-- ========================================== -->
-    <!-- 2. MAIN APP CONTAINER (DASHBOARD)          -->
-    <!-- ========================================== -->
     <div id="dashboard-container" class="hidden relative min-h-screen pb-20">
         
-        <!-- MODAL GENÉRICO (Movido dentro del dashboard o global) -->
         <div id="app-modal" class="fixed inset-0 z-[80] hidden items-center justify-center p-4">
-            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal()"></div>
-            <div class="bg-white rounded-3xl w-full max-w-sm p-6 relative shadow-2xl transform transition-all scale-100 opacity-100">
-                <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-500">
+            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+            
+            <div id="modal-card" class="bg-white rounded-3xl w-full max-w-md p-0 relative shadow-2xl transform transition-all scale-100 opacity-100 max-h-[90vh] flex flex-col overflow-hidden">
+                <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-500 z-50 bg-white/80 rounded-full p-1 shadow-sm hover:rotate-90 transition-transform duration-300">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
-                <div id="modal-content">
-                    <!-- Contenido dinámico aquí -->
-                </div>
+                <div id="modal-content" class="overflow-y-auto scrollbar-hide p-6 w-full h-full">
+                    </div>
             </div>
         </div>
 
-        <!-- HEADER -->
         <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-sm">
             <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95 transition-all">
+                <button onclick="toggleSidebar()" class="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 btn-animate">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
                 <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-gradient-to-br from-amber-400 to-yellow-200 rounded-full flex items-center justify-center text-white font-bold shadow-sm text-sm">VN</div>
-                    <h1 class="text-sm font-bold text-slate-700 tracking-wide">ECOSISTEMA <span class="text-amber-500">VNHE</span></h1>
+                    <div class="w-8 h-8 bg-gradient-to-br from-amber-400 to-yellow-200 rounded-full flex items-center justify-center text-white font-bold shadow-sm text-sm">SE</div>
+                    <h1 class="text-sm font-bold text-slate-700 tracking-wide">STREAM <span class="text-amber-500">EVOLUTION</span></h1>
                 </div>
             </div>
             <div class="flex items-center gap-2">
                 <div class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                     <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> ONLINE
                 </div>
-                <button class="p-2 text-slate-400 hover:text-amber-500 transition-colors relative">
+                <button onclick="openNotifications()" class="p-2 text-slate-400 hover:text-amber-500 transition-colors relative hover-bounce">
                     <i data-lucide="bell" class="w-5 h-5"></i>
-                    <span class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+                    <span id="notification-dot" class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white hidden animate-bounce"></span>
                 </button>
             </div>
         </header>
 
-        <!-- SIDEBAR -->
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300"></div>
         <aside id="sidebar" class="fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-50 transition-transform duration-300 -translate-x-full flex flex-col">
             <div class="p-5 flex justify-between items-center border-b border-slate-100 bg-slate-50">
@@ -203,125 +207,181 @@
                     <h2 class="font-bold text-lg text-slate-800">Mi Cuenta</h2>
                     <p class="text-xs text-slate-400 truncate w-48" id="sidebar-email">Cargando...</p>
                 </div>
-                <button onclick="toggleSidebar()" class="p-2 hover:bg-rose-50 text-rose-400 rounded-full transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+                <button onclick="toggleSidebar()" class="p-2 hover:bg-rose-50 text-rose-400 rounded-full transition-colors hover:rotate-90 duration-300"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-4 space-y-1 overflow-y-auto flex-1 scrollbar-hide">
-                <div class="flex items-center gap-4 p-3 rounded-xl bg-amber-50 text-amber-600 font-semibold cursor-pointer"><i data-lucide="home" class="w-5 h-5"></i><span class="text-sm">Inicio</span></div>
-                <button onclick="showToast('Función de reporte simulada', 'info')" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-600 hover:bg-slate-50"><i data-lucide="alert-circle" class="w-5 h-5"></i><span class="text-sm font-medium">Reportar Fallo</span></button>
-                <button onclick="showToast('Historial cargado en pantalla principal', 'success')" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-600 hover:bg-slate-50"><i data-lucide="trending-up" class="w-5 h-5"></i><span class="text-sm font-medium">Movimientos</span></button>
-                <button onclick="showToast('Configuración no disponible', 'info')" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-600 hover:bg-slate-50"><i data-lucide="settings" class="w-5 h-5"></i><span class="text-sm font-medium">Configuración</span></button>
+                <div onclick="switchView('user')" class="flex items-center gap-4 p-3 rounded-xl bg-amber-50 text-amber-600 font-semibold cursor-pointer mb-1 hover:pl-5 transition-all"><i data-lucide="home" class="w-5 h-5"></i><span class="text-sm">Inicio</span></div>
+                
+                <div id="admin-menu-btn" onclick="switchView('admin')" class="hidden flex items-center gap-4 p-3 rounded-xl bg-slate-800 text-white font-semibold cursor-pointer shadow-lg shadow-slate-200 mb-4 transition-transform hover:scale-105 hover:shadow-xl">
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-amber-400 animate-pulse"></i>
+                    <span class="text-sm">Panel Admin</span>
+                </div>
+
+                <button onclick="openReportModal()" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-600 hover:bg-slate-50 hover:pl-5 transition-all">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    <span class="text-sm font-medium">Reportar Fallo</span>
+                </button>
+                
+                <button onclick="openNotifications(); toggleSidebar();" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-600 hover:bg-slate-50 hover:pl-5 transition-all"><i data-lucide="trending-up" class="w-5 h-5"></i><span class="text-sm font-medium">Movimientos</span></button>
             </div>
             <div class="p-4 border-t border-slate-100">
-                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold transition-colors">
+                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold transition-colors btn-animate">
                     <i data-lucide="log-out" class="w-5 h-5"></i> Cerrar Sesión
                 </button>
             </div>
         </aside>
 
-        <!-- DASHBOARD CONTENT -->
-        <main class="px-4 py-6 space-y-8 max-w-md mx-auto md:max-w-3xl">
-            
-            <!-- BALANCES -->
-            <section class="flex justify-between items-center gap-3 overflow-x-auto pb-2 scrollbar-hide fade-in" style="animation-delay: 0.1s;">
-                <div class="flex-1 min-w-[100px] bg-slate-800 text-white rounded-3xl py-4 px-4 flex flex-col items-center justify-center shadow-lg shadow-slate-200">
+        <main id="user-view" class="px-4 py-6 space-y-8 max-w-md mx-auto md:max-w-3xl">
+            <section class="flex justify-between items-center gap-3 overflow-x-auto pb-2 scrollbar-hide bounce-enter" style="animation-delay: 0.1s;">
+                <div class="flex-1 min-w-[100px] bg-slate-800 text-white rounded-3xl py-4 px-4 flex flex-col items-center justify-center shadow-lg shadow-slate-200 hover:-translate-y-1 transition-transform">
                     <span class="text-[10px] uppercase tracking-wider opacity-70 mb-1">Saldo</span>
                     <span id="balance-display" class="font-bold text-lg text-emerald-400 transition-all duration-300">--</span>
                 </div>
-                <div class="flex-1 min-w-[100px] bg-white text-slate-700 rounded-3xl py-4 px-4 flex flex-col items-center justify-center border border-slate-200 shadow-sm">
+                <div class="flex-1 min-w-[100px] bg-white text-slate-700 rounded-3xl py-4 px-4 flex flex-col items-center justify-center border border-slate-200 shadow-sm hover:-translate-y-1 transition-transform">
                     <span class="text-[10px] uppercase tracking-wider opacity-70 mb-1">Ganancia</span>
                     <span id="profit-display" class="font-bold text-lg transition-all duration-300">--</span>
                 </div>
-                <button onclick="openChargeModal()" class="flex-1 min-w-[100px] bg-amber-400 text-slate-900 rounded-3xl py-4 px-4 flex flex-col items-center justify-center shadow-lg shadow-amber-200 hover:bg-amber-300 active:scale-95 transition-transform">
+                <button onclick="openChargeModal()" class="flex-1 min-w-[100px] bg-amber-400 text-slate-900 rounded-3xl py-4 px-4 flex flex-col items-center justify-center shadow-lg shadow-amber-200 hover:bg-amber-300 btn-animate hover-bounce">
                     <i data-lucide="plus-circle" class="w-5 h-5 mb-1"></i>
                     <span class="font-bold text-xs">Cargar</span>
                 </button>
             </section>
 
-            <!-- BANNER -->
-            <section class="relative w-full h-40 rounded-3xl overflow-hidden shadow-md group cursor-pointer fade-in" style="animation-delay: 0.2s;" onclick="openProductModal('Streaming Premium', 25000)">
-                <div class="absolute inset-0 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 flex items-center px-6">
+            <section class="relative w-full h-40 rounded-3xl overflow-hidden shadow-md group cursor-pointer bounce-enter hover:shadow-xl transition-all duration-300" style="animation-delay: 0.2s;" onclick="openCategoryModule('cuentas', 'Cuentas')">
+                <div class="absolute inset-0 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 flex items-center px-6 transform transition-transform group-hover:scale-105 duration-700">
                     <div class="z-10 w-3/4">
-                        <span class="bg-amber-400 text-slate-900 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2 inline-block">Oferta</span>
-                        <h3 class="text-white font-bold text-lg leading-tight mb-1">Plex + Emby</h3>
+                        <span class="bg-amber-400 text-slate-900 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2 inline-block shadow-sm">Oferta</span>
+                        <h3 class="text-white font-bold text-lg leading-tight mb-1 group-hover:text-amber-100 transition-colors">Plex + Emby</h3>
                         <p class="text-slate-300 text-xs mb-3">Acceso total por solo $25.000</p>
                         <div class="flex gap-2">
-                            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"><i data-lucide="play" class="w-3 h-3 text-white fill-white"></i></div>
+                            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm group-hover:bg-amber-400 group-hover:text-slate-900 transition-all"><i data-lucide="play" class="w-3 h-3 text-white fill-white group-hover:text-slate-900 group-hover:fill-slate-900"></i></div>
                         </div>
                     </div>
-                    <div class="absolute right-0 bottom-0 w-32 h-32 bg-amber-400 rounded-full blur-3xl opacity-20 translate-y-1/2 translate-x-1/4"></div>
+                    <div class="absolute right-0 bottom-0 w-32 h-32 bg-amber-400 rounded-full blur-3xl opacity-20 translate-y-1/2 translate-x-1/4 group-hover:opacity-30 transition-opacity"></div>
                 </div>
             </section>
 
-            <!-- SERVICES GRID -->
-            <section class="fade-in" style="animation-delay: 0.3s;">
+            <section class="bounce-enter" style="animation-delay: 0.3s;">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-bold text-slate-800 text-lg border-b-2 border-amber-400 inline-block pb-1">Servicios</h3>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div onclick="openProductModal('Marketplace', 5000)" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all hover:shadow-md group">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform"><i data-lucide="shopping-bag" class="w-7 h-7 text-orange-600"></i></div>
-                        <span class="font-medium text-slate-600 text-sm text-center">Marketplace</span>
+                    
+                    <div onclick="openCategoryModule('perfiles', 'Perfiles')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                            <i data-lucide="tv" class="w-7 h-7 text-orange-600"></i>
+                        </div>
+                        <span class="font-medium text-slate-600 text-sm text-center group-hover:text-orange-600 transition-colors">Perfiles</span>
                     </div>
-                    <div onclick="openProductModal('Lotería', 3000)" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all hover:shadow-md group">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform"><i data-lucide="dices" class="w-7 h-7 text-emerald-600"></i></div>
-                        <span class="font-medium text-slate-600 text-sm text-center">Loterías</span>
+
+                    <div onclick="openCategoryModule('cuentas', 'Cuentas')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                            <i data-lucide="shield-check" class="w-7 h-7 text-emerald-600"></i>
+                        </div>
+                        <span class="font-medium text-slate-600 text-sm text-center group-hover:text-emerald-600 transition-colors">Cuentas</span>
                     </div>
-                    <div onclick="openProductModal('Recargas', 10000)" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all hover:shadow-md group">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform"><i data-lucide="repeat" class="w-7 h-7 text-blue-600"></i></div>
-                        <span class="font-medium text-slate-600 text-sm text-center">Recargas</span>
+
+                    <div onclick="openCategoryModule('musica', 'Música')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                            <i data-lucide="headphones" class="w-7 h-7 text-blue-600"></i>
+                        </div>
+                        <span class="font-medium text-slate-600 text-sm text-center group-hover:text-blue-600 transition-colors">Música</span>
                     </div>
-                    <div onclick="openProductModal('Paquetes', 15000)" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all hover:shadow-md group">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-100 to-violet-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform"><i data-lucide="package" class="w-7 h-7 text-purple-600"></i></div>
-                        <span class="font-medium text-slate-600 text-sm text-center">Paquetes</span>
+
+                    <div onclick="openCategoryModule('gamepass', 'Game Pass')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-100 to-violet-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                            <i data-lucide="gamepad-2" class="w-7 h-7 text-purple-600"></i>
+                        </div>
+                        <span class="font-medium text-slate-600 text-sm text-center group-hover:text-purple-600 transition-colors">Game Pass</span>
                     </div>
                 </div>
             </section>
+        </main>
 
-            <!-- HISTORIAL -->
-            <section class="fade-in" style="animation-delay: 0.4s;">
-                <h3 class="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
-                    <i data-lucide="history" class="w-5 h-5 text-slate-400"></i> Últimos Movimientos
-                </h3>
-                <div id="transactions-list" class="space-y-3 pb-4">
-                    <div class="animate-pulse space-y-3">
-                        <div class="h-16 bg-white rounded-2xl w-full"></div>
-                        <div class="h-16 bg-white rounded-2xl w-full"></div>
-                    </div>
+        <main id="admin-view" class="hidden px-4 py-6 space-y-8 max-w-md mx-auto md:max-w-3xl bounce-enter">
+            <div class="flex items-center justify-between mb-6 bg-slate-800 p-4 rounded-2xl text-white shadow-lg relative overflow-hidden">
+                <div class="absolute right-0 top-0 w-32 h-32 bg-white opacity-5 rounded-full blur-3xl transform translate-x-10 -translate-y-10"></div>
+                <div class="relative z-10">
+                    <h2 class="text-xl font-bold">Panel Administrador</h2>
+                    <p class="text-xs text-slate-300">Gestión integral Stream Evolution</p>
+                </div>
+                <div class="relative z-10 w-10 h-10 bg-amber-400 text-slate-900 rounded-full flex items-center justify-center shadow-md floating">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+            </div>
+            
+            <div class="flex gap-2 p-1 bg-white rounded-xl shadow-sm border border-slate-100 mb-6 overflow-x-auto">
+                <button onclick="adminTab('requests')" id="tab-requests" class="flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold bg-amber-100 text-amber-700 transition-all">Solicitudes</button>
+                <button onclick="adminTab('users')" id="tab-users" class="flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all">Usuarios</button>
+                <button onclick="adminTab('stock')" id="tab-stock" class="flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all">Artículos</button>
+                <button onclick="adminTab('inventory')" id="tab-inventory" class="flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all">Inventario</button>
+                <button onclick="adminTab('reports')" id="tab-reports" class="flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all">Reportes</button>
+            </div>
+            
+            <section id="admin-requests-section">
+                <h3 class="font-bold text-slate-800 mb-3">Solicitudes de Saldo</h3>
+                <div id="admin-requests-list" class="space-y-3">
+                    <p class="text-center text-slate-400 py-8">Cargando solicitudes...</p>
+                </div>
+            </section>
+            
+            <section id="admin-users-section" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-800">Gestión de Usuarios</h3>
+                    <button onclick="openAddUserModal()" class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-emerald-600 shadow-md btn-animate">
+                        <i data-lucide="user-plus" class="w-3 h-3"></i> Nuevo
+                    </button>
+                </div>
+                <div id="admin-users-list" class="space-y-3">
+                    <p class="text-center text-slate-400 py-8">Cargando usuarios...</p>
                 </div>
             </section>
 
+            <section id="admin-stock-section" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-800">Artículos (Vitrina)</h3>
+                    <button onclick="openAddProductModal()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-slate-700 shadow-md btn-animate">
+                        <i data-lucide="plus" class="w-3 h-3"></i> Agregar Artículo
+                    </button>
+                </div>
+                <div id="admin-stock-list" class="space-y-3">
+                     <p class="text-center text-slate-400 py-8">Cargando artículos...</p>
+                </div>
+            </section>
+
+            <section id="admin-inventory-section" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 class="font-bold text-slate-800">Inventario (Cuentas)</h3>
+                        <p class="text-[10px] text-slate-400">Credenciales y expiraciones</p>
+                    </div>
+                    <button onclick="openAddInventoryModal()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-indigo-700 shadow-md btn-animate">
+                        <i data-lucide="archive" class="w-3 h-3"></i> Agregar Item
+                    </button>
+                </div>
+                <div id="admin-inventory-list" class="space-y-3">
+                     <p class="text-center text-slate-400 py-8 border border-dashed rounded-xl">Cargando inventario...</p>
+                </div>
+            </section>
+
+            <section id="admin-reports-section" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-800">Reportes de Usuarios</h3>
+                    <span class="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded-full">Bugs / Errores</span>
+                </div>
+                <div id="admin-reports-list" class="space-y-3">
+                     <p class="text-center text-slate-400 py-8 border border-dashed rounded-xl">Cargando reportes...</p>
+                </div>
+            </section>
         </main>
     </div>
 
-    <!-- SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { 
-            getAuth, 
-            signInAnonymously, 
-            onAuthStateChanged, 
-            signInWithCustomToken,
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            signOut,
-            sendPasswordResetEmail
-        } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            onSnapshot, 
-            collection, 
-            addDoc, 
-            query, 
-            orderBy, 
-            limit, 
-            serverTimestamp, 
-            setDoc, 
-            getDoc, 
-            runTransaction 
-        } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, collection, addDoc, query, orderBy, limit, serverTimestamp, setDoc, getDoc, runTransaction, updateDoc, deleteDoc, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
-        // --- CONFIGURACIÓN FIREBASE ---
+        // CONFIG
         const firebaseConfig = {
           apiKey: "AIzaSyBYaYm2LDE6QM_K5Dii74sfZCYYd1eQfvY",
           authDomain: "ventasstre-a24b7.firebaseapp.com",
@@ -335,467 +395,763 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = "mi-ecosistema-v1";
+        const ADMIN_EMAIL = "mrandroidtutorialeshd@gmail.com";
 
         let currentUser = null;
+        let isAdmin = false;
+        let expirationInterval = null;
+        window.userTransactions = [];
+        window.currentHistoryTab = 'all';
 
-        // --- GESTIÓN DE ESTADO GLOBAL ---
-        
-        // Listener de Autenticación
+        // AUTH & INIT
         onAuthStateChanged(auth, async (user) => {
             const loader = document.getElementById('global-loader');
             const authContainer = document.getElementById('auth-container');
             const dashboardContainer = document.getElementById('dashboard-container');
             
             if (user) {
-                // USUARIO LOGUEADO
-                currentUser = user;
-                console.log("Usuario detectado:", user.uid);
+                const userStatusRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', user.uid);
+                const userStatusSnap = await getDoc(userStatusRef);
                 
-                // Actualizar Sidebar
-                const emailDisplay = user.email || "Usuario Anónimo";
-                document.getElementById('sidebar-email').textContent = emailDisplay;
+                if (userStatusSnap.exists() && userStatusSnap.data().suspended === true) {
+                    await signOut(auth);
+                    showToast('Esta cuenta ha sido suspendida.', 'error');
+                    return;
+                }
 
-                // Inicializar Datos de Usuario
+                currentUser = user;
+                isAdmin = user.email === ADMIN_EMAIL;
+                document.getElementById('sidebar-email').textContent = user.email || "Usuario Anónimo";
+                
+                const adminBtn = document.getElementById('admin-menu-btn');
+                if (isAdmin) {
+                    adminBtn.classList.remove('hidden');
+                    initAdminPanel();
+                    switchView('admin'); 
+                } else {
+                    adminBtn.classList.add('hidden');
+                    switchView('user');
+                }
+
                 await initUserData(user);
-
-                // Mostrar Dashboard
+                saveUserToGlobalList(user);
+                
                 authContainer.classList.add('hidden');
                 dashboardContainer.classList.remove('hidden');
-                
             } else {
-                // USUARIO NO LOGUEADO
                 currentUser = null;
-                console.log("Sin usuario activo");
-
-                // Mostrar Auth Screen
+                isAdmin = false;
+                window.userTransactions = [];
                 dashboardContainer.classList.add('hidden');
                 authContainer.classList.remove('hidden');
             }
-
-            // Ocultar Loader Global
             loader.style.opacity = '0';
             setTimeout(() => loader.style.display = 'none', 500);
         });
 
-        // Inicialización de Datos (Wallet & Transacciones)
+        // DATA INIT
         async function initUserData(user) {
             const walletRef = doc(db, 'artifacts', appId, 'users', user.uid, 'wallet', 'main');
             const walletSnap = await getDoc(walletRef);
-            
-            // Crear Billetera si es usuario nuevo
             if (!walletSnap.exists()) {
-                await setDoc(walletRef, {
-                    balance: 0, // Empiezan en 0 si es nuevo registro
-                    profit: 0,
-                    createdAt: serverTimestamp()
-                });
+                await setDoc(walletRef, { balance: 0, profit: 0, createdAt: serverTimestamp() });
             }
-
-            // Escuchar Saldo
             onSnapshot(walletRef, (doc) => {
                 if (doc.exists()) {
                     const data = doc.data();
                     updateBalanceUI(data.balance, data.profit);
                 }
             });
-
-            // Escuchar Movimientos
             const transactionsRef = collection(db, 'artifacts', appId, 'users', user.uid, 'transactions');
-            const q = query(transactionsRef, orderBy('timestamp', 'desc'), limit(10));
-            
+            const q = query(transactionsRef, orderBy('timestamp', 'desc'), limit(20));
             onSnapshot(q, (snapshot) => {
-                const list = document.getElementById('transactions-list');
-                if (snapshot.empty) {
-                    list.innerHTML = `
-                        <div class="text-center py-8 bg-white rounded-3xl border border-slate-100 border-dashed">
-                            <div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-300">
-                                <i data-lucide="inbox" class="w-6 h-6"></i>
-                            </div>
-                            <p class="text-xs text-slate-400">Sin movimientos recientes.</p>
-                        </div>`;
-                    lucide.createIcons();
-                } else {
-                    list.innerHTML = '';
-                    snapshot.forEach((doc) => {
-                        const t = doc.data();
-                        list.innerHTML += createTransactionHTML(t);
-                    });
-                    lucide.createIcons();
-                }
+                window.userTransactions = [];
+                snapshot.forEach((doc) => {
+                    let data = doc.data();
+                    data.id = doc.id;
+                    window.userTransactions.push(data);
+                });
+                const dot = document.getElementById('notification-dot');
+                if (window.userTransactions.length > 0) dot.style.display = 'block'; else dot.style.display = 'none';
             });
         }
 
-        // --- FUNCIONES DE AUTENTICACIÓN (Expuestas a Window) ---
-
-        window.handleLogin = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const btn = e.submitter || e.target.querySelector('button[type="submit"]');
-            
-            setLoading(btn, true);
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                showToast("¡Bienvenido de nuevo!", "success");
-                // onAuthStateChanged se encargará del redireccionamiento
-            } catch (error) {
-                console.error(error);
-                handleAuthError(error);
-                setLoading(btn, false);
-            }
-        };
-
-        window.handleRegister = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-password').value;
-            const confirm = document.getElementById('reg-confirm-password').value;
-            const btn = e.submitter || e.target.querySelector('button[type="submit"]');
-
-            if (password !== confirm) {
-                showToast("Las contraseñas no coinciden", "error");
-                return;
-            }
-
-            setLoading(btn, true);
-
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                // Crear saldo inicial de bienvenida (opcional)
-                const uid = userCredential.user.uid;
-                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'), {
-                    balance: 5000, // Bono de bienvenida
-                    profit: 0,
-                    createdAt: serverTimestamp()
-                });
-                
-                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'), {
-                    type: 'deposit',
-                    amount: 5000,
-                    description: 'Bono de Bienvenida',
-                    timestamp: serverTimestamp(),
-                    status: 'Aprobado'
-                });
-
-                showToast("¡Cuenta creada exitosamente!", "success");
-            } catch (error) {
-                console.error(error);
-                handleAuthError(error);
-                setLoading(btn, false);
-            }
-        };
-
-        window.handleResetPassword = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('forgot-email').value;
-            const btn = e.submitter || e.target.querySelector('button[type="submit"]');
-            
-            setLoading(btn, true);
-
-            try {
-                await sendPasswordResetEmail(auth, email);
-                showToast("Enlace enviado a tu correo", "success");
-                setTimeout(() => window.switchAuthView('login'), 3000);
-            } catch (error) {
-                handleAuthError(error);
-            } finally {
-                setLoading(btn, false);
-            }
-        };
-
-        window.handleLogout = async () => {
-            try {
-                await signOut(auth);
-                toggleSidebar(); // Cerrar sidebar
-                showToast("Sesión cerrada", "info");
-            } catch (error) {
-                console.error(error);
-            }
-        };
-
-        // --- HELPERS DE AUTH ---
-
-        function handleAuthError(error) {
-            let msg = "Ocurrió un error inesperado.";
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                msg = "Correo o contraseña incorrectos.";
-            } else if (error.code === 'auth/email-already-in-use') {
-                msg = "Este correo ya está registrado.";
-            } else if (error.code === 'auth/weak-password') {
-                msg = "La contraseña es muy débil (mínimo 6 caracteres).";
-            } else if (error.code === 'auth/too-many-requests') {
-                msg = "Demasiados intentos fallidos. Intenta más tarde.";
-            }
-            showToast(msg, "error");
+        async function saveUserToGlobalList(user) {
+            try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', user.uid), { email: user.email, uid: user.uid, lastLogin: serverTimestamp() }, { merge: true }); } catch (e) { console.error(e); }
         }
 
-        function setLoading(btn, isLoading) {
-            if (isLoading) {
-                btn.dataset.originalText = btn.innerHTML;
-                btn.innerHTML = `<div class="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>`;
-                btn.disabled = true;
+        // --- NOTIFICATIONS LOGIC (UPDATED) ---
+        window.openNotifications = () => {
+            const dot = document.getElementById('notification-dot');
+            if(dot) dot.style.display = 'none';
+            
+            let htmlContent = `<div class="text-center mb-4"><h3 class="text-xl font-bold text-slate-800">Notificaciones</h3><p class="text-xs text-slate-400">Historial de movimientos</p></div><div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">`;
+            
+            if (!window.userTransactions || window.userTransactions.length === 0) {
+                htmlContent += `<div class="text-center py-8 text-slate-400 text-sm">No tienes notificaciones recientes.</div>`;
             } else {
-                btn.innerHTML = btn.dataset.originalText;
-                btn.disabled = false;
-            }
-        }
-
-        // --- FUNCIONES DE NEGOCIO (TRANSACCIONES) ---
-        
-        window.processRecharge = async (amount) => {
-            if (!currentUser) return;
-            const btn = document.getElementById('confirm-btn');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = `<div class="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>`;
-            btn.disabled = true;
-
-            try {
-                const walletRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main');
-                const transactionsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions');
-
-                await runTransaction(db, async (transaction) => {
-                    const sfDoc = await transaction.get(walletRef);
-                    if (!sfDoc.exists()) throw "Cuenta no inicializada";
+                window.userTransactions.forEach((t, index) => {
+                    let bg = 'bg-slate-50';
+                    let color = 'text-slate-700';
+                    let icon = 'shopping-bag';
+                    let sign = '-';
+                    let amountDisplay = `$${t.amount}`;
                     
-                    const newBalance = (sfDoc.data().balance || 0) + Number(amount);
-                    transaction.update(walletRef, { balance: newBalance });
-                });
+                    if(t.type === 'deposit') { bg='bg-emerald-50'; color='text-emerald-600'; icon='arrow-down-left'; sign='+'; }
+                    if(t.type === 'support_reply') { bg='bg-blue-50'; color='text-blue-600'; icon='message-circle'; sign=''; amountDisplay='MSG'; }
 
-                await addDoc(transactionsRef, {
-                    type: 'deposit',
-                    amount: Number(amount),
-                    description: 'Recarga de Saldo',
-                    timestamp: serverTimestamp(),
-                    status: 'Aprobado'
-                });
+                    const time = t.timestamp ? t.timestamp.toDate().toLocaleString() : 'Reciente';
+                    const clickAction = `onclick="openNotificationDetails('${t.id}')"`;
 
-                showToast(`¡Recarga de $${amount} exitosa!`, 'success');
-                closeModal();
-            } catch (e) {
-                console.error(e);
-                showToast('Error al recargar saldo', 'error');
-            } finally {
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
-            }
-        };
-
-        window.processPurchase = async (serviceName, price) => {
-            if (!currentUser) return;
-            const btn = document.getElementById('confirm-purchase-btn');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
-            btn.disabled = true;
-
-            try {
-                const walletRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main');
-                const transactionsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions');
-
-                await runTransaction(db, async (transaction) => {
-                    const sfDoc = await transaction.get(walletRef);
-                    if (!sfDoc.exists()) throw "Error cuenta";
-                    
-                    const currentBal = sfDoc.data().balance || 0;
-                    if (currentBal < price) throw "Saldo insuficiente";
-
-                    const newBalance = currentBal - Number(price);
-                    const newProfit = (sfDoc.data().profit || 0) + (price * 0.05);
-
-                    transaction.update(walletRef, { 
-                        balance: newBalance,
-                        profit: newProfit
-                    });
-                });
-
-                await addDoc(transactionsRef, {
-                    type: 'purchase',
-                    amount: Number(price),
-                    description: `Compra ${serviceName}`,
-                    timestamp: serverTimestamp(),
-                    status: 'Completado'
-                });
-
-                showToast(`¡Compra de ${serviceName} exitosa!`, 'success');
-                closeModal();
-            } catch (e) {
-                if (e === "Saldo insuficiente") {
-                    showToast('Saldo insuficiente. Por favor recarga.', 'error');
-                } else {
-                    console.error(e);
-                    showToast('Error en la transacción', 'error');
-                }
-            } finally {
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
-            }
-        };
-
-        // Función auxiliar UI para actualizar saldos
-        function updateBalanceUI(balance, profit) {
-            document.getElementById('balance-display').textContent = `$${(balance || 0).toLocaleString()}`;
-            document.getElementById('profit-display').textContent = `$${(profit || 0).toLocaleString()}`;
-        }
-
-        // Función auxiliar UI para HTML de transacciones
-        function createTransactionHTML(t) {
-            const isPositive = t.type === 'deposit';
-            const colorClass = isPositive ? 'text-emerald-600' : 'text-slate-800';
-            const bgClass = isPositive ? 'bg-emerald-100' : 'bg-rose-50';
-            const sign = isPositive ? '+' : '-';
-            const icon = isPositive ? 'arrow-down-left' : 'shopping-bag';
-            
-            let timeStr = 'Reciente';
-            if (t.timestamp) {
-                const date = t.timestamp.toDate();
-                timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            }
-
-            return `
-                <div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full ${bgClass} flex items-center justify-center text-${isPositive ? 'emerald' : 'rose'}-500">
-                            <i data-lucide="${icon}" class="w-5 h-5"></i>
+                    htmlContent += `
+                        <div ${clickAction} class="flex items-center justify-between p-3 rounded-xl border border-slate-100 ${bg} cursor-pointer history-item transition-transform hover-bounce">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm"><i data-lucide="${icon}" class="w-4 h-4"></i></div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-700">${t.description}</p>
+                                    <p class="text-[10px] text-slate-400">${time}</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-bold ${color}">${sign}${amountDisplay}</span>
                         </div>
-                        <div>
-                            <p class="text-sm font-bold text-slate-700">${t.description}</p>
-                            <p class="text-[10px] text-slate-400">${timeStr} • ${t.status || 'Exitoso'}</p>
+                    `;
+                });
+            }
+            htmlContent += `</div>`;
+            openModal(htmlContent);
+        };
+
+        // --- ADMIN PANEL INIT ---
+        function initAdminPanel() {
+            const requestsRef = collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges');
+            const qRequests = query(requestsRef, orderBy('timestamp', 'desc'), limit(50));
+            onSnapshot(qRequests, (snapshot) => {
+                const list = document.getElementById('admin-requests-list');
+                if (snapshot.empty) { list.innerHTML = `<div class="text-center p-6 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400">No hay solicitudes pendientes</div>`; return; }
+                let html = '';
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if(data.status === 'pending') {
+                        html += `<div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-400 flex flex-col md:flex-row justify-between items-center gap-3 slide-up"><div class="flex-1"><p class="font-bold text-slate-800 text-sm">${data.email}</p><p class="text-xs text-slate-400 font-mono mb-1">ID: ${data.uid.substring(0,8)}</p><span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-full">Pendiente</span></div><div class="flex items-center gap-3"><span class="font-bold text-lg text-emerald-600">$${data.amount.toLocaleString()}</span><button onclick="window.approveRecharge('${docSnap.id}', '${data.uid}', ${data.amount}, '${data.userTxId}')" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-700 flex items-center gap-1 btn-animate"><i data-lucide="check" class="w-4 h-4"></i> Aprobar</button></div></div>`;
+                    }
+                });
+                if (html === '') html = `<div class="text-center p-6 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400">Todas las solicitudes gestionadas</div>`;
+                list.innerHTML = html;
+                lucide.createIcons();
+            });
+            
+            const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'all_users');
+            onSnapshot(usersRef, (snapshot) => {
+                const list = document.getElementById('admin-users-list');
+                if(snapshot.empty) { list.innerHTML = `<p class="text-center text-slate-400">No hay usuarios.</p>`; return; }
+                let html = '';
+                snapshot.forEach(doc => { 
+                    const data = doc.data(); const isSuspended = data.suspended === true;
+                    html += `<div onclick="openUserHistory('${data.uid}', '${data.email}')" class="bg-white p-3 rounded-xl border border-slate-100 flex flex-col gap-3 relative cursor-pointer hover:shadow-md transition-shadow group slide-up"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">${data.email.substring(0,2).toUpperCase()}</div><div class="overflow-hidden flex-1"><p class="font-bold text-sm text-slate-700 truncate">${data.email}</p><p class="text-[10px] text-slate-400 font-mono">ID: ${data.uid}</p></div><div class="text-slate-300"><i data-lucide="chevron-right" class="w-4 h-4"></i></div></div><div class="flex gap-2 pt-2 border-t border-slate-50" onclick="event.stopPropagation();"><button onclick="openManualBalanceModal('${data.uid}', '${data.email}')" class="flex-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors btn-animate"><i data-lucide="dollar-sign" class="w-3 h-3"></i> Cargar</button><button onclick="toggleSuspend('${doc.id}', ${!isSuspended})" class="px-3 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg text-xs font-bold transition-colors btn-animate">${isSuspended ? 'Activar' : 'Suspender'}</button><button onclick="deleteUserSystem('${doc.id}')" class="px-3 bg-rose-50 text-rose-500 hover:bg-rose-100 rounded-lg text-xs font-bold transition-colors btn-animate"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div></div>`; 
+                });
+                list.innerHTML = html; lucide.createIcons();
+            });
+
+            const stockRef = collection(db, 'artifacts', appId, 'public', 'data', 'profiles');
+            onSnapshot(stockRef, (snapshot) => {
+                const list = document.getElementById('admin-stock-list');
+                if(snapshot.empty) { list.innerHTML = `<p class="text-center text-slate-400">No hay productos.</p>`; return; }
+                let html = '';
+                snapshot.forEach(doc => { 
+                    const data = doc.data(); const cat = data.category ? data.category.toUpperCase() : 'N/A'; const stockVal = data.stock || 0;
+                    html += `<div class="bg-white p-3 rounded-xl border border-slate-100 flex items-center gap-3 slide-up"><img src="${data.imageUrl || 'https://via.placeholder.com/50'}" class="w-12 h-12 rounded-lg object-cover bg-slate-100"><div class="flex-1 overflow-hidden"><div class="flex justify-between"><p class="font-bold text-sm text-slate-800 truncate">${data.name}</p><p class="font-bold text-xs text-emerald-600">$${data.price}</p></div><p class="text-[10px] text-slate-400 bg-slate-100 px-1.5 rounded inline-block mt-0.5">${cat}</p><div class="flex items-center gap-2 mt-1"><span class="text-[10px] text-slate-500">Stock en Inventario: <b>${stockVal}</b></span></div></div><button onclick="deleteProfile('${doc.id}')" class="p-2 text-rose-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg btn-animate"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`; 
+                });
+                list.innerHTML = html; lucide.createIcons();
+            });
+
+            const inventoryRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items');
+            const qInv = query(inventoryRef, where('status', '==', 'available')); 
+            onSnapshot(qInv, (snapshot) => {
+                const list = document.getElementById('admin-inventory-list');
+                if(snapshot.empty) { list.innerHTML = `<p class="text-center text-slate-400 py-4 bg-white rounded-xl border border-dashed">No hay cuentas disponibles.</p>`; return; }
+                let html = '';
+                snapshot.forEach(doc => {
+                    const item = doc.data();
+                    html += `<div class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-2 slide-up"><div class="flex justify-between items-start"><div><p class="font-bold text-slate-800 text-sm">${item.serviceName}</p><p class="text-xs text-slate-500 flex items-center gap-1 mt-1"><i data-lucide="mail" class="w-3 h-3"></i> ${item.email}</p><p class="text-xs text-slate-500 flex items-center gap-1"><i data-lucide="key" class="w-3 h-3"></i> ${item.password}</p></div><button onclick="deleteInventoryItem('${doc.id}')" class="text-rose-400 hover:bg-rose-50 p-1.5 rounded-lg btn-animate"><i data-lucide="trash" class="w-4 h-4"></i></button></div><div class="flex gap-2 mt-1 pt-2 border-t border-slate-50"><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Expira: ${item.expiryDate || 'N/A'}</span><span class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded">${item.duration}</span></div></div>`;
+                });
+                list.innerHTML = html; lucide.createIcons();
+            });
+
+            // --- LISTENER DE REPORTES ---
+            const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
+            const qReports = query(reportsRef, orderBy('timestamp', 'desc'));
+            
+            onSnapshot(qReports, (snapshot) => {
+                const list = document.getElementById('admin-reports-list');
+                if(snapshot.empty) { 
+                    list.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-slate-400 opacity-50"><i data-lucide="check-circle" class="w-10 h-10 mb-2"></i><p class="text-xs">Sin reportes pendientes</p></div>`; 
+                    lucide.createIcons();
+                    return; 
+                }
+                
+                let html = '';
+                snapshot.forEach(doc => {
+                    const r = doc.data();
+                    const time = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente';
+                    
+                    // Icono según el tipo
+                    let icon = 'alert-circle';
+                    let color = 'text-slate-500';
+                    let bg = 'bg-slate-100';
+                    
+                    if(r.type === 'bug') { icon = 'bug'; color = 'text-rose-500'; bg = 'bg-rose-50'; }
+                    if(r.type === 'payment') { icon = 'dollar-sign'; color = 'text-emerald-500'; bg = 'bg-emerald-50'; }
+                    if(r.type === 'account') { icon = 'user-x'; color = 'text-blue-500'; bg = 'bg-blue-50'; }
+                    
+                    // Estado: si ya fue respondido
+                    let statusBadge = r.status === 'replied' 
+                        ? `<span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold ml-2">Respondido</span>` 
+                        : `<span class="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full font-bold ml-2">Pendiente</span>`;
+
+                    // Si hay imagen de evidencia
+                    let imgHTML = '';
+                    if(r.evidenceImage) {
+                        imgHTML = `<div class="mt-2 mb-2"><img src="${r.evidenceImage}" class="max-h-32 rounded-lg border border-slate-200 cursor-pointer hover:scale-105 transition-transform" onclick="openModal('<img src=\\'${r.evidenceImage}\\' class=\\'w-full rounded-xl\\'>')"></div>`;
+                    }
+
+                    // Botón de respuesta (deshabilitado si ya respondido)
+                    const replyBtn = `<button onclick="openReplyModal('${doc.id}', '${r.uid}')" class="text-xs font-bold text-blue-500 hover:text-blue-700 flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded transition-colors border border-blue-100 mr-2">
+                                        <i data-lucide="message-square" class="w-3 h-3"></i> Responder
+                                      </button>`;
+
+                    html += `
+                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm relative group slide-up">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-full ${bg} flex items-center justify-center flex-shrink-0">
+                                    <i data-lucide="${icon}" class="w-5 h-5 ${color}"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start">
+                                        <p class="text-xs font-bold text-slate-700 truncate">${r.email} ${statusBadge}</p>
+                                        <span class="text-[10px] text-slate-400 whitespace-nowrap ml-2">${time}</span>
+                                    </div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase mt-0.5 mb-1">${r.type}</p>
+                                    
+                                    <div class="text-sm text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 whitespace-pre-wrap">${r.description}</div>
+                                    ${imgHTML}
+                                    ${r.adminReply ? `<div class="mt-2 text-xs bg-blue-50 text-blue-700 p-2 rounded border border-blue-100"><b>Tu respuesta:</b> ${r.adminReply}</div>` : ''}
+                                </div>
+                            </div>
+                            <div class="mt-3 flex justify-end border-t border-slate-50 pt-2">
+                                ${replyBtn}
+                                <button onclick="resolveReport('${doc.id}')" class="text-xs font-bold text-slate-400 hover:text-rose-500 flex items-center gap-1 hover:bg-rose-50 px-3 py-1.5 rounded transition-colors">
+                                    <i data-lucide="trash-2" class="w-3 h-3"></i> Borrar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+                lucide.createIcons();
+            });
+        }
+
+        // --- FUNCIONES UNIFICADAS DE DETALLE (UPDATED PARA SOPORTE) ---
+        window.renderTransactionDetail = (t, containerId, backFunction) => {
+            const container = document.getElementById(containerId);
+            if (!t) return;
+
+            if (t.type === 'support_reply') {
+                // VISTA DE MENSAJE DE SOPORTE
+                container.innerHTML = `
+                    <div class="text-center pt-4 bounce-enter">
+                        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-50 mb-4 border border-blue-100">
+                            <i data-lucide="message-circle" class="h-8 w-8 text-blue-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-1">Respuesta de Soporte</h3>
+                        <p class="text-xs text-slate-400 mb-6">${t.jsDate.toLocaleString()}</p>
+                        
+                        <div class="text-left bg-white border border-slate-100 rounded-2xl p-5 shadow-sm mb-6 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-blue-400"></div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Mensaje del Administrador</p>
+                            <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">${t.message}</p>
+                        </div>
+
+                        <button onclick="navigator.clipboard.writeText('${t.message}').then(()=>showToast('Texto copiado','success'))" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-slate-700 btn-animate flex justify-center items-center gap-2 mb-4">
+                            <i data-lucide="copy" class="w-4 h-4"></i> Copiar Mensaje
+                        </button>
+                        ${backFunction ? `<button onclick="${backFunction}" class="text-sm text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1 mx-auto hover:underline transition-all"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver</button>` : ''}
+                    </div>
+                `;
+            }
+            else if (t.type === 'purchase') {
+                let item = t.details; 
+                if (item) {
+                    const safeTerms = encodeURIComponent(item.terms || 'Sin términos adicionales.');
+                    container.innerHTML = `
+                        <div class="text-center pt-4 bounce-enter">
+                            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-50 mb-4 border border-amber-100">
+                                <i data-lucide="receipt" class="h-8 w-8 text-amber-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-1">Ticket de Compra</h3>
+                            <p class="text-xs text-slate-400 mb-6">${t.jsDate.toLocaleString()}</p>
+                            
+                            <div class="text-left bg-white border border-slate-100 rounded-2xl p-5 shadow-sm mb-6 space-y-4 relative overflow-hidden">
+                                <div class="absolute top-0 left-0 w-1 h-full bg-amber-400"></div>
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Plataforma</p>
+                                    <p class="text-lg font-bold text-slate-800">${item.serviceName}</p>
+                                </div>
+                                <div class="grid grid-cols-1 gap-3">
+                                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Correo</p>
+                                        <p class="font-mono text-sm text-slate-700 select-all break-all">${item.email}</p>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Contraseña</p>
+                                        <p class="font-mono text-sm text-slate-700 select-all">${item.password}</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase">Expiración</p>
+                                        <p class="text-sm font-medium text-slate-700">${item.expiryDate || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase">Duración</p>
+                                        <p class="text-sm font-medium text-slate-700">${item.duration || 'N/A'}</p>
+                                    </div>
+                                </div>
+                                ${item.terms ? `
+                                <div class="pt-2 border-t border-dashed border-slate-200">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Términos</p>
+                                    <p class="text-xs text-slate-500 italic leading-relaxed">${item.terms}</p>
+                                </div>` : ''}
+                            </div>
+
+                            <button onclick="copyReceiptInfo('${item.serviceName}', '${item.email}', '${item.password}', '${item.expiryDate}', '${safeTerms}')" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-slate-700 active:scale-95 transition-all flex justify-center items-center gap-2 mb-4 btn-animate">
+                                <i data-lucide="copy" class="w-4 h-4"></i> Copiar Ticket
+                            </button>
+                            ${backFunction ? `<button onclick="${backFunction}" class="text-sm text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1 mx-auto hover:underline transition-all"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver</button>` : ''}
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center pt-10 bounce-enter">
+                            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-slate-100 mb-4">
+                                <i data-lucide="file-question" class="h-8 w-8 text-slate-400"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-800 mb-2">Detalle no disponible</h3>
+                            <p class="text-sm text-slate-500 max-w-xs mx-auto mb-8">Esta compra es antigua y no tiene un ticket digital asociado.</p>
+                            ${backFunction ? `<button onclick="${backFunction}" class="text-slate-600 font-bold underline">Volver</button>` : ''}
+                        </div>
+                    `;
+                }
+
+            } else if (t.type === 'deposit') {
+                const prevBal = t.prevBalance !== undefined ? `$${t.prevBalance.toLocaleString()}` : 'No registrado';
+                const newBal = t.newBalance !== undefined ? `<span class="text-emerald-600 font-bold">$${t.newBalance.toLocaleString()}</span>` : 'No registrado';
+                
+                container.innerHTML = `
+                    <div class="text-center pt-4 bounce-enter">
+                        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-emerald-50 mb-4 border border-emerald-100">
+                            <i data-lucide="trending-up" class="h-8 w-8 text-emerald-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-1">Detalle de Recarga</h3>
+                        <p class="text-xs text-slate-400 mb-8">${t.jsDate.toLocaleString()}</p>
+                        
+                        <div class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm mb-8 text-sm text-left">
+                            <div class="flex justify-between items-center p-5 border-b border-slate-50">
+                                <span class="text-slate-500 font-medium">Saldo Anterior</span>
+                                <span class="font-mono text-slate-600">${prevBal}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-5 bg-emerald-50/30 border-b border-emerald-50/50">
+                                <span class="text-emerald-700 font-bold">Monto Recargado</span>
+                                <span class="font-mono text-emerald-700 font-bold">+ $${t.amount.toLocaleString()}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-5 bg-slate-50/50">
+                                <span class="text-slate-800 font-bold">Saldo Total</span>
+                                <span class="font-mono text-lg text-slate-800">${newBal}</span>
+                            </div>
+                        </div>
+                        ${backFunction ? `<button onclick="${backFunction}" class="text-sm text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1 mx-auto hover:underline transition-all"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver</button>` : ''}
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+        };
+
+        window.openTransactionDetails = async (index) => {
+            const t = window.currentUserHistory[index];
+            if (!t) return;
+            document.querySelector('.flex.gap-2.mb-3.overflow-x-auto').style.display = 'none';
+            document.querySelector('.flex.gap-2.mb-3').style.display = 'none';
+            const targetUserId = window.inspectingUserId || currentUser.uid;
+            const targetUserEmail = window.inspectingUserEmail || currentUser.email;
+            renderTransactionDetail(t, 'history-content', `openUserHistory('${targetUserId}', '${targetUserEmail}')`);
+        };
+
+        window.openNotificationDetails = (txId) => {
+            const t = window.userTransactions.find(item => item.id === txId);
+            if(t && t.timestamp && !t.jsDate) t.jsDate = t.timestamp.toDate();
+            if(!t) return;
+            const html = `<div id="notification-detail-content" class="h-full overflow-y-auto"></div>`;
+            openModal(html);
+            renderTransactionDetail(t, 'notification-detail-content', `openNotifications()`);
+        };
+
+        window.openUserHistory = async (uid, email) => {
+            window.inspectingUserId = uid;
+            window.inspectingUserEmail = email;
+            
+            window.currentHistoryTab = 'all'; 
+            openModal(`
+                <div class="flex flex-col h-[80vh] bounce-enter">
+                    <div class="border-b border-slate-100 pb-4 mb-2">
+                        <h3 class="text-lg font-bold text-slate-800 mb-1">Expediente de Usuario</h3>
+                        <p class="text-xs text-slate-400 font-mono mb-3">${email}</p>
+                        <div class="bg-slate-900 text-white p-3 rounded-xl flex justify-between items-center shadow-lg">
+                            <span class="text-xs text-slate-400 font-bold uppercase">Saldo Actual</span>
+                            <span id="history-balance" class="text-xl font-bold text-emerald-400">Cargando...</span>
                         </div>
                     </div>
-                    <span class="font-bold text-sm ${colorClass}">${sign}$${t.amount.toLocaleString()}</span>
+                    <div class="flex gap-2 mb-3 overflow-x-auto scrollbar-hide border-b border-slate-100 pb-1">
+                        <button onclick="switchHistoryTab('all')" id="tab-h-all" class="history-tab active pb-2 px-3 text-sm font-bold whitespace-nowrap transition-colors">Todas</button>
+                        <button onclick="switchHistoryTab('platforms')" id="tab-h-platforms" class="history-tab pb-2 px-3 text-sm font-bold whitespace-nowrap transition-colors">Plataformas</button>
+                        <button onclick="switchHistoryTab('deposits')" id="tab-h-deposits" class="history-tab pb-2 px-3 text-sm font-bold whitespace-nowrap transition-colors">Saldos</button>
+                        <button onclick="switchHistoryTab('active')" id="tab-h-active" class="history-tab pb-2 px-3 text-sm font-bold whitespace-nowrap transition-colors">Activas</button>
+                        <button onclick="switchHistoryTab('expired')" id="tab-h-expired" class="history-tab pb-2 px-3 text-sm font-bold whitespace-nowrap transition-colors">Caducadas</button>
+                    </div>
+                    <div class="flex gap-2 mb-3">
+                        <input type="date" id="filter-date-start" class="w-1/2 bg-slate-50 border rounded-lg p-2 text-xs">
+                        <input type="date" id="filter-date-end" class="w-1/2 bg-slate-50 border rounded-lg p-2 text-xs">
+                        <button onclick="applyDateFilter()" class="bg-slate-800 text-white px-3 rounded-lg hover:bg-slate-700 transition-colors flex items-center justify-center btn-animate"><i data-lucide="search" class="w-4 h-4"></i></button>
+                    </div>
+                    <div id="history-content" class="flex-1 overflow-y-auto scrollbar-hide space-y-2">
+                        <p class="text-center text-slate-400 py-8">Cargando datos...</p>
+                    </div>
+                </div>
+            `);
+            const modal = document.getElementById('app-modal');
+            const modalCard = document.getElementById('modal-card');
+            modalCard.className = "bg-white w-full max-w-2xl h-[85vh] rounded-3xl relative shadow-2xl flex flex-col overflow-hidden p-6 bounce-enter";
+            const walletRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main');
+            getDoc(walletRef).then(snap => { if(snap.exists()) document.getElementById('history-balance').textContent = `$${(snap.data().balance || 0).toLocaleString()}`; else document.getElementById('history-balance').textContent = "$0"; });
+            const txRef = collection(db, 'artifacts', appId, 'users', uid, 'transactions');
+            const q = query(txRef, orderBy('timestamp', 'desc'));
+            const snap = await getDocs(q);
+            window.currentUserHistory = [];
+            snap.forEach(d => { let t = d.data(); t.id = d.id; t.jsDate = t.timestamp ? t.timestamp.toDate() : new Date(); window.currentUserHistory.push(t); });
+            renderHistory('all');
+            lucide.createIcons();
+        };
+
+        window.switchHistoryTab = (tab) => {
+            window.currentHistoryTab = tab; 
+            document.querySelectorAll('.history-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-h-${tab}`).classList.add('active');
+            renderHistory(tab);
+        };
+
+        window.applyDateFilter = () => { renderHistory(window.currentHistoryTab); showToast('Filtro aplicado', 'info'); }
+
+        window.copyReceiptInfo = (srv, mail, pass, exp, encodedTerms) => {
+            const terms = decodeURIComponent(encodedTerms);
+            const text = `📦 *COMPRA EXITOSA*\n\n📌 Servicio: ${srv}\n📧 Correo: ${mail}\n🔑 Contraseña: ${pass}\n📅 Expira: ${exp}\n\nTérminos y condiciones: ${terms}\n\n¡Gracias por tu compra!`;
+            const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select(); try { document.execCommand('copy'); showToast('¡Información copiada!', 'success'); } catch (err) { showToast('Error al copiar', 'error'); } document.body.removeChild(textArea);
+        };
+
+        // --- FUNCIONES DE REPORTE DINÁMICO ---
+
+        window.openReportModal = () => {
+            if (!currentUser) return showToast('Debes iniciar sesión', 'error');
+            
+            localStorage.removeItem('report_evidence');
+
+            const html = `
+                <div class="text-left bounce-enter">
+                    <div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mb-4 mx-auto">
+                        <i data-lucide="alert-triangle" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2 text-center">Reportar un Problema</h3>
+                    <p class="text-slate-400 text-xs text-center mb-6">Selecciona la categoría para ayudarte mejor.</p>
+                    
+                    <form onsubmit="submitReport(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tipo de problema</label>
+                            <select id="report-type" onchange="updateReportFields(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-rose-400 transition-colors">
+                                <option value="bug">Error del sistema / Bugs</option>
+                                <option value="account">Problemas con una cuenta</option>
+                                <option value="payment">Problema con un pago</option>
+                            </select>
+                        </div>
+
+                        <div id="dynamic-fields" class="space-y-4 min-h-[100px]">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Descripción del Error</label>
+                            <textarea id="report-desc" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-24 resize-none focus:border-rose-400 outline-none transition-colors" placeholder="Explica qué sucedió en el sistema..."></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-slate-700 btn-animate flex items-center justify-center gap-2">
+                            Enviar Reporte <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </form>
                 </div>
             `;
-        }
+            openModal(html);
+        };
+
+        window.updateReportFields = (type) => {
+            const container = document.getElementById('dynamic-fields');
+            let content = '';
+
+            if (type === 'bug') {
+                content = `
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Descripción del Error</label>
+                    <textarea id="report-desc" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-24 resize-none focus:border-rose-400 outline-none" placeholder="Explica qué sucedió en el sistema..."></textarea>
+                `;
+            } 
+            else if (type === 'account') {
+                content = `
+                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 mb-2">
+                        <p class="text-[10px] text-blue-600 leading-tight flex gap-2"><i data-lucide="info" class="w-4 h-4"></i> <b>Nota:</b> El "Ticket de Compra" es el texto que contiene el correo y contraseña que te entregamos.</p>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Pegar Ticket de Compra</label>
+                        <input type="text" id="account-ticket" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:border-rose-400 outline-none" placeholder="Ej: Servicio: Plex, Correo: x, Pass: y...">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Motivo del Fallo</label>
+                        <select id="account-reason" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-rose-400">
+                            <option value="Ya no es Premium">Ya no es Premium / Se cayó</option>
+                            <option value="Pide Suscripción">Me pide suscripción / pago</option>
+                            <option value="Cuenta Suspendida">La cuenta dice Suspendida</option>
+                            <option value="Cuenta Inhabilitada">La cuenta dice Inhabilitada</option>
+                            <option value="Contraseña Incorrecta">Contraseña incorrecta</option>
+                            <option value="PIN Incorrecto">PIN de perfil incorrecto</option>
+                        </select>
+                    </div>
+                `;
+            } 
+            else if (type === 'payment') {
+                content = `
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Motivo del Problema</label>
+                        <select id="payment-reason" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-rose-400">
+                            <option value="No abonado">Pagué y no se me abona el saldo</option>
+                            <option value="Cobro doble">Se descontó doble el pago</option>
+                            <option value="Otro">Otro problema de pago</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Descripción Detallada</label>
+                        <textarea id="payment-desc" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20 resize-none focus:border-rose-400 outline-none" placeholder="Detalles de la transacción (ID, hora, banco)..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Adjuntar Foto/Comprobante</label>
+                        <div class="flex items-center gap-2">
+                            <label class="flex-1 bg-slate-100 text-slate-500 text-xs font-bold py-3 rounded-xl cursor-pointer hover:bg-slate-200 text-center transition-colors border border-dashed border-slate-300 relative overflow-hidden">
+                                <span id="file-label"><i data-lucide="camera" class="w-4 h-4 inline mb-0.5 mr-1"></i> Subir Imagen</span>
+                                <input type="file" accept="image/*" onchange="handleImageUpload(this)" class="absolute inset-0 opacity-0 cursor-pointer">
+                            </label>
+                        </div>
+                        <div id="img-preview" class="mt-2 hidden rounded-xl overflow-hidden border border-slate-200 h-24 w-full bg-slate-50 relative">
+                             <img id="preview-src" class="w-full h-full object-contain">
+                             <button type="button" onclick="clearImage()" class="absolute top-1 right-1 bg-rose-500 text-white p-1 rounded-full shadow-md hover:scale-110 transition-transform"><i data-lucide="x" class="w-3 h-3"></i></button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = content;
+            lucide.createIcons();
+        };
+
+        window.handleImageUpload = (input) => {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                if(file.size > 2000000) {
+                    showToast('La imagen es muy pesada (Máx 2MB)', 'error');
+                    input.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64String = e.target.result;
+                    try {
+                        localStorage.setItem('report_evidence', base64String);
+                        document.getElementById('preview-src').src = base64String;
+                        document.getElementById('img-preview').classList.remove('hidden');
+                        document.getElementById('file-label').innerText = "Imagen Cargada";
+                        document.getElementById('file-label').classList.add('text-emerald-600', 'bg-emerald-50');
+                    } catch (err) {
+                        showToast('Error: Imagen muy grande', 'error');
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.clearImage = () => {
+            localStorage.removeItem('report_evidence');
+            document.getElementById('img-preview').classList.add('hidden');
+            document.getElementById('file-label').innerHTML = `<i data-lucide="camera" class="w-4 h-4 inline mb-0.5 mr-1"></i> Subir Imagen`;
+            document.getElementById('file-label').classList.remove('text-emerald-600', 'bg-emerald-50');
+        };
+
+        window.submitReport = async (e) => {
+            e.preventDefault();
+            const type = document.getElementById('report-type').value;
+            
+            let reportData = {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                type: type,
+                timestamp: serverTimestamp(),
+                status: 'unread'
+            };
+
+            if (type === 'bug') {
+                reportData.description = document.getElementById('report-desc').value;
+            } 
+            else if (type === 'account') {
+                const ticket = document.getElementById('account-ticket').value;
+                const reason = document.getElementById('account-reason').value;
+                reportData.description = `FALLO CUENTA: ${reason} \n\nTICKET: ${ticket}`;
+            } 
+            else if (type === 'payment') {
+                const reason = document.getElementById('payment-reason').value;
+                const desc = document.getElementById('payment-desc').value;
+                const evidence = localStorage.getItem('report_evidence');
+                reportData.description = `PROBLEMA PAGO: ${reason} \n\nDETALLE: ${desc}`;
+                if (evidence) reportData.evidenceImage = evidence; 
+            }
+            
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), reportData);
+                localStorage.removeItem('report_evidence');
+                showToast('Reporte enviado correctamente', 'success');
+                closeModal();
+            } catch (err) {
+                console.error(err);
+                if(err.code === 'resource-exhausted') showToast('Error: La imagen es demasiado pesada', 'error'); 
+                else showToast('Error al enviar reporte', 'error');
+            }
+        };
+
+        // --- FUNCIONES DE REPORTE (ADMIN) ---
+        window.openReplyModal = (reportId, userUid) => {
+            openModal(`
+                <div class="text-left bounce-enter">
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Responder Reporte</h3>
+                    <p class="text-slate-400 text-xs mb-4">Envía instrucciones o credenciales de reposición.</p>
+                    <textarea id="admin-reply-text" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-32 resize-none mb-4 focus:border-blue-400 outline-none" placeholder="Escribe tu respuesta aquí..."></textarea>
+                    <button onclick="sendAdminReply('${reportId}', '${userUid}')" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 btn-animate">Enviar Respuesta</button>
+                </div>
+            `);
+        };
+
+        window.sendAdminReply = async (reportId, userUid) => {
+            const text = document.getElementById('admin-reply-text').value;
+            if(!text) return showToast('Escribe una respuesta', 'error');
+
+            try {
+                // 1. Actualizar reporte
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', reportId), {
+                    status: 'replied',
+                    adminReply: text,
+                    replyDate: serverTimestamp()
+                });
+
+                // 2. Notificar al usuario (inyectar en historial)
+                await addDoc(collection(db, 'artifacts', appId, 'users', userUid, 'transactions'), {
+                    type: 'support_reply',
+                    amount: 0,
+                    description: 'Respuesta de Soporte',
+                    message: text,
+                    timestamp: serverTimestamp()
+                });
+
+                showToast('Respuesta enviada', 'success');
+                closeModal();
+            } catch(e) {
+                console.error(e);
+                showToast('Error al enviar respuesta', 'error');
+            }
+        };
+
+        window.resolveReport = async (id) => {
+            if(!confirm("¿Eliminar este reporte permanentemente?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', id));
+                showToast('Reporte eliminado', 'success');
+            } catch (err) {
+                showToast('Error al eliminar', 'error');
+            }
+        };
+
+        window.handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); showToast("Bienvenido", "success"); } catch (e) { showToast("Error de acceso", "error"); } };
+        window.handleRegister = async (e) => { e.preventDefault(); const p1=document.getElementById('reg-password').value; const p2=document.getElementById('reg-confirm-password').value; if(p1!==p2) return showToast("Pass no coincide", "error"); try { const c = await createUserWithEmailAndPassword(auth, document.getElementById('reg-email').value, p1); await setDoc(doc(db, 'artifacts', appId, 'users', c.user.uid, 'wallet', 'main'), { balance: 0, profit: 0 }); showToast("Creado", "success"); } catch(e){ showToast("Error", "error"); } };
+        window.handleResetPassword = async (e) => { e.preventDefault(); try { await sendPasswordResetEmail(auth, document.getElementById('forgot-email').value); showToast("Enviado", "success"); switchAuthView('login'); } catch(e){showToast("Error", "error");} };
+        window.handleLogout = async () => { await signOut(auth); document.getElementById('sidebar').classList.add('-translate-x-full'); };
+        window.updateBalanceUI = (balance, profit) => { document.getElementById('balance-display').textContent = `$${(balance || 0).toLocaleString()}`; document.getElementById('profit-display').textContent = `$${(profit || 0).toLocaleString()}`; };
         
-        // Conectar formularios a funciones globales
+        window.adminTab = function(tab) { 
+            const tabs = ['requests', 'users', 'stock', 'inventory', 'reports']; 
+            tabs.forEach(t => { 
+                const btn = document.getElementById(`tab-${t}`); 
+                const sec = document.getElementById(`admin-${t}-section`); 
+                if(t === tab) { 
+                    btn.className = "flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold bg-amber-100 text-amber-700 transition-all shadow-sm transform scale-105"; 
+                    sec.classList.remove('hidden'); 
+                    sec.classList.add('bounce-enter'); 
+                } else { 
+                    btn.className = "flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all"; 
+                    sec.classList.add('hidden'); 
+                    sec.classList.remove('bounce-enter'); 
+                } 
+            }); 
+        };
+
+        window.closeModal = () => { const m = document.getElementById('app-modal'); const card = document.getElementById('modal-card'); m.classList.add('hidden'); m.classList.remove('flex'); setTimeout(() => { m.className = "fixed inset-0 z-[80] hidden items-center justify-center p-4"; card.className = "bg-white rounded-3xl w-full max-w-md p-0 relative shadow-2xl transform transition-all scale-100 opacity-100 max-h-[90vh] flex flex-col overflow-hidden"; }, 100); }
+        window.openModal = (h) => { const m=document.getElementById('app-modal'); document.getElementById('modal-content').innerHTML=h; m.classList.remove('hidden'); m.classList.add('flex'); lucide.createIcons(); }
+        window.openChargeModal = () => { openModal(`<div class="text-center bounce-enter"><div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 hover-bounce"><i data-lucide="wallet" class="w-8 h-8"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">Cargar Saldo</h3><input type="number" id="charge-amount" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold text-center mb-4 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none transition-all" placeholder="$0"><button id="confirm-btn" onclick="processRecharge(document.getElementById('charge-amount').value)" class="w-full bg-amber-400 text-slate-900 font-bold py-3 rounded-xl shadow-lg hover:bg-amber-300 btn-animate">Confirmar</button><div id="payment-info-container"></div></div>`); }
+        
         document.getElementById('login-form').addEventListener('submit', window.handleLogin);
         document.getElementById('register-form').addEventListener('submit', window.handleRegister);
         document.getElementById('forgot-form').addEventListener('submit', window.handleResetPassword);
-
-    </script>
-
-    <!-- UI INTERACTION SCRIPT -->
-    <script>
-        // Inicializar Iconos UI
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
-
-        // --- AUTH UI SWITCHING ---
-        function switchAuthView(viewName) {
-            const views = document.querySelectorAll('.auth-view');
-            views.forEach(v => v.classList.add('hidden'));
+        
+        window.switchAuthView = (viewName) => { const views=document.querySelectorAll('.auth-view'); views.forEach(v=>v.classList.add('hidden')); let targetId=viewName==='login'?'login-form':viewName==='register'?'register-form':'forgot-form'; const el = document.getElementById(targetId); el.classList.remove('hidden'); el.classList.add('bounce-enter'); setTimeout(()=>el.classList.remove('bounce-enter'), 1000); } 
+        window.toggleSidebar = () => { const s=document.getElementById('sidebar'); const o=document.getElementById('sidebar-overlay'); if(s.classList.contains('-translate-x-full')){s.classList.remove('-translate-x-full');o.classList.remove('opacity-0','pointer-events-none');}else{s.classList.add('-translate-x-full');o.classList.add('opacity-0','pointer-events-none');} } 
+        window.switchView = (view) => { const u=document.getElementById('user-view'); const a=document.getElementById('admin-view'); if(view==='admin'){u.classList.add('hidden');a.classList.remove('hidden');a.classList.add('bounce-enter'); adminTab('requests');}else{a.classList.add('hidden');u.classList.remove('hidden');u.classList.add('bounce-enter');} toggleSidebar(); } 
+        window.showToast = (m,t='info') => {const c=document.getElementById('toast-container');const el=document.createElement('div');const col={success:'bg-emerald-500 text-white',error:'bg-rose-500 text-white',info:'bg-slate-800 text-white'};const ic=t==='success'?'check-circle':t==='error'?'alert-triangle':'info';el.className=`${col[t]} px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-sm font-medium transform transition-all duration-300 translate-x-full pointer-events-auto`;el.innerHTML=`<i data-lucide="${ic}" class="w-5 h-5"></i><span>${m}</span>`;c.appendChild(el);lucide.createIcons();requestAnimationFrame(()=>el.classList.remove('translate-x-full'));setTimeout(()=>{el.classList.add('translate-x-full','opacity-0');setTimeout(()=>el.remove(),300);},3000);}
+        window.openAddInventoryModal = async () => { const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles')); const querySnapshot = await getDocs(q); let options = '<option value="">Selecciona un Artículo...</option>'; querySnapshot.forEach((doc) => { const data = doc.data(); options += `<option value="${doc.id}" data-name="${data.name}">${data.name}</option>`; }); openModal(` <div class="text-left bounce-enter"><h3 class="text-lg font-bold text-slate-800 mb-4">Agregar al Inventario</h3><form onsubmit="saveInventoryItem(event)" class="space-y-3"><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Artículo (Plataforma/Servicio)</label><select id="inv-product-select" class="w-full bg-slate-50 border rounded-lg p-2 text-sm" required>${options}</select></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Correo</label><input type="email" id="inv-email" class="w-full bg-slate-50 border rounded-lg p-2 text-sm" required></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Contraseña</label><input type="text" id="inv-pass" class="w-full bg-slate-50 border rounded-lg p-2 text-sm" required></div></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Expiración</label><input type="date" id="inv-expiry" class="w-full bg-slate-50 border rounded-lg p-2 text-sm"></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Duración</label><select id="inv-duration" class="w-full bg-slate-50 border rounded-lg p-2 text-sm"><option>1 Mes</option><option>3 Meses</option><option>6 Meses</option><option>Indefinido</option></select></div></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Términos</label><textarea id="inv-terms" class="w-full bg-slate-50 border rounded-lg p-2 text-sm h-16 resize-none" placeholder="Notas adicionales..."></textarea></div><button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700 btn-animate">Guardar</button></form></div> `); };
+        window.saveInventoryItem = async (e) => { e.preventDefault(); try { const select = document.getElementById('inv-product-select'); const productId = select.value; const productName = select.options[select.selectedIndex].text; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), { productId: productId, serviceName: productName, email: document.getElementById('inv-email').value, password: document.getElementById('inv-pass').value, expiryDate: document.getElementById('inv-expiry').value, duration: document.getElementById('inv-duration').value, terms: document.getElementById('inv-terms').value, createdAt: serverTimestamp(), status: 'available' }); const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId); await updateDoc(productRef, { stock: increment(1) }); showToast('Item agregado y Stock actualizado', 'success'); closeModal(); } catch(e) { console.error(e); showToast('Error al guardar', 'error'); } };
+        window.deleteInventoryItem = async (id) => { if(confirm("¿Borrar este item del inventario? Esta acción reducirá el stock.")) { try { const itemRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', id); const itemSnap = await getDoc(itemRef); if (itemSnap.exists()) { const data = itemSnap.data(); const productId = data.productId; await deleteDoc(itemRef); if (productId) { const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId); await updateDoc(productRef, { stock: increment(-1) }); } } showToast('Item eliminado y Stock ajustado', 'success'); } catch(e) { console.error(e); showToast('Error al eliminar', 'error'); } } };
+        window.openCategoryModule = (category, title) => { const html = `<div class="relative h-full flex flex-col"><div class="flex justify-between items-center mb-4 px-2 pt-2"><div><h3 class="text-xl font-bold text-slate-800">${title}</h3><p class="text-xs text-slate-400">Productos disponibles</p></div></div><div class="overflow-y-auto flex-1 pb-20 scrollbar-hide"><div id="products-grid" class="grid grid-cols-2 gap-3"><div class="col-span-full text-center py-10"><div class="inline-block w-8 h-8 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div></div></div></div>`; document.getElementById('modal-content').innerHTML = html; const modal = document.getElementById('app-modal'); const modalCard = document.getElementById('modal-card'); modal.classList.remove('items-center', 'justify-center', 'p-4'); modal.classList.add('items-end', 'justify-center', 'p-0'); modalCard.className = "bg-white w-full max-w-3xl h-[calc(100vh-220px)] rounded-t-3xl relative shadow-[0_-10px_40px_rgba(0,0,0,0.2)] flex flex-col overflow-hidden slide-up border-t border-slate-100"; modal.classList.remove('hidden'); modal.classList.add('flex'); lucide.createIcons(); const productsRef = collection(db, 'artifacts', appId, 'public', 'data', 'profiles'); let q = category && category !== 'all' ? query(productsRef, where('category', '==', category)) : productsRef; onSnapshot(q, (snapshot) => { const grid = document.getElementById('products-grid'); if(!grid) return; if (snapshot.empty) { grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 text-sm">No hay productos en ${title}.</div>`; return; } grid.innerHTML = ''; snapshot.forEach(doc => { const p = doc.data(); const safeDesc = encodeURIComponent(p.description || 'Sin descripción detallada.'); const card = document.createElement('div'); card.className = "gift-card rounded-lg shadow-sm bg-slate-100 cursor-pointer group hover:shadow-md relative overflow-hidden bounce-enter"; let ribbonHTML = (p.stock || 0) <= 0 ? `<div class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center backdrop-blur-[1px]"><span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full transform -rotate-12 shadow-sm">AGOTADO</span></div>` : ''; card.innerHTML = `${ribbonHTML}<div onclick="buyProduct('${doc.id}', '${p.name}', ${p.price}, ${p.stock||0}, '${safeDesc}')" class="w-full h-full flex flex-col"><div class="flex-1 relative overflow-hidden"><img src="${p.imageUrl || 'https://via.placeholder.com/200x300'}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"></div><div class="bg-white p-2 text-center border-t border-slate-100 relative z-10"><p class="text-xs text-slate-700 font-bold leading-tight truncate mb-1">${p.name}</p><p class="text-xs text-emerald-600 font-bold bg-emerald-50 inline-block px-2 rounded">$${p.price}</p></div></div>`; grid.appendChild(card); }); lucide.createIcons(); }); };
+        window.openAddProductModal = () => { if(!isAdmin) return; openModal(` <div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Artículo</h3><form onsubmit="saveProduct(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría</label><select id="p-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none"><option value="perfiles">Perfiles</option><option value="cuentas">Cuentas</option><option value="musica">Música</option><option value="gamepass">Game Pass</option></select></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Precio</label><input type="number" id="p-price" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label><textarea id="p-desc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20 resize-none" placeholder="Detalles del servicio..."></textarea></div><p class="text-[10px] text-slate-400 mt-1">* El stock se actualizará automáticamente al agregar Inventario vinculado.</p><button type="submit" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Guardar Artículo</button></form></div> `); };
+        window.saveProduct = async (e) => { e.preventDefault(); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { category: document.getElementById('p-category').value, name: document.getElementById('p-name').value, imageUrl: document.getElementById('p-image').value, price: Number(document.getElementById('p-price').value), description: document.getElementById('p-desc').value, stock: 0, createdAt: serverTimestamp() }); showToast('Producto agregado', 'success'); closeModal(); } catch(err) { showToast('Error al guardar', 'error'); } };
+        window.openAddUserModal = () => { openModal(` <div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Usuario</h3><form onsubmit="registerUserByAdmin(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Correo</label><input type="email" id="new-user-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña</label><input type="text" id="new-user-pass" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required minlength="6"></div><button type="submit" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg mt-2 hover:bg-emerald-600 btn-animate">Crear</button></form></div> `); };
+        window.registerUserByAdmin = async (e) => { e.preventDefault(); const email = document.getElementById('new-user-email').value; const password = document.getElementById('new-user-pass').value; try { const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp"); const secondaryAuth = getAuth(secondaryApp); const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password); await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'wallet', 'main'), { balance: 0, profit: 0, createdAt: serverTimestamp() }); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', cred.user.uid), { email: email, uid: cred.user.uid, lastLogin: serverTimestamp(), suspended: false }, { merge: true }); await signOut(secondaryAuth); showToast('Usuario creado', 'success'); closeModal(); } catch (error) { showToast('Error: ' + error.message, 'error'); } };
+        window.toggleSuspend = async (uid, shouldSuspend) => { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { suspended: shouldSuspend }); };
+        window.deleteUserSystem = async (uid) => { if(confirm("¿Eliminar usuario?")) { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { suspended: true, deleted: true }); await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid)); }};
+        window.deleteProfile = async (id) => { if(confirm("¿Eliminar producto?")) { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', id)); }};
+        window.approveRecharge = async (requestId, targetUid, amount, userTxId) => { if(!confirm(`¿Aprobar $${amount}?`)) return; const walletRef = doc(db, 'artifacts', appId, 'users', targetUid, 'wallet', 'main'); await runTransaction(db, async (t) => { const sfDoc = await t.get(walletRef); if (!sfDoc.exists()) throw "Error"; t.update(walletRef, { balance: sfDoc.data().balance + Number(amount) }); }); await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pending_recharges', requestId), { status: 'approved' }); if (userTxId) await updateDoc(doc(db, 'artifacts', appId, 'users', targetUid, 'transactions', userTxId), { status: 'Realizado' }); showToast("Saldo liberado", "success"); };
+        window.processRecharge = async (amount) => { if (!currentUser) return; const btn = document.getElementById('confirm-btn'); const originalHTML = btn.innerHTML; btn.innerHTML = `<div class="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>`; btn.disabled = true; try { const userTxDoc = await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), { type: 'deposit', amount: Number(amount), description: 'Recarga (Pendiente)', timestamp: serverTimestamp(), status: 'Pendiente' }); await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), { uid: currentUser.uid, email: currentUser.email, amount: Number(amount), status: 'pending', timestamp: serverTimestamp(), userTxId: userTxDoc.id }); showToast(`Solicitud creada. Realiza tu pago.`, 'success'); const infoContainer = document.getElementById('payment-info-container'); infoContainer.innerHTML = `<div class="mt-6 pt-6 border-t border-dashed border-slate-200 bounce-enter text-left"><div class="bg-amber-50 border border-amber-100 rounded-xl p-4"><p class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-3 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Datos para Transferir</p><div class="space-y-2 text-sm text-slate-700"><div class="flex justify-between"><span class="text-slate-500">Cuenta:</span><span class="font-mono font-bold select-all">123456789101112131415</span></div><div class="flex justify-between"><span class="text-slate-500">Nombre:</span><span class="font-bold">Juan Zamora</span></div><div class="flex justify-between"><span class="text-slate-500">Concepto:</span><span class="font-bold">Donativo</span></div><div class="flex justify-between"><span class="text-slate-500">Referencia:</span><span class="bg-white px-2 py-0.5 rounded border border-amber-200 font-mono text-xs font-bold">RW1221</span></div></div></div><p class="text-[10px] text-slate-400 text-center mt-3">Tu saldo se verá reflejado una vez validado el pago.</p></div>`; lucide.createIcons(); btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Solicitud Enviada`; btn.className = "w-full bg-emerald-100 text-emerald-700 font-bold py-3 rounded-xl shadow-none cursor-default flex items-center justify-center gap-2"; } catch (e) { console.error(e); showToast('Error al generar solicitud', 'error'); btn.innerHTML = originalHTML; btn.disabled = false; } };
+        
+        window.buyProduct = (id, name, price, stock, desc) => { openProductModal(id, name, price, stock, decodeURIComponent(desc)); };
+        
+        window.openProductModal = (id, n, p, s, d) => {
+            let stockColor = 'bg-emerald-100 text-emerald-600';
+            let stockText = 'Disponible';
+            if(s <= 3 && s > 0) { stockColor = 'bg-amber-100 text-amber-600'; stockText = '¡Pocas unidades!'; } 
+            else if (s <= 0) { stockColor = 'bg-rose-100 text-rose-600'; stockText = 'Agotado'; }
             
-            let targetId = '';
-            if (viewName === 'login') targetId = 'login-form';
-            if (viewName === 'register') targetId = 'register-form';
-            if (viewName === 'forgot') targetId = 'forgot-form';
-            
-            const target = document.getElementById(targetId);
-            target.classList.remove('hidden');
-            target.classList.add('auth-switch-enter');
-            setTimeout(() => target.classList.remove('auth-switch-enter'), 300);
-        }
-
-        // --- SIDEBAR & TOASTS ---
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            const isOpen = !sidebar.classList.contains('-translate-x-full');
-            
-            if (isOpen) {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.remove('opacity-100', 'pointer-events-auto');
-                overlay.classList.add('opacity-0', 'pointer-events-none');
-            } else {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.add('opacity-100', 'pointer-events-auto');
-                overlay.classList.remove('opacity-0', 'pointer-events-none');
-            }
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            const colors = {
-                success: 'bg-emerald-500 text-white',
-                error: 'bg-rose-500 text-white',
-                info: 'bg-slate-800 text-white'
-            };
-            const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-triangle' : 'info';
-
-            toast.className = `${colors[type]} px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-sm font-medium transform transition-all duration-300 translate-x-full pointer-events-auto`;
-            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i> <span>${message}</span>`;
-            container.appendChild(toast);
-            lucide.createIcons();
-
-            requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
-            setTimeout(() => {
-                toast.classList.add('translate-x-full', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // --- MODALS ---
-        function closeModal() {
-            const modal = document.getElementById('app-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        function openModal(contentHTML) {
-            const modal = document.getElementById('app-modal');
-            const content = document.getElementById('modal-content');
-            content.innerHTML = contentHTML;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            lucide.createIcons();
-        }
-
-        function openChargeModal() {
             openModal(`
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i data-lucide="wallet" class="w-8 h-8"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-800 mb-2">Cargar Saldo</h3>
-                    <p class="text-slate-500 text-sm mb-6">Ingresa el monto a añadir a tu billetera virtual.</p>
-                    <input type="number" id="charge-amount" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold text-center mb-4 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-200" placeholder="$0" value="10000">
-                    <button id="confirm-btn" onclick="processRecharge(document.getElementById('charge-amount').value)" class="w-full bg-amber-400 text-slate-900 font-bold py-3 rounded-xl shadow-lg shadow-amber-200 hover:bg-amber-300 active:scale-95 transition-all">
-                        Confirmar Recarga
-                    </button>
-                </div>
-            `);
-        }
-
-        function openProductModal(name, price) {
-            openModal(`
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i data-lucide="shopping-cart" class="w-8 h-8"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-800 mb-1">Comprar ${name}</h3>
-                    <p class="text-slate-400 text-sm mb-6">Valor: <span class="text-slate-800 font-bold">$${price.toLocaleString()}</span></p>
-                    
-                    <div class="bg-slate-50 p-4 rounded-xl mb-6 text-left">
-                        <p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Detalles</p>
-                        <div class="flex justify-between text-sm mb-1">
-                            <span class="text-slate-600">Servicio:</span>
-                            <span class="font-medium">${name}</span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-600">Comisión:</span>
-                            <span class="font-medium text-emerald-500">+$${(price * 0.05).toLocaleString()}</span>
-                        </div>
-                    </div>
-                    <button id="confirm-purchase-btn" onclick="processPurchase('${name}', ${price})" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-slate-700 active:scale-95 transition-all">
-                        Confirmar Compra
-                    </button>
+                <div class="text-center bounce-enter">
+                    <h3 class="text-xl font-bold text-slate-800 mb-1">Comprar ${n}</h3>
+                    <p class="text-slate-400 text-sm mb-4">Precio: <span class="font-bold text-slate-800">$${p.toLocaleString()}</span></p>
+                    <div class="inline-block px-3 py-1 rounded-full text-xs font-bold mb-4 ${stockColor}">Stock: ${s} • ${stockText}</div>
+                    <div class="bg-slate-50 rounded-xl p-4 mb-6 text-left border border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase mb-1">Descripción</p><p class="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">${d}</p></div>
+                    <button onclick="processPurchase('${id}', '${n}',${p})" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-slate-700 active:scale-95 transition-all btn-animate" ${s <= 0 ? 'disabled class="w-full bg-slate-200 text-slate-400 font-bold py-3 rounded-xl cursor-not-allowed"' : ''}>${s <= 0 ? 'Sin Stock' : 'Confirmar Compra'}</button>
                 </div>
             `);
         }
     </script>
+    <script>document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });</script>
 </body>
 </html>
-
