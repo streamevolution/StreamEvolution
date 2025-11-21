@@ -23,7 +23,6 @@
         .slide-up { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- NUEVAS ANIMACIONES Y REBOTES --- */
         .bounce-enter { animation: bounceIn 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) both; }
         @keyframes bounceIn {
             0% { opacity: 0; transform: scale(0.3); }
@@ -65,10 +64,17 @@
             border-bottom: 2px solid transparent;
         }
         .history-item:active { transform: scale(0.98); background-color: #F8FAFC; }
-
-        /* Botones animados */
         .btn-animate { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         .btn-animate:active { transform: scale(0.90); }
+        
+        /* Grid Admin */
+        .admin-card {
+            transition: all 0.3s ease;
+        }
+        .admin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body class="text-slate-800 overflow-x-hidden min-h-screen relative bg-slate-50">
@@ -117,50 +123,17 @@
 
             <form id="register-form" class="space-y-5 hidden auth-view">
                 <h2 class="text-xl font-bold text-slate-700 mb-2">Crear Cuenta</h2>
-                <div class="input-group group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1 group-focus-within:text-amber-500 transition-colors">Correo Electrónico</label>
-                    <div class="relative">
-                        <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors group-focus-within:text-amber-400"></i>
-                        <input type="email" id="reg-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-amber-400 focus:bg-white transition-all" placeholder="tu@correo.com" required>
-                    </div>
-                </div>
-                <div class="input-group group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1 group-focus-within:text-amber-500 transition-colors">Contraseña</label>
-                    <div class="relative">
-                        <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors group-focus-within:text-amber-400"></i>
-                        <input type="password" id="reg-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-amber-400 focus:bg-white transition-all" placeholder="Mínimo 6 caracteres" required minlength="6">
-                    </div>
-                </div>
-                <div class="input-group group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1 group-focus-within:text-amber-500 transition-colors">Confirmar Contraseña</label>
-                    <div class="relative">
-                        <i data-lucide="check-circle" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors group-focus-within:text-amber-400"></i>
-                        <input type="password" id="reg-confirm-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-amber-400 focus:bg-white transition-all" placeholder="Repite tu contraseña" required>
-                    </div>
-                </div>
-                <button type="submit" class="w-full bg-amber-400 text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-amber-200 hover:bg-amber-300 hover:shadow-amber-300/50 btn-animate flex justify-center items-center gap-2">
-                    <i data-lucide="user-plus" class="w-4 h-4"></i> <span>Registrarse</span>
-                </button>
-                <div class="text-center text-sm text-slate-500 mt-4">
-                    ¿Ya tienes cuenta? <button type="button" onclick="switchAuthView('login')" class="text-amber-600 font-bold hover:underline hover-bounce inline-block">Inicia Sesión</button>
-                </div>
+                <div class="input-group group"><label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Correo</label><input type="email" id="reg-email" class="w-full bg-slate-50 border rounded-xl py-3 px-4" required></div>
+                <div class="input-group group"><label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Pass</label><input type="password" id="reg-password" class="w-full bg-slate-50 border rounded-xl py-3 px-4" required></div>
+                <div class="input-group group"><label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Confirmar</label><input type="password" id="reg-confirm-password" class="w-full bg-slate-50 border rounded-xl py-3 px-4" required></div>
+                <button type="submit" class="w-full bg-amber-400 text-slate-900 font-bold py-4 rounded-xl">Registrarse</button>
+                <div class="text-center text-sm text-slate-500 mt-4">¿Ya tienes cuenta? <button type="button" onclick="switchAuthView('login')" class="text-amber-600 font-bold">Inicia Sesión</button></div>
             </form>
-
             <form id="forgot-form" class="space-y-5 hidden auth-view">
-                <button type="button" onclick="switchAuthView('login')" class="text-slate-400 hover:text-slate-600 flex items-center gap-1 mb-2 text-sm hover-bounce">
-                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver
-                </button>
-                <h2 class="text-xl font-bold text-slate-700 mb-2">Recuperar Acceso</h2>
-                <div class="input-group group">
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1 group-focus-within:text-amber-500 transition-colors">Correo Registrado</label>
-                    <div class="relative">
-                        <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300 transition-colors group-focus-within:text-amber-400"></i>
-                        <input type="email" id="forgot-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-amber-400 focus:bg-white transition-all" placeholder="ejemplo@correo.com" required>
-                    </div>
-                </div>
-                <button type="submit" class="w-full bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-700 btn-animate">
-                    Enviar Enlace
-                </button>
+                <button type="button" onclick="switchAuthView('login')" class="text-slate-400 flex items-center gap-1 mb-2 text-sm"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver</button>
+                <h2 class="text-xl font-bold text-slate-700 mb-2">Recuperar</h2>
+                <div class="input-group group"><label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Correo</label><input type="email" id="forgot-email" class="w-full bg-slate-50 border rounded-xl py-3 px-4" required></div>
+                <button type="submit" class="w-full bg-slate-800 text-white font-bold py-4 rounded-xl">Enviar</button>
             </form>
         </div>
     </div>
@@ -169,30 +142,22 @@
         
         <div id="app-modal" class="fixed inset-0 z-[80] hidden items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
-            
             <div id="modal-card" class="bg-white rounded-3xl w-full max-w-md p-0 relative shadow-2xl transform transition-all scale-100 opacity-100 max-h-[90vh] flex flex-col overflow-hidden">
-                <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-500 z-50 bg-white/80 rounded-full p-1 shadow-sm hover:rotate-90 transition-transform duration-300">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-                <div id="modal-content" class="overflow-y-auto scrollbar-hide p-6 w-full h-full">
-                    </div>
+                <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-500 z-50 bg-white/80 rounded-full p-1 shadow-sm hover:rotate-90 transition-transform duration-300"><i data-lucide="x" class="w-6 h-6"></i></button>
+                <div id="modal-content" class="overflow-y-auto scrollbar-hide p-6 w-full h-full"></div>
             </div>
         </div>
 
         <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-sm">
             <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 btn-animate">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
-                </button>
+                <button onclick="toggleSidebar()" class="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 btn-animate"><i data-lucide="menu" class="w-6 h-6"></i></button>
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 bg-gradient-to-br from-amber-400 to-yellow-200 rounded-full flex items-center justify-center text-white font-bold shadow-sm text-sm">SE</div>
                     <h1 class="text-sm font-bold text-slate-700 tracking-wide">STREAM <span class="text-amber-500">EVOLUTION</span></h1>
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <div class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> ONLINE
-                </div>
+                <div id="online-badge" class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> ONLINE</div>
                 <button onclick="openNotifications()" class="p-2 text-slate-400 hover:text-amber-500 transition-colors relative hover-bounce">
                     <i data-lucide="bell" class="w-5 h-5"></i>
                     <span id="notification-dot" class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white hidden animate-bounce"></span>
@@ -203,31 +168,22 @@
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300"></div>
         <aside id="sidebar" class="fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-50 transition-transform duration-300 -translate-x-full flex flex-col">
             <div class="p-5 flex justify-between items-center border-b border-slate-100 bg-slate-50">
-                <div>
-                    <h2 class="font-bold text-lg text-slate-800">Mi Cuenta</h2>
-                    <p class="text-xs text-slate-400 truncate w-48" id="sidebar-email">Cargando...</p>
-                </div>
+                <div><h2 class="font-bold text-lg text-slate-800">Mi Cuenta</h2><p class="text-xs text-slate-400 truncate w-48" id="sidebar-email">Cargando...</p></div>
                 <button onclick="toggleSidebar()" class="p-2 hover:bg-rose-50 text-rose-400 rounded-full transition-colors hover:rotate-90 duration-300"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-4 space-y-1 overflow-y-auto flex-1 scrollbar-hide">
-                <div onclick="switchView('user')" class="flex items-center gap-4 p-3 rounded-xl bg-amber-50 text-amber-600 font-semibold cursor-pointer mb-1 hover:pl-5 transition-all"><i data-lucide="home" class="w-5 h-5"></i><span class="text-sm">Inicio</span></div>
-                
-                <div id="admin-menu-btn" onclick="switchView('admin')" class="hidden flex items-center gap-4 p-3 rounded-xl bg-slate-800 text-white font-semibold cursor-pointer shadow-lg shadow-slate-200 mb-4 transition-transform hover:scale-105 hover:shadow-xl">
-                    <i data-lucide="shield-alert" class="w-5 h-5 text-amber-400 animate-pulse"></i>
-                    <span class="text-sm">Panel Admin</span>
+                <div id="user-menu-items">
+                    <div onclick="switchView('user')" class="flex items-center gap-4 p-3 rounded-xl bg-amber-50 text-amber-600 font-semibold cursor-pointer mb-1 hover:pl-5 transition-all"><i data-lucide="home" class="w-5 h-5"></i><span class="text-sm">Inicio</span></div>
+                    <button onclick="openReportModal()" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-600 hover:bg-slate-50 hover:pl-5 transition-all"><i data-lucide="alert-triangle" class="w-5 h-5"></i><span class="text-sm font-medium">Reportar Fallo</span></button>
+                    <button onclick="openNotifications(); toggleSidebar();" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-600 hover:bg-slate-50 hover:pl-5 transition-all"><i data-lucide="trending-up" class="w-5 h-5"></i><span class="text-sm font-medium">Movimientos</span></button>
                 </div>
-
-                <button onclick="openReportModal()" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-600 hover:bg-slate-50 hover:pl-5 transition-all">
-                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-                    <span class="text-sm font-medium">Reportar Fallo</span>
-                </button>
                 
-                <button onclick="openNotifications(); toggleSidebar();" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-600 hover:bg-slate-50 hover:pl-5 transition-all"><i data-lucide="trending-up" class="w-5 h-5"></i><span class="text-sm font-medium">Movimientos</span></button>
+                <div id="admin-menu-items" class="hidden">
+                    <div onclick="returnToAdminDashboard()" class="flex items-center gap-4 p-3 rounded-xl bg-slate-800 text-white font-semibold cursor-pointer mb-4 hover:bg-slate-700 transition-all"><i data-lucide="layout-dashboard" class="w-5 h-5 text-amber-400"></i><span class="text-sm">Dashboard Admin</span></div>
+                </div>
             </div>
             <div class="p-4 border-t border-slate-100">
-                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold transition-colors btn-animate">
-                    <i data-lucide="log-out" class="w-5 h-5"></i> Cerrar Sesión
-                </button>
+                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold transition-colors btn-animate"><i data-lucide="log-out" class="w-5 h-5"></i> Cerrar Sesión</button>
             </div>
         </aside>
 
@@ -253,126 +209,128 @@
                         <span class="bg-amber-400 text-slate-900 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2 inline-block shadow-sm">Oferta</span>
                         <h3 class="text-white font-bold text-lg leading-tight mb-1 group-hover:text-amber-100 transition-colors">Plex + Emby</h3>
                         <p class="text-slate-300 text-xs mb-3">Acceso total por solo $25.000</p>
-                        <div class="flex gap-2">
-                            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm group-hover:bg-amber-400 group-hover:text-slate-900 transition-all"><i data-lucide="play" class="w-3 h-3 text-white fill-white group-hover:text-slate-900 group-hover:fill-slate-900"></i></div>
-                        </div>
+                        <div class="flex gap-2"><div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm group-hover:bg-amber-400 group-hover:text-slate-900 transition-all"><i data-lucide="play" class="w-3 h-3 text-white fill-white group-hover:text-slate-900 group-hover:fill-slate-900"></i></div></div>
                     </div>
                     <div class="absolute right-0 bottom-0 w-32 h-32 bg-amber-400 rounded-full blur-3xl opacity-20 translate-y-1/2 translate-x-1/4 group-hover:opacity-30 transition-opacity"></div>
                 </div>
             </section>
 
             <section class="bounce-enter" style="animation-delay: 0.3s;">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-slate-800 text-lg border-b-2 border-amber-400 inline-block pb-1">Servicios</h3>
-                </div>
+                <div class="flex items-center justify-between mb-4"><h3 class="font-bold text-slate-800 text-lg border-b-2 border-amber-400 inline-block pb-1">Servicios</h3></div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    
-                    <div onclick="openCategoryModule('perfiles', 'Perfiles')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                            <i data-lucide="tv" class="w-7 h-7 text-orange-600"></i>
-                        </div>
-                        <span class="font-medium text-slate-600 text-sm text-center group-hover:text-orange-600 transition-colors">Perfiles</span>
-                    </div>
-
-                    <div onclick="openCategoryModule('cuentas', 'Cuentas')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                            <i data-lucide="shield-check" class="w-7 h-7 text-emerald-600"></i>
-                        </div>
-                        <span class="font-medium text-slate-600 text-sm text-center group-hover:text-emerald-600 transition-colors">Cuentas</span>
-                    </div>
-
-                    <div onclick="openCategoryModule('musica', 'Música')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                            <i data-lucide="headphones" class="w-7 h-7 text-blue-600"></i>
-                        </div>
-                        <span class="font-medium text-slate-600 text-sm text-center group-hover:text-blue-600 transition-colors">Música</span>
-                    </div>
-
-                    <div onclick="openCategoryModule('gamepass', 'Game Pass')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-100 to-violet-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                            <i data-lucide="gamepad-2" class="w-7 h-7 text-purple-600"></i>
-                        </div>
-                        <span class="font-medium text-slate-600 text-sm text-center group-hover:text-purple-600 transition-colors">Game Pass</span>
-                    </div>
+                    <div onclick="openCategoryModule('perfiles', 'Perfiles')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce"><div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner"><i data-lucide="tv" class="w-7 h-7 text-orange-600"></i></div><span class="font-medium text-slate-600 text-sm text-center group-hover:text-orange-600 transition-colors">Perfiles</span></div>
+                    <div onclick="openCategoryModule('cuentas', 'Cuentas')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce"><div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner"><i data-lucide="shield-check" class="w-7 h-7 text-emerald-600"></i></div><span class="font-medium text-slate-600 text-sm text-center group-hover:text-emerald-600 transition-colors">Cuentas</span></div>
+                    <div onclick="openCategoryModule('musica', 'Música')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce"><div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner"><i data-lucide="headphones" class="w-7 h-7 text-blue-600"></i></div><span class="font-medium text-slate-600 text-sm text-center group-hover:text-blue-600 transition-colors">Música</span></div>
+                    <div onclick="openCategoryModule('gamepass', 'Game Pass')" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg group hover-bounce"><div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-100 to-violet-100 flex items-center justify-center mb-3 soft-3d-icon group-hover:scale-110 transition-transform duration-300 shadow-inner"><i data-lucide="gamepad-2" class="w-7 h-7 text-purple-600"></i></div><span class="font-medium text-slate-600 text-sm text-center group-hover:text-purple-600 transition-colors">Game Pass</span></div>
                 </div>
             </section>
         </main>
 
-        <main id="admin-view" class="hidden px-4 py-6 space-y-8 max-w-md mx-auto md:max-w-3xl bounce-enter">
-            <div class="flex items-center justify-between mb-6 bg-slate-800 p-4 rounded-2xl text-white shadow-lg relative overflow-hidden">
-                <div class="absolute right-0 top-0 w-32 h-32 bg-white opacity-5 rounded-full blur-3xl transform translate-x-10 -translate-y-10"></div>
-                <div class="relative z-10">
-                    <h2 class="text-xl font-bold">Panel Administrador</h2>
-                    <p class="text-xs text-slate-300">Gestión integral Stream Evolution</p>
-                </div>
-                <div class="relative z-10 w-10 h-10 bg-amber-400 text-slate-900 rounded-full flex items-center justify-center shadow-md floating">
-                    <i data-lucide="shield-check" class="w-6 h-6"></i>
-                </div>
-            </div>
+        <main id="admin-view" class="hidden px-4 py-6 space-y-6 max-w-md mx-auto md:max-w-3xl bounce-enter">
             
-            <div class="flex gap-2 p-1 bg-white rounded-xl shadow-sm border border-slate-100 mb-6 overflow-x-auto">
-                <button onclick="adminTab('requests')" id="tab-requests" class="flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold bg-amber-100 text-amber-700 transition-all">Solicitudes</button>
-                <button onclick="adminTab('users')" id="tab-users" class="flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all">Usuarios</button>
-                <button onclick="adminTab('stock')" id="tab-stock" class="flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all">Artículos</button>
-                <button onclick="adminTab('inventory')" id="tab-inventory" class="flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all">Inventario</button>
-                <button onclick="adminTab('reports')" id="tab-reports" class="flex-1 min-w-[90px] py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all">Reportes</button>
-            </div>
-            
-            <section id="admin-requests-section">
-                <h3 class="font-bold text-slate-800 mb-3">Solicitudes de Saldo</h3>
-                <div id="admin-requests-list" class="space-y-3">
-                    <p class="text-center text-slate-400 py-8">Cargando solicitudes...</p>
+            <div id="admin-dashboard-grid" class="space-y-6">
+                <div class="bg-slate-800 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-40 h-40 bg-amber-400 opacity-10 rounded-full blur-3xl transform translate-x-10 -translate-y-10"></div>
+                    <h2 class="text-2xl font-bold mb-1">Panel de Control</h2>
+                    <p class="text-slate-400 text-sm">Bienvenido, Administrador</p>
                 </div>
-            </section>
-            
-            <section id="admin-users-section" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-800">Gestión de Usuarios</h3>
-                    <button onclick="openAddUserModal()" class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-emerald-600 shadow-md btn-animate">
-                        <i data-lucide="user-plus" class="w-3 h-3"></i> Nuevo
-                    </button>
-                </div>
-                <div id="admin-users-list" class="space-y-3">
-                    <p class="text-center text-slate-400 py-8">Cargando usuarios...</p>
-                </div>
-            </section>
 
-            <section id="admin-stock-section" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-800">Artículos (Vitrina)</h3>
-                    <button onclick="openAddProductModal()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-slate-700 shadow-md btn-animate">
-                        <i data-lucide="plus" class="w-3 h-3"></i> Agregar Artículo
-                    </button>
-                </div>
-                <div id="admin-stock-list" class="space-y-3">
-                     <p class="text-center text-slate-400 py-8">Cargando artículos...</p>
-                </div>
-            </section>
-
-            <section id="admin-inventory-section" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <div>
-                        <h3 class="font-bold text-slate-800">Inventario (Cuentas)</h3>
-                        <p class="text-[10px] text-slate-400">Credenciales y expiraciones</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div onclick="enterAdminModule('requests')" class="admin-card bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center cursor-pointer h-40 relative overflow-hidden group">
+                        <div class="w-14 h-14 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><i data-lucide="dollar-sign" class="w-7 h-7"></i></div>
+                        <span class="font-bold text-slate-700 text-sm">Solicitudes</span>
+                        <div id="badge-requests" class="absolute top-4 right-4 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</div>
                     </div>
-                    <button onclick="openAddInventoryModal()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-indigo-700 shadow-md btn-animate">
-                        <i data-lucide="archive" class="w-3 h-3"></i> Agregar Item
-                    </button>
-                </div>
-                <div id="admin-inventory-list" class="space-y-3">
-                     <p class="text-center text-slate-400 py-8 border border-dashed rounded-xl">Cargando inventario...</p>
-                </div>
-            </section>
 
-            <section id="admin-reports-section" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-800">Reportes de Usuarios</h3>
-                    <span class="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded-full">Bugs / Errores</span>
+                    <div onclick="enterAdminModule('support')" class="admin-card bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center cursor-pointer h-40 relative overflow-hidden group">
+                        <div class="w-14 h-14 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><i data-lucide="message-circle" class="w-7 h-7"></i></div>
+                        <span class="font-bold text-slate-700 text-sm">Soporte</span>
+                        <div id="badge-support" class="absolute top-4 right-4 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</div>
+                    </div>
+
+                    <div onclick="enterAdminModule('users')" class="admin-card bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center cursor-pointer h-32 group">
+                        <div class="w-10 h-10 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center mb-2 group-hover:bg-slate-200 transition-colors"><i data-lucide="users" class="w-5 h-5"></i></div>
+                        <span class="font-bold text-slate-700 text-xs">Usuarios</span>
+                    </div>
+
+                    <div onclick="enterAdminModule('inventory')" class="admin-card bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center cursor-pointer h-32 group">
+                        <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-2 group-hover:bg-indigo-100 transition-colors"><i data-lucide="archive" class="w-5 h-5"></i></div>
+                        <span class="font-bold text-slate-700 text-xs">Inventario</span>
+                    </div>
+
+                    <div onclick="enterAdminModule('stock')" class="admin-card bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center cursor-pointer h-32 group col-span-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center group-hover:bg-emerald-100 transition-colors"><i data-lucide="package" class="w-5 h-5"></i></div>
+                            <div class="text-left">
+                                <span class="font-bold text-slate-700 text-sm block">Gestionar Productos</span>
+                                <span class="text-[10px] text-slate-400">Agregar o editar vitrina</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div id="admin-reports-list" class="space-y-3">
-                     <p class="text-center text-slate-400 py-8 border border-dashed rounded-xl">Cargando reportes...</p>
-                </div>
-            </section>
+            </div>
+
+            <div id="admin-modules-container" class="hidden">
+                <button onclick="returnToAdminDashboard()" class="mb-4 flex items-center gap-2 text-slate-500 hover:text-amber-500 font-bold text-sm transition-colors btn-animate">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i> Volver al Panel
+                </button>
+
+                <section id="admin-requests-section" class="hidden bounce-enter">
+                    <h3 class="font-bold text-slate-800 mb-3 text-lg">Solicitudes de Saldo</h3>
+                    <div id="admin-requests-list" class="space-y-3">
+                        <p class="text-center text-slate-400 py-8">Cargando solicitudes...</p>
+                    </div>
+                </section>
+                
+                <section id="admin-users-section" class="hidden bounce-enter">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-800 text-lg">Gestión de Usuarios</h3>
+                        <button onclick="openAddUserModal()" class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 hover:bg-emerald-600 shadow-md btn-animate">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo
+                        </button>
+                    </div>
+                    <div id="admin-users-list" class="space-y-3">
+                        <p class="text-center text-slate-400 py-8">Cargando usuarios...</p>
+                    </div>
+                </section>
+
+                <section id="admin-stock-section" class="hidden bounce-enter">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-800 text-lg">Artículos (Vitrina)</h3>
+                        <button onclick="openAddProductModal()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 hover:bg-slate-700 shadow-md btn-animate">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Agregar
+                        </button>
+                    </div>
+                    <div id="admin-stock-list" class="space-y-3">
+                         <p class="text-center text-slate-400 py-8">Cargando artículos...</p>
+                    </div>
+                </section>
+
+                <section id="admin-inventory-section" class="hidden bounce-enter">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-lg">Inventario (Cuentas)</h3>
+                            <p class="text-[10px] text-slate-400">Credenciales y expiraciones</p>
+                        </div>
+                        <button onclick="openAddInventoryModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 hover:bg-indigo-700 shadow-md btn-animate">
+                            <i data-lucide="archive" class="w-4 h-4"></i> Agregar Item
+                        </button>
+                    </div>
+                    <div id="admin-inventory-list" class="space-y-3">
+                         <p class="text-center text-slate-400 py-8 border border-dashed rounded-xl">Cargando inventario...</p>
+                    </div>
+                </section>
+
+                <section id="admin-support-section" class="hidden bounce-enter">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-800 text-lg">Soporte y Fallos</h3>
+                        <span class="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded-full">Tickets Usuarios</span>
+                    </div>
+                    <div id="admin-support-list" class="space-y-3">
+                         <p class="text-center text-slate-400 py-8 border border-dashed rounded-xl">Cargando reportes de soporte...</p>
+                    </div>
+                </section>
+            </div>
         </main>
     </div>
 
@@ -381,7 +339,7 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, collection, addDoc, query, orderBy, limit, serverTimestamp, setDoc, getDoc, runTransaction, updateDoc, deleteDoc, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
-        // CONFIG
+        // CONFIGURACIÓN
         const firebaseConfig = {
           apiKey: "AIzaSyBYaYm2LDE6QM_K5Dii74sfZCYYd1eQfvY",
           authDomain: "ventasstre-a24b7.firebaseapp.com",
@@ -399,11 +357,14 @@
 
         let currentUser = null;
         let isAdmin = false;
-        let expirationInterval = null;
         window.userTransactions = [];
+        window.globalNotifications = []; 
+        window.adminReportsCache = []; // CACHE DE REPORTES
+        window.adminPendingRequests = []; // CACHE SOLICITUDES
+        window.adminPendingReports = []; // CACHE REPORTES
         window.currentHistoryTab = 'all';
 
-        // AUTH & INIT
+        // AUTH & INICIALIZACIÓN
         onAuthStateChanged(auth, async (user) => {
             const loader = document.getElementById('global-loader');
             const authContainer = document.getElementById('auth-container');
@@ -423,17 +384,19 @@
                 isAdmin = user.email === ADMIN_EMAIL;
                 document.getElementById('sidebar-email').textContent = user.email || "Usuario Anónimo";
                 
-                const adminBtn = document.getElementById('admin-menu-btn');
                 if (isAdmin) {
-                    adminBtn.classList.remove('hidden');
+                    document.getElementById('user-menu-items').classList.add('hidden');
+                    document.getElementById('admin-menu-items').classList.remove('hidden');
                     initAdminPanel();
                     switchView('admin'); 
                 } else {
-                    adminBtn.classList.add('hidden');
+                    document.getElementById('user-menu-items').classList.remove('hidden');
+                    document.getElementById('admin-menu-items').classList.add('hidden');
                     switchView('user');
                 }
 
                 await initUserData(user);
+                initGlobalNotifications(); 
                 saveUserToGlobalList(user);
                 
                 authContainer.classList.add('hidden');
@@ -449,7 +412,7 @@
             setTimeout(() => loader.style.display = 'none', 500);
         });
 
-        // DATA INIT
+        // DATOS USUARIO
         async function initUserData(user) {
             const walletRef = doc(db, 'artifacts', appId, 'users', user.uid, 'wallet', 'main');
             const walletSnap = await getDoc(walletRef);
@@ -471,46 +434,94 @@
                     data.id = doc.id;
                     window.userTransactions.push(data);
                 });
-                const dot = document.getElementById('notification-dot');
-                if (window.userTransactions.length > 0) dot.style.display = 'block'; else dot.style.display = 'none';
+                updateNotificationDot();
             });
+        }
+
+        function initGlobalNotifications() {
+            const globalRef = collection(db, 'artifacts', appId, 'public', 'data', 'global_notifications');
+            const q = query(globalRef, orderBy('timestamp', 'desc'), limit(5));
+            onSnapshot(q, (snapshot) => {
+                window.globalNotifications = [];
+                snapshot.forEach(doc => {
+                    let data = doc.data();
+                    data.id = doc.id;
+                    data.isGlobal = true;
+                    window.globalNotifications.push(data);
+                });
+                updateNotificationDot();
+            });
+        }
+
+        function updateNotificationDot() {
+            const dot = document.getElementById('notification-dot');
+            let hasAdminAlerts = (window.adminPendingRequests && window.adminPendingRequests.length > 0) || (window.adminPendingReports && window.adminPendingReports.length > 0);
+            
+            if (window.userTransactions.length > 0 || window.globalNotifications.length > 0 || (isAdmin && hasAdminAlerts)) {
+                dot.style.display = 'block';
+            } else {
+                dot.style.display = 'none';
+            }
         }
 
         async function saveUserToGlobalList(user) {
             try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', user.uid), { email: user.email, uid: user.uid, lastLogin: serverTimestamp() }, { merge: true }); } catch (e) { console.error(e); }
         }
 
-        // --- NOTIFICATIONS LOGIC (UPDATED) ---
         window.openNotifications = () => {
             const dot = document.getElementById('notification-dot');
             if(dot) dot.style.display = 'none';
             
-            let htmlContent = `<div class="text-center mb-4"><h3 class="text-xl font-bold text-slate-800">Notificaciones</h3><p class="text-xs text-slate-400">Historial de movimientos</p></div><div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">`;
+            let htmlContent = `<div class="text-center mb-4"><h3 class="text-xl font-bold text-slate-800">Notificaciones</h3><p class="text-xs text-slate-400">Historial de movimientos y anuncios</p></div><div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">`;
             
-            if (!window.userTransactions || window.userTransactions.length === 0) {
+            // COMBINAR TODO: Globales + AdminAlerts + UserTransactions
+            let combined = [...window.globalNotifications];
+            
+            if(isAdmin) {
+                if(window.adminPendingRequests) combined = [...combined, ...window.adminPendingRequests];
+                if(window.adminPendingReports) combined = [...combined, ...window.adminPendingReports];
+            }
+            
+            combined = [...combined, ...window.userTransactions];
+
+            // Ordenar
+            combined.sort((a, b) => {
+                const tA = a.timestamp ? a.timestamp.toMillis() : 0;
+                const tB = b.timestamp ? b.timestamp.toMillis() : 0;
+                return tB - tA;
+            });
+
+            if (combined.length === 0) {
                 htmlContent += `<div class="text-center py-8 text-slate-400 text-sm">No tienes notificaciones recientes.</div>`;
             } else {
-                window.userTransactions.forEach((t, index) => {
-                    let bg = 'bg-slate-50';
-                    let color = 'text-slate-700';
-                    let icon = 'shopping-bag';
-                    let sign = '-';
-                    let amountDisplay = `$${t.amount}`;
-                    
-                    if(t.type === 'deposit') { bg='bg-emerald-50'; color='text-emerald-600'; icon='arrow-down-left'; sign='+'; }
-                    if(t.type === 'support_reply') { bg='bg-blue-50'; color='text-blue-600'; icon='message-circle'; sign=''; amountDisplay='MSG'; }
+                combined.forEach((t) => {
+                    let bg = 'bg-slate-50'; let color = 'text-slate-700'; let icon = 'shopping-bag'; let sign = '-'; let amountDisplay = t.amount ? `$${t.amount}` : ''; let clickAction = `onclick="openNotificationDetails('${t.id}')"`;
+
+                    if(t.isGlobal) {
+                        bg = 'bg-indigo-50'; color = 'text-indigo-600'; icon = 'bell'; sign = ''; amountDisplay = 'INFO';
+                        clickAction = `onclick="openModal('<div class=\\'text-center bounce-enter\\'><div class=\\'w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4\\'><i data-lucide=\\'bell\\' class=\\'w-8 h-8\\'></i></div><h3 class=\\'text-xl font-bold text-slate-800 mb-2\\'>${t.title}</h3><p class=\\'text-sm text-slate-600\\'>${t.message}</p></div>')"`;
+                    } 
+                    else if(t.isAdminRequest) {
+                        bg = 'bg-amber-50'; color = 'text-amber-600'; icon = 'dollar-sign'; sign = ''; amountDisplay = `$${t.amount}`;
+                        clickAction = `onclick="enterAdminModule('requests'); closeModal();"`;
+                    }
+                    else if(t.isAdminReport) {
+                        bg = 'bg-rose-50'; color = 'text-rose-600'; icon = 'alert-circle'; sign = ''; amountDisplay = 'FALLO';
+                        clickAction = `onclick="enterAdminModule('support'); closeModal();"`;
+                    }
+                    else {
+                        if(t.type === 'deposit') { bg='bg-emerald-50'; color='text-emerald-600'; icon='arrow-down-left'; sign='+'; }
+                        if(t.type === 'support_reply') { bg='bg-blue-50'; color='text-blue-600'; icon='message-circle'; sign=''; amountDisplay='MSG'; }
+                    }
 
                     const time = t.timestamp ? t.timestamp.toDate().toLocaleString() : 'Reciente';
-                    const clickAction = `onclick="openNotificationDetails('${t.id}')"`;
+                    const desc = t.isGlobal ? t.title : (t.isAdminRequest ? `Solicitud: ${t.email}` : (t.isAdminReport ? `Reporte: ${t.type}` : t.description));
 
                     htmlContent += `
                         <div ${clickAction} class="flex items-center justify-between p-3 rounded-xl border border-slate-100 ${bg} cursor-pointer history-item transition-transform hover-bounce">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm"><i data-lucide="${icon}" class="w-4 h-4"></i></div>
-                                <div>
-                                    <p class="text-xs font-bold text-slate-700">${t.description}</p>
-                                    <p class="text-[10px] text-slate-400">${time}</p>
-                                </div>
+                                <div><p class="text-xs font-bold text-slate-700 truncate w-40">${desc}</p><p class="text-[10px] text-slate-400">${time}</p></div>
                             </div>
                             <span class="text-xs font-bold ${color}">${sign}${amountDisplay}</span>
                         </div>
@@ -521,25 +532,196 @@
             openModal(htmlContent);
         };
 
-        // --- ADMIN PANEL INIT ---
+        // --- FUNCIÓN DE COMPRA ---
+        window.processPurchase = async (productId, name, price) => {
+            if(!currentUser) return showToast('Inicia sesión', 'error');
+            
+            const confirmBtn = document.querySelector('button[onclick^="processPurchase"]');
+            const originalText = confirmBtn ? confirmBtn.innerText : 'Confirmar';
+            if(confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = `<span class="animate-spin mr-2">⌛</span> Procesando...`;
+            }
+
+            try {
+                const qInv = query(
+                    collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), 
+                    where('productId', '==', productId),
+                    where('status', '==', 'available'),
+                    limit(1)
+                );
+                const invSnap = await getDocs(qInv);
+                
+                if(invSnap.empty) {
+                    throw new Error("Stock no sincronizado. Intente más tarde.");
+                }
+                
+                const itemDoc = invSnap.docs[0];
+                const itemData = itemDoc.data();
+
+                await runTransaction(db, async (transaction) => {
+                    const walletRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main');
+                    const walletSnap = await transaction.get(walletRef);
+                    if(!walletSnap.exists()) throw "Error de billetera";
+                    
+                    const currentBalance = walletSnap.data().balance || 0;
+                    if(currentBalance < price) throw "Saldo insuficiente. Por favor recarga.";
+
+                    const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId);
+                    const productSnap = await transaction.get(productRef);
+                    if(!productSnap.exists()) throw "Producto no existe";
+                    
+                    const invRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemDoc.id);
+                    const invCheck = await transaction.get(invRef);
+                    if(invCheck.data().status !== 'available') throw "Item ya vendido. Intenta de nuevo.";
+
+                    transaction.update(walletRef, { balance: currentBalance - price });
+                    
+                    transaction.update(invRef, { 
+                        status: 'sold', 
+                        soldTo: currentUser.uid, 
+                        soldAt: serverTimestamp() 
+                    });
+                    
+                    const newStock = (productSnap.data().stock || 0) - 1;
+                    transaction.update(productRef, { stock: newStock < 0 ? 0 : newStock });
+                    
+                    const newTxRef = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'));
+                    transaction.set(newTxRef, {
+                        type: 'purchase',
+                        amount: price,
+                        description: `Compra: ${name}`,
+                        details: {
+                            serviceName: itemData.serviceName,
+                            email: itemData.email,
+                            password: itemData.password,
+                            expiryDate: itemData.expiryDate,
+                            terms: itemData.terms || ''
+                        },
+                        itemId: itemDoc.id,
+                        timestamp: serverTimestamp()
+                    });
+                });
+
+                showToast('¡Compra exitosa!', 'success');
+                
+                const ticketData = {
+                    serviceName: itemData.serviceName || name,
+                    email: itemData.email,
+                    password: itemData.password,
+                    expiryDate: itemData.expiryDate,
+                    terms: itemData.terms || ''
+                };
+                showTicketModal(ticketData);
+
+            } catch (e) {
+                console.error(e);
+                let msg = "Error en la compra";
+                if(typeof e === 'string') msg = e;
+                else if(e.message) msg = e.message;
+                showToast(msg, 'error');
+                if(confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerText = originalText;
+                }
+            } 
+        };
+
+        window.showTicketModal = (item) => {
+            const safeTerms = encodeURIComponent(item.terms || 'Sin términos adicionales.');
+            const html = `
+                <div class="text-center pt-4 bounce-enter">
+                    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-emerald-50 mb-4 border border-emerald-100 animate-pulse">
+                        <i data-lucide="check-circle" class="h-8 w-8 text-emerald-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-1">¡Compra Exitosa!</h3>
+                    <p class="text-xs text-slate-400 mb-6">Aquí tienes tu ticket digital</p>
+                    
+                    <div class="text-left bg-white border border-slate-100 rounded-2xl p-5 shadow-lg mb-6 space-y-4 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-emerald-400"></div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Plataforma</p>
+                            <p class="text-lg font-bold text-slate-800">${item.serviceName}</p>
+                        </div>
+                        <div class="grid grid-cols-1 gap-3">
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Correo</p>
+                                <p class="font-mono text-sm text-slate-700 select-all break-all">${item.email}</p>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Contraseña</p>
+                                <p class="font-mono text-sm text-slate-700 select-all">${item.password}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase">Expiración</p>
+                                <p class="text-sm font-medium text-slate-700">${item.expiryDate || 'N/A'}</p>
+                            </div>
+                        </div>
+                        ${item.terms ? `
+                        <div class="pt-2 border-t border-dashed border-slate-200">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Términos</p>
+                            <p class="text-xs text-slate-500 italic leading-relaxed">${item.terms}</p>
+                        </div>` : ''}
+                    </div>
+
+                    <button onclick="copyReceiptInfo('${item.serviceName}', '${item.email}', '${item.password}', '${item.expiryDate}', '${safeTerms}')" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-slate-700 active:scale-95 transition-all flex justify-center items-center gap-2 mb-4 btn-animate">
+                        <i data-lucide="copy" class="w-4 h-4"></i> Copiar Ticket
+                    </button>
+                    <button onclick="closeModal()" class="text-sm text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1 mx-auto hover:underline transition-all">Cerrar</button>
+                </div>
+            `;
+            openModal(html);
+        };
+
+        // --- LOGICA DEL NUEVO PANEL ADMINISTRADOR ---
+        window.returnToAdminDashboard = () => {
+            document.getElementById('admin-dashboard-grid').classList.remove('hidden');
+            document.getElementById('admin-modules-container').classList.add('hidden');
+        };
+
+        window.enterAdminModule = (moduleName) => {
+            document.getElementById('admin-dashboard-grid').classList.add('hidden');
+            document.getElementById('admin-modules-container').classList.remove('hidden');
+            
+            const sections = ['requests', 'users', 'stock', 'inventory', 'support'];
+            sections.forEach(s => document.getElementById(`admin-${s}-section`).classList.add('hidden'));
+            
+            const target = document.getElementById(`admin-${moduleName}-section`);
+            target.classList.remove('hidden');
+            target.classList.add('bounce-enter');
+        };
+
         function initAdminPanel() {
+            // SOLICITUDES
             const requestsRef = collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges');
             const qRequests = query(requestsRef, orderBy('timestamp', 'desc'), limit(50));
             onSnapshot(qRequests, (snapshot) => {
                 const list = document.getElementById('admin-requests-list');
-                if (snapshot.empty) { list.innerHTML = `<div class="text-center p-6 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400">No hay solicitudes pendientes</div>`; return; }
+                window.adminPendingRequests = [];
                 let html = '';
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
                     if(data.status === 'pending') {
+                        // Guardar para notificaciones
+                        data.id = docSnap.id;
+                        data.isAdminRequest = true;
+                        window.adminPendingRequests.push(data);
+
                         html += `<div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-400 flex flex-col md:flex-row justify-between items-center gap-3 slide-up"><div class="flex-1"><p class="font-bold text-slate-800 text-sm">${data.email}</p><p class="text-xs text-slate-400 font-mono mb-1">ID: ${data.uid.substring(0,8)}</p><span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-full">Pendiente</span></div><div class="flex items-center gap-3"><span class="font-bold text-lg text-emerald-600">$${data.amount.toLocaleString()}</span><button onclick="window.approveRecharge('${docSnap.id}', '${data.uid}', ${data.amount}, '${data.userTxId}')" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-700 flex items-center gap-1 btn-animate"><i data-lucide="check" class="w-4 h-4"></i> Aprobar</button></div></div>`;
                     }
                 });
-                if (html === '') html = `<div class="text-center p-6 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400">Todas las solicitudes gestionadas</div>`;
+                if (html === '') html = `<div class="text-center p-6 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400">No hay solicitudes pendientes</div>`;
                 list.innerHTML = html;
+                
+                const badge = document.getElementById('badge-requests');
+                if(window.adminPendingRequests.length > 0) { badge.innerText = `${window.adminPendingRequests.length} Pendientes`; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+                updateNotificationDot();
                 lucide.createIcons();
             });
             
+            // USUARIOS
             const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'all_users');
             onSnapshot(usersRef, (snapshot) => {
                 const list = document.getElementById('admin-users-list');
@@ -552,6 +734,7 @@
                 list.innerHTML = html; lucide.createIcons();
             });
 
+            // STOCK
             const stockRef = collection(db, 'artifacts', appId, 'public', 'data', 'profiles');
             onSnapshot(stockRef, (snapshot) => {
                 const list = document.getElementById('admin-stock-list');
@@ -564,6 +747,7 @@
                 list.innerHTML = html; lucide.createIcons();
             });
 
+            // INVENTARIO
             const inventoryRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items');
             const qInv = query(inventoryRef, where('status', '==', 'available')); 
             onSnapshot(qInv, (snapshot) => {
@@ -577,14 +761,18 @@
                 list.innerHTML = html; lucide.createIcons();
             });
 
-            // --- LISTENER DE REPORTES ---
+            // SOPORTE
             const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
             const qReports = query(reportsRef, orderBy('timestamp', 'desc'));
             
             onSnapshot(qReports, (snapshot) => {
-                const list = document.getElementById('admin-reports-list');
+                const list = document.getElementById('admin-support-list');
+                window.adminReportsCache = []; // Limpiar cache
+                window.adminPendingReports = []; // Limpiar cache notificaciones
+                
                 if(snapshot.empty) { 
-                    list.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-slate-400 opacity-50"><i data-lucide="check-circle" class="w-10 h-10 mb-2"></i><p class="text-xs">Sin reportes pendientes</p></div>`; 
+                    list.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-slate-400 opacity-50"><i data-lucide="check-circle" class="w-10 h-10 mb-2"></i><p class="text-xs">Sin tickets de soporte</p></div>`; 
+                    document.getElementById('badge-support').classList.add('hidden');
                     lucide.createIcons();
                     return; 
                 }
@@ -592,72 +780,102 @@
                 let html = '';
                 snapshot.forEach(doc => {
                     const r = doc.data();
+                    r.id = doc.id;
+                    window.adminReportsCache.push(r); // Guardar en cache para abrir detalles
+
+                    if(r.status !== 'replied') {
+                        r.isAdminReport = true;
+                        window.adminPendingReports.push(r);
+                    }
+
                     const time = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente';
-                    
-                    // Icono según el tipo
-                    let icon = 'alert-circle';
-                    let color = 'text-slate-500';
-                    let bg = 'bg-slate-100';
-                    
+                    let icon = 'alert-circle'; let color = 'text-slate-500'; let bg = 'bg-slate-100';
                     if(r.type === 'bug') { icon = 'bug'; color = 'text-rose-500'; bg = 'bg-rose-50'; }
                     if(r.type === 'payment') { icon = 'dollar-sign'; color = 'text-emerald-500'; bg = 'bg-emerald-50'; }
                     if(r.type === 'account') { icon = 'user-x'; color = 'text-blue-500'; bg = 'bg-blue-50'; }
                     
-                    // Estado: si ya fue respondido
                     let statusBadge = r.status === 'replied' 
                         ? `<span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold ml-2">Respondido</span>` 
                         : `<span class="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full font-bold ml-2">Pendiente</span>`;
 
-                    // Si hay imagen de evidencia
-                    let imgHTML = '';
-                    if(r.evidenceImage) {
-                        imgHTML = `<div class="mt-2 mb-2"><img src="${r.evidenceImage}" class="max-h-32 rounded-lg border border-slate-200 cursor-pointer hover:scale-105 transition-transform" onclick="openModal('<img src=\\'${r.evidenceImage}\\' class=\\'w-full rounded-xl\\'>')"></div>`;
-                    }
-
-                    // Botón de respuesta (deshabilitado si ya respondido)
-                    const replyBtn = `<button onclick="openReplyModal('${doc.id}', '${r.uid}')" class="text-xs font-bold text-blue-500 hover:text-blue-700 flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded transition-colors border border-blue-100 mr-2">
-                                        <i data-lucide="message-square" class="w-3 h-3"></i> Responder
-                                      </button>`;
+                    const replyBtn = `<button onclick="event.stopPropagation(); openReplyModal('${doc.id}', '${r.uid}')" class="text-xs font-bold text-blue-500 hover:text-blue-700 flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded transition-colors border border-blue-100 mr-2"><i data-lucide="message-square" class="w-3 h-3"></i> Responder</button>`;
 
                     html += `
-                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm relative group slide-up">
+                        <div onclick="openReportDetails('${doc.id}')" class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm relative group slide-up cursor-pointer hover:border-amber-300 transition-colors">
                             <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 rounded-full ${bg} flex items-center justify-center flex-shrink-0">
-                                    <i data-lucide="${icon}" class="w-5 h-5 ${color}"></i>
-                                </div>
+                                <div class="w-10 h-10 rounded-full ${bg} flex items-center justify-center flex-shrink-0"><i data-lucide="${icon}" class="w-5 h-5 ${color}"></i></div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="flex justify-between items-start">
-                                        <p class="text-xs font-bold text-slate-700 truncate">${r.email} ${statusBadge}</p>
-                                        <span class="text-[10px] text-slate-400 whitespace-nowrap ml-2">${time}</span>
-                                    </div>
+                                    <div class="flex justify-between items-start"><p class="text-xs font-bold text-slate-700 truncate">${r.email} ${statusBadge}</p><span class="text-[10px] text-slate-400 whitespace-nowrap ml-2">${time}</span></div>
                                     <p class="text-[10px] font-bold text-slate-400 uppercase mt-0.5 mb-1">${r.type}</p>
-                                    
-                                    <div class="text-sm text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 whitespace-pre-wrap">${r.description}</div>
-                                    ${imgHTML}
-                                    ${r.adminReply ? `<div class="mt-2 text-xs bg-blue-50 text-blue-700 p-2 rounded border border-blue-100"><b>Tu respuesta:</b> ${r.adminReply}</div>` : ''}
+                                    <div class="text-sm text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 whitespace-pre-wrap h-12 overflow-hidden relative">
+                                        ${r.description}
+                                        <div class="absolute bottom-0 left-0 w-full h-6 bg-gradient-to-t from-slate-50 to-transparent"></div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="mt-3 flex justify-end border-t border-slate-50 pt-2">
                                 ${replyBtn}
-                                <button onclick="resolveReport('${doc.id}')" class="text-xs font-bold text-slate-400 hover:text-rose-500 flex items-center gap-1 hover:bg-rose-50 px-3 py-1.5 rounded transition-colors">
-                                    <i data-lucide="trash-2" class="w-3 h-3"></i> Borrar
-                                </button>
+                                <button onclick="event.stopPropagation(); resolveReport('${doc.id}')" class="text-xs font-bold text-slate-400 hover:text-rose-500 flex items-center gap-1 hover:bg-rose-50 px-3 py-1.5 rounded transition-colors"><i data-lucide="trash-2" class="w-3 h-3"></i> Borrar</button>
                             </div>
                         </div>
                     `;
                 });
                 list.innerHTML = html;
+                
+                // Badge y Notificaciones
+                const badge = document.getElementById('badge-support');
+                if(window.adminPendingReports.length > 0) { badge.innerText = `${window.adminPendingReports.length} Tickets`; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+                updateNotificationDot();
                 lucide.createIcons();
             });
         }
 
-        // --- FUNCIONES UNIFICADAS DE DETALLE (UPDATED PARA SOPORTE) ---
+        // --- VISOR DE DETALLE COMPLETO DE REPORTE ---
+        window.openReportDetails = (reportId) => {
+            const report = window.adminReportsCache.find(r => r.id === reportId);
+            if(!report) return;
+
+            let imgHTML = '';
+            if(report.evidenceImage) {
+                imgHTML = `<div class="mt-4"><p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Evidencia Adjunta</p><img src="${report.evidenceImage}" class="w-full rounded-xl border border-slate-200"></div>`;
+            }
+
+            // Preparamos el texto para copiar (limpiamos un poco el formato si es necesario)
+            const textToCopy = report.description;
+
+            const html = `
+                <div class="text-left bounce-enter">
+                    <h3 class="text-xl font-bold text-slate-800 mb-1">Detalle del Reporte</h3>
+                    <p class="text-xs text-slate-400 mb-4 font-mono">${report.id}</p>
+                    
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4">
+                        <p class="text-xs font-bold text-slate-700">${report.email}</p>
+                        <p class="text-[10px] text-slate-400">${report.timestamp ? report.timestamp.toDate().toLocaleString() : ''}</p>
+                        <span class="inline-block bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded mt-1 font-bold uppercase">${report.type}</span>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-xl p-3 max-h-60 overflow-y-auto">
+                        <p class="text-sm text-slate-600 whitespace-pre-wrap font-medium leading-relaxed" id="report-full-text">${report.description}</p>
+                    </div>
+                    ${imgHTML}
+
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="navigator.clipboard.writeText(\`${textToCopy}\`).then(()=>showToast('Reporte copiado','success'))" class="flex-1 bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-slate-700 btn-animate flex items-center justify-center gap-2">
+                            <i data-lucide="copy" class="w-4 h-4"></i> Copiar Texto
+                        </button>
+                        <button onclick="closeModal()" class="px-4 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cerrar</button>
+                    </div>
+                </div>
+            `;
+            openModal(html);
+        };
+
+        // --- VISOR DE DETALLES (USUARIO) ---
         window.renderTransactionDetail = (t, containerId, backFunction) => {
             const container = document.getElementById(containerId);
             if (!t) return;
 
             if (t.type === 'support_reply') {
-                // VISTA DE MENSAJE DE SOPORTE
                 container.innerHTML = `
                     <div class="text-center pt-4 bounce-enter">
                         <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-50 mb-4 border border-blue-100">
@@ -672,7 +890,7 @@
                             <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">${t.message}</p>
                         </div>
 
-                        <button onclick="navigator.clipboard.writeText('${t.message}').then(()=>showToast('Texto copiado','success'))" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-slate-700 btn-animate flex justify-center items-center gap-2 mb-4">
+                        <button onclick="navigator.clipboard.writeText(\`${t.message}\`).then(()=>showToast('Texto copiado','success'))" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-slate-700 btn-animate flex justify-center items-center gap-2 mb-4">
                             <i data-lucide="copy" class="w-4 h-4"></i> Copiar Mensaje
                         </button>
                         ${backFunction ? `<button onclick="${backFunction}" class="text-sm text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1 mx-auto hover:underline transition-all"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver</button>` : ''}
@@ -798,7 +1016,6 @@
         window.openUserHistory = async (uid, email) => {
             window.inspectingUserId = uid;
             window.inspectingUserEmail = email;
-            
             window.currentHistoryTab = 'all'; 
             openModal(`
                 <div class="flex flex-col h-[80vh] bounce-enter">
@@ -1033,12 +1250,12 @@
             }
         };
 
-        // --- FUNCIONES DE REPORTE (ADMIN) ---
+        // --- LÓGICA DE RESPUESTA DE ADMIN (SOPORTE) ---
         window.openReplyModal = (reportId, userUid) => {
             openModal(`
                 <div class="text-left bounce-enter">
                     <h3 class="text-xl font-bold text-slate-800 mb-2">Responder Reporte</h3>
-                    <p class="text-slate-400 text-xs mb-4">Envía instrucciones o credenciales de reposición.</p>
+                    <p class="text-slate-400 text-xs mb-4">Envía instrucciones o credenciales de reposición al usuario.</p>
                     <textarea id="admin-reply-text" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-32 resize-none mb-4 focus:border-blue-400 outline-none" placeholder="Escribe tu respuesta aquí..."></textarea>
                     <button onclick="sendAdminReply('${reportId}', '${userUid}')" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 btn-animate">Enviar Respuesta</button>
                 </div>
@@ -1050,14 +1267,14 @@
             if(!text) return showToast('Escribe una respuesta', 'error');
 
             try {
-                // 1. Actualizar reporte
+                // 1. Actualizar el reporte en la colección de admin
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', reportId), {
                     status: 'replied',
                     adminReply: text,
                     replyDate: serverTimestamp()
                 });
 
-                // 2. Notificar al usuario (inyectar en historial)
+                // 2. Enviar notificación al usuario (como transacción en su historial)
                 await addDoc(collection(db, 'artifacts', appId, 'users', userUid, 'transactions'), {
                     type: 'support_reply',
                     amount: 0,
@@ -1090,8 +1307,9 @@
         window.handleLogout = async () => { await signOut(auth); document.getElementById('sidebar').classList.add('-translate-x-full'); };
         window.updateBalanceUI = (balance, profit) => { document.getElementById('balance-display').textContent = `$${(balance || 0).toLocaleString()}`; document.getElementById('profit-display').textContent = `$${(profit || 0).toLocaleString()}`; };
         
+        // --- NAVEGACIÓN DE PESTAÑAS ADMIN ---
         window.adminTab = function(tab) { 
-            const tabs = ['requests', 'users', 'stock', 'inventory', 'reports']; 
+            const tabs = ['requests', 'users', 'stock', 'inventory', 'support']; 
             tabs.forEach(t => { 
                 const btn = document.getElementById(`tab-${t}`); 
                 const sec = document.getElementById(`admin-${t}-section`); 
@@ -1117,14 +1335,21 @@
         
         window.switchAuthView = (viewName) => { const views=document.querySelectorAll('.auth-view'); views.forEach(v=>v.classList.add('hidden')); let targetId=viewName==='login'?'login-form':viewName==='register'?'register-form':'forgot-form'; const el = document.getElementById(targetId); el.classList.remove('hidden'); el.classList.add('bounce-enter'); setTimeout(()=>el.classList.remove('bounce-enter'), 1000); } 
         window.toggleSidebar = () => { const s=document.getElementById('sidebar'); const o=document.getElementById('sidebar-overlay'); if(s.classList.contains('-translate-x-full')){s.classList.remove('-translate-x-full');o.classList.remove('opacity-0','pointer-events-none');}else{s.classList.add('-translate-x-full');o.classList.add('opacity-0','pointer-events-none');} } 
-        window.switchView = (view) => { const u=document.getElementById('user-view'); const a=document.getElementById('admin-view'); if(view==='admin'){u.classList.add('hidden');a.classList.remove('hidden');a.classList.add('bounce-enter'); adminTab('requests');}else{a.classList.add('hidden');u.classList.remove('hidden');u.classList.add('bounce-enter');} toggleSidebar(); } 
+        window.switchView = (view) => { const u=document.getElementById('user-view'); const a=document.getElementById('admin-view'); if(view==='admin'){u.classList.add('hidden');a.classList.remove('hidden');a.classList.add('bounce-enter');}else{a.classList.add('hidden');u.classList.remove('hidden');u.classList.add('bounce-enter');} toggleSidebar(); } 
         window.showToast = (m,t='info') => {const c=document.getElementById('toast-container');const el=document.createElement('div');const col={success:'bg-emerald-500 text-white',error:'bg-rose-500 text-white',info:'bg-slate-800 text-white'};const ic=t==='success'?'check-circle':t==='error'?'alert-triangle':'info';el.className=`${col[t]} px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-sm font-medium transform transition-all duration-300 translate-x-full pointer-events-auto`;el.innerHTML=`<i data-lucide="${ic}" class="w-5 h-5"></i><span>${m}</span>`;c.appendChild(el);lucide.createIcons();requestAnimationFrame(()=>el.classList.remove('translate-x-full'));setTimeout(()=>{el.classList.add('translate-x-full','opacity-0');setTimeout(()=>el.remove(),300);},3000);}
         window.openAddInventoryModal = async () => { const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles')); const querySnapshot = await getDocs(q); let options = '<option value="">Selecciona un Artículo...</option>'; querySnapshot.forEach((doc) => { const data = doc.data(); options += `<option value="${doc.id}" data-name="${data.name}">${data.name}</option>`; }); openModal(` <div class="text-left bounce-enter"><h3 class="text-lg font-bold text-slate-800 mb-4">Agregar al Inventario</h3><form onsubmit="saveInventoryItem(event)" class="space-y-3"><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Artículo (Plataforma/Servicio)</label><select id="inv-product-select" class="w-full bg-slate-50 border rounded-lg p-2 text-sm" required>${options}</select></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Correo</label><input type="email" id="inv-email" class="w-full bg-slate-50 border rounded-lg p-2 text-sm" required></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Contraseña</label><input type="text" id="inv-pass" class="w-full bg-slate-50 border rounded-lg p-2 text-sm" required></div></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Expiración</label><input type="date" id="inv-expiry" class="w-full bg-slate-50 border rounded-lg p-2 text-sm"></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Duración</label><select id="inv-duration" class="w-full bg-slate-50 border rounded-lg p-2 text-sm"><option>1 Mes</option><option>3 Meses</option><option>6 Meses</option><option>Indefinido</option></select></div></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase">Términos</label><textarea id="inv-terms" class="w-full bg-slate-50 border rounded-lg p-2 text-sm h-16 resize-none" placeholder="Notas adicionales..."></textarea></div><button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700 btn-animate">Guardar</button></form></div> `); };
         window.saveInventoryItem = async (e) => { e.preventDefault(); try { const select = document.getElementById('inv-product-select'); const productId = select.value; const productName = select.options[select.selectedIndex].text; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), { productId: productId, serviceName: productName, email: document.getElementById('inv-email').value, password: document.getElementById('inv-pass').value, expiryDate: document.getElementById('inv-expiry').value, duration: document.getElementById('inv-duration').value, terms: document.getElementById('inv-terms').value, createdAt: serverTimestamp(), status: 'available' }); const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId); await updateDoc(productRef, { stock: increment(1) }); showToast('Item agregado y Stock actualizado', 'success'); closeModal(); } catch(e) { console.error(e); showToast('Error al guardar', 'error'); } };
         window.deleteInventoryItem = async (id) => { if(confirm("¿Borrar este item del inventario? Esta acción reducirá el stock.")) { try { const itemRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', id); const itemSnap = await getDoc(itemRef); if (itemSnap.exists()) { const data = itemSnap.data(); const productId = data.productId; await deleteDoc(itemRef); if (productId) { const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId); await updateDoc(productRef, { stock: increment(-1) }); } } showToast('Item eliminado y Stock ajustado', 'success'); } catch(e) { console.error(e); showToast('Error al eliminar', 'error'); } } };
         window.openCategoryModule = (category, title) => { const html = `<div class="relative h-full flex flex-col"><div class="flex justify-between items-center mb-4 px-2 pt-2"><div><h3 class="text-xl font-bold text-slate-800">${title}</h3><p class="text-xs text-slate-400">Productos disponibles</p></div></div><div class="overflow-y-auto flex-1 pb-20 scrollbar-hide"><div id="products-grid" class="grid grid-cols-2 gap-3"><div class="col-span-full text-center py-10"><div class="inline-block w-8 h-8 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div></div></div></div>`; document.getElementById('modal-content').innerHTML = html; const modal = document.getElementById('app-modal'); const modalCard = document.getElementById('modal-card'); modal.classList.remove('items-center', 'justify-center', 'p-4'); modal.classList.add('items-end', 'justify-center', 'p-0'); modalCard.className = "bg-white w-full max-w-3xl h-[calc(100vh-220px)] rounded-t-3xl relative shadow-[0_-10px_40px_rgba(0,0,0,0.2)] flex flex-col overflow-hidden slide-up border-t border-slate-100"; modal.classList.remove('hidden'); modal.classList.add('flex'); lucide.createIcons(); const productsRef = collection(db, 'artifacts', appId, 'public', 'data', 'profiles'); let q = category && category !== 'all' ? query(productsRef, where('category', '==', category)) : productsRef; onSnapshot(q, (snapshot) => { const grid = document.getElementById('products-grid'); if(!grid) return; if (snapshot.empty) { grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 text-sm">No hay productos en ${title}.</div>`; return; } grid.innerHTML = ''; snapshot.forEach(doc => { const p = doc.data(); const safeDesc = encodeURIComponent(p.description || 'Sin descripción detallada.'); const card = document.createElement('div'); card.className = "gift-card rounded-lg shadow-sm bg-slate-100 cursor-pointer group hover:shadow-md relative overflow-hidden bounce-enter"; let ribbonHTML = (p.stock || 0) <= 0 ? `<div class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center backdrop-blur-[1px]"><span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full transform -rotate-12 shadow-sm">AGOTADO</span></div>` : ''; card.innerHTML = `${ribbonHTML}<div onclick="buyProduct('${doc.id}', '${p.name}', ${p.price}, ${p.stock||0}, '${safeDesc}')" class="w-full h-full flex flex-col"><div class="flex-1 relative overflow-hidden"><img src="${p.imageUrl || 'https://via.placeholder.com/200x300'}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"></div><div class="bg-white p-2 text-center border-t border-slate-100 relative z-10"><p class="text-xs text-slate-700 font-bold leading-tight truncate mb-1">${p.name}</p><p class="text-xs text-emerald-600 font-bold bg-emerald-50 inline-block px-2 rounded">$${p.price}</p></div></div>`; grid.appendChild(card); }); lucide.createIcons(); }); };
         window.openAddProductModal = () => { if(!isAdmin) return; openModal(` <div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Artículo</h3><form onsubmit="saveProduct(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría</label><select id="p-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none"><option value="perfiles">Perfiles</option><option value="cuentas">Cuentas</option><option value="musica">Música</option><option value="gamepass">Game Pass</option></select></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Precio</label><input type="number" id="p-price" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label><textarea id="p-desc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20 resize-none" placeholder="Detalles del servicio..."></textarea></div><p class="text-[10px] text-slate-400 mt-1">* El stock se actualizará automáticamente al agregar Inventario vinculado.</p><button type="submit" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Guardar Artículo</button></form></div> `); };
-        window.saveProduct = async (e) => { e.preventDefault(); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { category: document.getElementById('p-category').value, name: document.getElementById('p-name').value, imageUrl: document.getElementById('p-image').value, price: Number(document.getElementById('p-price').value), description: document.getElementById('p-desc').value, stock: 0, createdAt: serverTimestamp() }); showToast('Producto agregado', 'success'); closeModal(); } catch(err) { showToast('Error al guardar', 'error'); } };
+        window.saveProduct = async (e) => { e.preventDefault(); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { category: document.getElementById('p-category').value, name: document.getElementById('p-name').value, imageUrl: document.getElementById('p-image').value, price: Number(document.getElementById('p-price').value), description: document.getElementById('p-desc').value, stock: 0, createdAt: serverTimestamp() }); 
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'global_notifications'), {
+            type: 'new_product',
+            title: '¡Nuevo Producto!',
+            message: `Ya disponible: ${document.getElementById('p-name').value}`,
+            timestamp: serverTimestamp()
+        });
+        showToast('Producto agregado', 'success'); closeModal(); } catch(err) { showToast('Error al guardar', 'error'); } };
         window.openAddUserModal = () => { openModal(` <div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Usuario</h3><form onsubmit="registerUserByAdmin(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Correo</label><input type="email" id="new-user-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña</label><input type="text" id="new-user-pass" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required minlength="6"></div><button type="submit" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg mt-2 hover:bg-emerald-600 btn-animate">Crear</button></form></div> `); };
         window.registerUserByAdmin = async (e) => { e.preventDefault(); const email = document.getElementById('new-user-email').value; const password = document.getElementById('new-user-pass').value; try { const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp"); const secondaryAuth = getAuth(secondaryApp); const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password); await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'wallet', 'main'), { balance: 0, profit: 0, createdAt: serverTimestamp() }); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', cred.user.uid), { email: email, uid: cred.user.uid, lastLogin: serverTimestamp(), suspended: false }, { merge: true }); await signOut(secondaryAuth); showToast('Usuario creado', 'success'); closeModal(); } catch (error) { showToast('Error: ' + error.message, 'error'); } };
         window.toggleSuspend = async (uid, shouldSuspend) => { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { suspended: shouldSuspend }); };
