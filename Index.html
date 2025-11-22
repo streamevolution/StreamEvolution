@@ -95,6 +95,11 @@
 
             <form id="register-form" class="space-y-4 hidden auth-view">
                 <h2 class="text-xl font-bold text-slate-800 mb-2">Registro</h2>
+                
+                <div id="referral-badge" class="hidden bg-indigo-50 text-indigo-600 p-3 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 animate-pulse">
+                    <i data-lucide="gift" class="w-4 h-4"></i> <span>¡Te han invitado! Recibe $40 de regalo.</span>
+                </div>
+
                 <input type="email" id="reg-email" class="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4" placeholder="Correo electrónico" required>
                 <input type="password" id="reg-password" class="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4" placeholder="Contraseña" required>
                 <input type="password" id="reg-confirm-password" class="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4" placeholder="Confirmar contraseña" required>
@@ -126,7 +131,10 @@
                 <button onclick="toggleSidebar()" class="p-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 btn-animate"><i data-lucide="menu" class="w-5 h-5"></i></button>
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-xs">SE</div>
-                    <h1 class="text-sm font-bold text-slate-700 tracking-tight">STREAM<span class="text-amber-500">EVO</span></h1>
+                    <div class="flex flex-col">
+                        <h1 class="text-sm font-bold text-slate-700 tracking-tight leading-none">STREAM<span class="text-amber-500">EVO</span></h1>
+                        <span id="header-role-badge" class="text-[8px] uppercase font-black tracking-widest text-slate-400 leading-none mt-0.5">Cliente</span>
+                    </div>
                 </div>
             </div>
             <div class="flex items-center gap-3">
@@ -143,6 +151,7 @@
             <div class="p-6 border-b border-slate-50">
                 <h2 class="font-bold text-lg text-slate-800">Mi Cuenta</h2>
                 <p class="text-xs text-slate-400 truncate font-mono mt-1" id="sidebar-email">Cargando...</p>
+                <div id="sidebar-role-tag" class="inline-block mt-2 bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Cliente</div>
             </div>
             <div class="p-4 space-y-2 overflow-y-auto flex-1 scrollbar-hide">
                 <div id="user-menu-items">
@@ -153,6 +162,11 @@
                         <span class="text-sm font-medium">Respuestas Soporte</span>
                     </button>
                     <button onclick="openNotifications(); toggleSidebar();" class="w-full flex items-center gap-3 p-3.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all"><i data-lucide="clock" class="w-5 h-5"></i><span class="text-sm font-medium">Movimientos</span></button>
+                    
+                    <button id="btn-invite-reseller" onclick="openInviteModal(); toggleSidebar();" class="hidden w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all">
+                        <i data-lucide="users" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
+                    </button>
+
                     <button onclick="openRenewalModal(); toggleSidebar();" class="w-full flex items-center gap-3 p-3.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all">
                         <i data-lucide="refresh-cw" class="w-5 h-5"></i><span class="text-sm font-medium">Renovar</span>
                     </button>
@@ -182,7 +196,7 @@
                     <span id="balance-display" class="font-bold text-xl text-emerald-400 tracking-tight">--</span>
                 </div>
                 <div class="flex-1 min-w-[110px] bg-white text-slate-700 rounded-[1.5rem] py-5 px-4 flex flex-col items-center justify-center border border-slate-100 shadow-sm relative overflow-hidden">
-                    <span class="text-[10px] uppercase tracking-widest opacity-50 mb-1 font-medium">Ahorro</span>
+                    <span class="text-[10px] uppercase tracking-widest opacity-50 mb-1 font-medium">Ganancias</span>
                     <span id="profit-display" class="font-bold text-xl tracking-tight">--</span>
                 </div>
                 <button onclick="openChargeModal()" class="flex-none w-[70px] bg-amber-400 text-slate-900 rounded-[1.5rem] py-4 flex flex-col items-center justify-center shadow-lg shadow-amber-200 hover:bg-amber-300 btn-animate">
@@ -338,6 +352,8 @@
 
         let currentUser = null;
         let isAdmin = false;
+        let currentUserRole = 'client'; // Por defecto Cliente
+
         window.userTransactions = [];
         window.globalNotifications = []; 
         window.adminPendingRequests = []; 
@@ -360,16 +376,37 @@
                 const userStatusRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', user.uid);
                 const userStatusSnap = await getDoc(userStatusRef);
                 
-                if (userStatusSnap.exists() && userStatusSnap.data().suspended === true) {
-                    await signOut(auth);
-                    showToast('Cuenta suspendida por administración.', 'error');
-                    return;
+                if (userStatusSnap.exists()) {
+                    const userData = userStatusSnap.data();
+                    if (userData.suspended === true) {
+                        await signOut(auth);
+                        showToast('Cuenta suspendida por administración.', 'error');
+                        return;
+                    }
+                    // OBTENER ROL
+                    currentUserRole = userData.role || 'client';
+                } else {
+                    currentUserRole = 'client'; // Fallback
                 }
 
                 currentUser = user;
                 isAdmin = user.email === ADMIN_EMAIL;
                 document.getElementById('sidebar-email').textContent = user.email;
                 
+                // Actualizar UI de rol en sidebar y header
+                const roleLabel = currentUserRole === 'reseller' ? 'Revendedor' : 'Cliente';
+                const roleColor = currentUserRole === 'reseller' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500';
+                document.getElementById('sidebar-role-tag').className = `inline-block mt-2 text-[10px] px-2 py-0.5 rounded font-bold uppercase ${roleColor}`;
+                document.getElementById('sidebar-role-tag').textContent = roleLabel;
+                
+                document.getElementById('header-role-badge').textContent = roleLabel;
+                document.getElementById('header-role-badge').className = `text-[8px] uppercase font-black tracking-widest leading-none mt-0.5 ${currentUserRole === 'reseller' ? 'text-indigo-500' : 'text-slate-400'}`;
+
+                // MOSTRAR BOTÓN DE INVITAR SI ES REVENDEDOR
+                const btnInvite = document.getElementById('btn-invite-reseller');
+                if(currentUserRole === 'reseller') btnInvite.classList.remove('hidden');
+                else btnInvite.classList.add('hidden');
+
                 await initCategories();
 
                 if (isAdmin) {
@@ -393,6 +430,8 @@
                 isAdmin = false;
                 dashboardContainer.classList.add('hidden');
                 authContainer.classList.remove('hidden');
+                // Verificar Referido en URL
+                checkReferralParam();
             }
             
             setTimeout(() => {
@@ -400,6 +439,16 @@
                 setTimeout(() => loader.style.display = 'none', 700);
             }, 1500);
         });
+
+        // --- SISTEMA DE REFERIDOS (URL CHECK) ---
+        function checkReferralParam() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const refId = urlParams.get('ref');
+            if(refId) {
+                document.getElementById('referral-badge').classList.remove('hidden');
+                switchAuthView('register');
+            }
+        }
 
         // --- CATEGORÍAS DINÁMICAS ---
         async function initCategories() {
@@ -470,12 +519,37 @@
             });
             // Productos
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), (snapshot) => {
-                let html = ''; snapshot.forEach(doc => { const d = doc.data(); html += `<div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-center gap-3 slide-up"><img src="${d.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-slate-100"><div class="flex-1 overflow-hidden"><div class="flex justify-between"><p class="font-bold text-sm text-slate-800 truncate">${d.name}</p><p class="font-bold text-xs text-emerald-600">$${d.price}</p></div><p class="text-[10px] text-slate-400 bg-slate-50 px-1.5 rounded inline-block mt-0.5">${d.category}</p><div class="mt-1 text-[10px]">Stock: <b>${d.stock||0}</b></div></div><div class="flex flex-col gap-1"><button onclick="openEditProductModal('${doc.id}')" class="p-2 text-blue-400 hover:bg-blue-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteProfile('${doc.id}')" class="p-2 text-rose-300 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`; });
+                let html = ''; snapshot.forEach(doc => { const d = doc.data(); html += `<div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-center gap-3 slide-up"><img src="${d.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-slate-100"><div class="flex-1 overflow-hidden"><div class="flex justify-between"><p class="font-bold text-sm text-slate-800 truncate">${d.name}</p></div><div class="flex gap-2"><span class="text-[10px] font-bold text-slate-500 bg-slate-50 px-1.5 rounded border border-slate-100">Cli: $${d.priceClient}</span><span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 rounded border border-indigo-100">Rev: $${d.priceReseller}</span></div><p class="text-[10px] text-slate-400 mt-0.5">${d.category}</p><div class="mt-1 text-[10px]">Stock: <b>${d.stock||0}</b></div></div><div class="flex flex-col gap-1"><button onclick="openEditProductModal('${doc.id}')" class="p-2 text-blue-400 hover:bg-blue-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteProfile('${doc.id}')" class="p-2 text-rose-300 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`; });
                 document.getElementById('admin-stock-list').innerHTML = html || '<p class="text-center text-slate-400">Vacío</p>'; lucide.createIcons();
             });
-            // Usuarios
+            // Usuarios (MODIFICADO PARA ROLES)
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'), (snapshot) => {
-                let html = ''; snapshot.forEach(doc => { const d = doc.data(); const susp = d.suspended === true; html += `<div onclick="openUserHistory('${d.uid}', '${d.email}')" class="bg-white p-3 rounded-xl border border-slate-100 flex flex-col gap-3 relative cursor-pointer hover:shadow-md transition-shadow group slide-up"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">${d.email.substring(0,2).toUpperCase()}</div><div class="overflow-hidden flex-1"><p class="font-bold text-sm text-slate-700 truncate">${d.email}</p><p class="text-[10px] text-slate-400 font-mono">ID: ${d.uid.substring(0,8)}</p></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i></div><div class="flex gap-2 pt-2 border-t border-slate-50" onclick="event.stopPropagation();"><button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="flex-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="dollar-sign" class="w-3 h-3"></i> Cargar</button><button onclick="toggleSuspend('${doc.id}', ${!susp})" class="px-3 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg text-xs font-bold">${susp?'Activar':'Suspender'}</button></div></div>`; });
+                let html = ''; 
+                snapshot.forEach(doc => { 
+                    const d = doc.data(); 
+                    const susp = d.suspended === true; 
+                    const uRole = d.role || 'client';
+                    const roleBadgeColor = uRole === 'reseller' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500';
+                    
+                    html += `<div onclick="openUserHistory('${d.uid}', '${d.email}')" class="bg-white p-3 rounded-xl border border-slate-100 flex flex-col gap-3 relative cursor-pointer hover:shadow-md transition-shadow group slide-up">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">${d.email.substring(0,2).toUpperCase()}</div>
+                            <div class="overflow-hidden flex-1">
+                                <p class="font-bold text-sm text-slate-700 truncate">${d.email}</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-[10px] text-slate-400 font-mono">ID: ${d.uid.substring(0,8)}</p>
+                                    <span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded ${roleBadgeColor}">${uRole}</span>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+                        </div>
+                        <div class="flex gap-2 pt-2 border-t border-slate-50" onclick="event.stopPropagation();">
+                            <button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="flex-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="dollar-sign" class="w-3 h-3"></i> Cargar</button>
+                            <button onclick="toggleUserRole('${doc.id}', '${uRole}')" class="px-3 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-bold" title="Cambiar Rol"><i data-lucide="user-cog" class="w-3 h-3"></i></button>
+                            <button onclick="toggleSuspend('${doc.id}', ${!susp})" class="px-3 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg text-xs font-bold">${susp?'Activar':'Suspender'}</button>
+                        </div>
+                    </div>`; 
+                });
                 document.getElementById('admin-users-list').innerHTML = html; lucide.createIcons();
             });
             // Inventario
@@ -515,22 +589,47 @@
 
         // Gestión Usuarios
         window.openAddUserModal = () => { openModal(` <div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Usuario</h3><form onsubmit="registerUserByAdmin(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Correo</label><input type="email" id="new-user-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña</label><input type="text" id="new-user-pass" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required minlength="6"></div><button type="submit" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg mt-2 hover:bg-emerald-600 btn-animate">Crear</button></form></div> `); };
-        window.registerUserByAdmin = async (e) => { e.preventDefault(); const email = document.getElementById('new-user-email').value; const password = document.getElementById('new-user-pass').value; try { const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp"); const secondaryAuth = getAuth(secondaryApp); const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password); await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'wallet', 'main'), { balance: 0, profit: 0, createdAt: serverTimestamp() }); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', cred.user.uid), { email: email, uid: cred.user.uid, lastLogin: serverTimestamp(), suspended: false }, { merge: true }); await signOut(secondaryAuth); showToast('Usuario creado', 'success'); closeModal(); } catch (error) { showToast('Error: ' + error.message, 'error'); } };
+        
+        // REGISTRO POR ADMIN CON ROL DEFAULT
+        window.registerUserByAdmin = async (e) => { e.preventDefault(); const email = document.getElementById('new-user-email').value; const password = document.getElementById('new-user-pass').value; try { const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp"); const secondaryAuth = getAuth(secondaryApp); const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password); await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'wallet', 'main'), { balance: 0, profit: 0, createdAt: serverTimestamp() }); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', cred.user.uid), { email: email, uid: cred.user.uid, role: 'client', lastLogin: serverTimestamp(), suspended: false }, { merge: true }); await signOut(secondaryAuth); showToast('Usuario creado (Cliente)', 'success'); closeModal(); } catch (error) { showToast('Error: ' + error.message, 'error'); } };
+        
         window.openManualBalanceModal = (uid, email) => { openModal(`<div class="text-center bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-1">Cargar Saldo Manual</h3><p class="text-xs text-slate-400 mb-4">${email}</p><input type="number" id="manual-amount" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-lg font-bold text-center mb-4" placeholder="$0"><button onclick="confirmManualBalance('${uid}')" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg btn-animate">Confirmar Recarga</button></div>`); };
         window.confirmManualBalance = async (uid) => { const amt = Number(document.getElementById('manual-amount').value); if(!amt) return; const wRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'); await runTransaction(db, async (t) => { const s = await t.get(wRef); t.update(wRef, { balance: (s.data().balance||0) + amt }); const txRef = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions')); t.set(txRef, { type: 'deposit', amount: amt, description: 'Carga Manual Admin', timestamp: serverTimestamp(), prevBalance: s.data().balance, newBalance: (s.data().balance||0) + amt }); }); showToast('Saldo cargado', 'success'); closeModal(); };
         
-        // --- ADMIN: EXPEDIENTE USUARIO MEJORADO ---
+        // --- ADMIN: FUNCIONES DE ROLES ---
+        window.toggleUserRole = async (docId, currentRole) => {
+            const newRole = currentRole === 'client' ? 'reseller' : 'client';
+            if(confirm(`¿Cambiar rol de ${currentRole.toUpperCase()} a ${newRole.toUpperCase()}?`)) {
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', docId), { role: newRole });
+                    showToast('Rol actualizado a ' + newRole, 'success');
+                } catch(e) {
+                    showToast('Error al cambiar rol', 'error');
+                }
+            }
+        };
+        
+        window.toggleSuspend = async (uid, val) => { await updateDoc(doc(db,'artifacts',appId,'public','data','all_users',uid), {suspended: val}); };
+
         window.openUserHistory = async (uid, email) => {
-            // 1. Obtener Billetera
             const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'));
             const balance = walletSnap.exists() ? walletSnap.data().balance : 0;
             const joinedDate = walletSnap.exists() && walletSnap.data().createdAt ? walletSnap.data().createdAt.toDate().toLocaleDateString() : 'N/A';
+            const userDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid));
+            const role = userDoc.exists() ? (userDoc.data().role || 'client') : 'client';
+            const referredBy = userDoc.exists() ? userDoc.data().referredBy : null;
 
             openModal(`
                 <div class="h-[80vh] flex flex-col bounce-enter">
                     <div class="border-b border-slate-100 pb-4 mb-4">
                         <h3 class="font-bold text-xl text-slate-800 mb-1">Expediente de Usuario</h3>
-                        <p class="text-sm text-slate-500 font-medium mb-4">${email}</p>
+                        <p class="text-sm text-slate-500 font-medium mb-4 flex flex-col gap-1">
+                            <span>${email}</span>
+                            <div class="flex gap-2">
+                                <span class="text-[10px] uppercase px-2 py-0.5 rounded font-bold ${role==='reseller'?'bg-indigo-100 text-indigo-600':'bg-slate-100 text-slate-500'}">${role}</span>
+                                ${referredBy ? `<span class="text-[10px] uppercase px-2 py-0.5 rounded font-bold bg-amber-50 text-amber-600">Referido: ${referredBy.substring(0,6)}...</span>` : ''}
+                            </div>
+                        </p>
                         
                         <div class="grid grid-cols-2 gap-3">
                             <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
@@ -559,23 +658,61 @@
             document.getElementById('usr-hist-list').innerHTML=h; 
         };
 
-        window.toggleSuspend = async (uid, val) => { await updateDoc(doc(db,'artifacts',appId,'public','data','all_users',uid), {suspended: val}); };
+        // --- MODAL INVITAR (SOLO REVENDEDOR) ---
+        window.openInviteModal = () => {
+            const link = `${window.location.origin}${window.location.pathname}?ref=${currentUser.uid}`;
+            openModal(`
+                <div class="text-center bounce-enter">
+                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="users" class="w-8 h-8"></i></div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-1">Invita y Gana</h3>
+                    <p class="text-xs text-slate-500 mb-6 px-4">Comparte este enlace. Tu referido recibe <strong>$40</strong> de bienvenida (de tu saldo) y tú ganas el <strong>1%</strong> de todas sus compras.</p>
+                    
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4 flex items-center justify-between gap-3">
+                        <span class="text-xs font-mono text-slate-600 truncate select-all">${link}</span>
+                        <button onclick="navigator.clipboard.writeText('${link}').then(()=>showToast('Enlace copiado','success'))" class="text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                    </div>
+                    <button onclick="closeModal()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl btn-animate">Entendido</button>
+                </div>
+            `);
+        }
 
-        // Producto
-        window.openAddProductModal = () => { let optionsHTML = window.categoriesCache.length > 0 ? window.categoriesCache.map(c => `<option value="${c.slug}">${c.name}</option>`).join('') : `<option value="" disabled selected>Crea categorías primero</option>`; openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Artículo</h3><form onsubmit="saveProduct(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría</label><select id="p-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required>${optionsHTML}</select></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Precio</label><input type="number" id="p-price" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label><textarea id="p-desc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20 resize-none"></textarea></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Guardar</button></form></div>`); };
+
+        // --- MODALES DE PRODUCTO CON DOBLE PRECIO ---
+        window.openAddProductModal = () => { 
+            let optionsHTML = window.categoriesCache.length > 0 ? window.categoriesCache.map(c => `<option value="${c.slug}">${c.name}</option>`).join('') : `<option value="" disabled selected>Crea categorías primero</option>`; 
+            openModal(`
+                <div class="text-left bounce-enter">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Artículo</h3>
+                    <form onsubmit="saveProduct(event)" class="space-y-4">
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría</label><select id="p-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required>${optionsHTML}</select></div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Precio Cliente</label><input type="number" id="p-price-client" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required placeholder="$ Alto"></div>
+                            <div><label class="block text-xs font-bold text-indigo-500 uppercase mb-1">Precio Revendedor</label><input type="number" id="p-price-reseller" class="w-full bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-sm text-indigo-700 font-bold" required placeholder="$ Bajo"></div>
+                        </div>
+                        
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label><textarea id="p-desc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20 resize-none"></textarea></div>
+                        <button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Guardar</button>
+                    </form>
+                </div>`); 
+        };
         
-        // --- GUARDADO ESTRICTO DE CATEGORÍA ---
+        // GUARDADO DE PRODUCTO CON DOBLE PRECIO
         window.saveProduct = async (e) => { 
             e.preventDefault(); 
-            // Obtenemos el valor directo del select (que es el slug)
             const selectedCategorySlug = document.getElementById('p-category').value;
             
             try { 
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { 
-                    category: selectedCategorySlug, // Guarda el slug, ej: 'perfiles'
+                    category: selectedCategorySlug, 
                     name: document.getElementById('p-name').value, 
                     imageUrl: document.getElementById('p-image').value, 
-                    price: Number(document.getElementById('p-price').value), 
+                    priceClient: Number(document.getElementById('p-price-client').value), 
+                    priceReseller: Number(document.getElementById('p-price-reseller').value),
+                    // Guardamos priceClient como 'price' por compatibilidad con código viejo si hiciera falta
+                    price: Number(document.getElementById('p-price-client').value), 
                     description: document.getElementById('p-desc').value, 
                     stock: 0, 
                     createdAt: serverTimestamp() 
@@ -585,24 +722,82 @@
             } catch(err) { showToast('Error al guardar', 'error'); } 
         };
         
-        window.openEditProductModal = async (pid) => { const d = (await getDoc(doc(db,'artifacts',appId,'public','data','profiles',pid))).data(); let optionsHTML = window.categoriesCache.map(c => `<option value="${c.slug}" ${c.slug===d.category?'selected':''}>${c.name}</option>`).join(''); openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Editar</h3><form onsubmit="updateProduct(event, '${pid}')" class="space-y-4"><div><label class="text-xs font-bold uppercase">Nombre</label><input type="text" id="e-name" value="${d.name}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Precio</label><input type="number" id="e-price" value="${d.price}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Categoría</label><select id="e-cat" class="w-full border rounded-xl p-3 text-sm">${optionsHTML}</select></div><div><label class="text-xs font-bold uppercase">Imagen</label><input type="url" id="e-img" value="${d.imageUrl}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Descripción</label><textarea id="e-desc" class="w-full border rounded-xl p-3 h-20">${d.description}</textarea></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">Guardar</button></form></div>`); };
-        window.updateProduct = async (e, pid) => { e.preventDefault(); await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), { name: document.getElementById('e-name').value, price: Number(document.getElementById('e-price').value), category: document.getElementById('e-cat').value, imageUrl: document.getElementById('e-img').value, description: document.getElementById('e-desc').value }); showToast('Actualizado', 'success'); closeModal(); };
+        window.openEditProductModal = async (pid) => { 
+            const d = (await getDoc(doc(db,'artifacts',appId,'public','data','profiles',pid))).data(); 
+            let optionsHTML = window.categoriesCache.map(c => `<option value="${c.slug}" ${c.slug===d.category?'selected':''}>${c.name}</option>`).join(''); 
+            
+            // Compatibilidad: Si no existen los campos nuevos, usar el viejo 'price'
+            const valClient = d.priceClient || d.price;
+            const valReseller = d.priceReseller || d.price;
 
-        // --- COMPRA Y NAVEGACIÓN (FILTRADO ESTRICTO) ---
+            openModal(`
+                <div class="text-left bounce-enter">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">Editar</h3>
+                    <form onsubmit="updateProduct(event, '${pid}')" class="space-y-4">
+                        <div><label class="text-xs font-bold uppercase">Nombre</label><input type="text" id="e-name" value="${d.name}" class="w-full border rounded-xl p-3 text-sm"></div>
+                        <div class="grid grid-cols-2 gap-4">
+                             <div><label class="text-xs font-bold uppercase">Precio Cliente</label><input type="number" id="e-price-client" value="${valClient}" class="w-full border rounded-xl p-3 text-sm"></div>
+                             <div><label class="text-xs font-bold uppercase text-indigo-600">Precio Revendedor</label><input type="number" id="e-price-reseller" value="${valReseller}" class="w-full border border-indigo-100 bg-indigo-50 rounded-xl p-3 text-sm"></div>
+                        </div>
+                        <div><label class="text-xs font-bold uppercase">Categoría</label><select id="e-cat" class="w-full border rounded-xl p-3 text-sm">${optionsHTML}</select></div>
+                        <div><label class="text-xs font-bold uppercase">Imagen</label><input type="url" id="e-img" value="${d.imageUrl}" class="w-full border rounded-xl p-3 text-sm"></div>
+                        <div><label class="text-xs font-bold uppercase">Descripción</label><textarea id="e-desc" class="w-full border rounded-xl p-3 h-20">${d.description}</textarea></div>
+                        <button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">Guardar</button>
+                    </form>
+                </div>`); 
+        };
+
+        window.updateProduct = async (e, pid) => { 
+            e.preventDefault(); 
+            await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), { 
+                name: document.getElementById('e-name').value, 
+                priceClient: Number(document.getElementById('e-price-client').value), 
+                priceReseller: Number(document.getElementById('e-price-reseller').value),
+                price: Number(document.getElementById('e-price-client').value), // Legacy update
+                category: document.getElementById('e-cat').value, 
+                imageUrl: document.getElementById('e-img').value, 
+                description: document.getElementById('e-desc').value 
+            }); 
+            showToast('Actualizado', 'success'); 
+            closeModal(); 
+        };
+
+        // --- COMPRA Y NAVEGACIÓN (CON LÓGICA DE ROLES) ---
         window.openCategoryModule = (categorySlug, title) => {
             const html = `<div class="relative h-full flex flex-col bg-slate-50"><div class="flex justify-between items-center mb-4 px-6 pt-6"><div><h3 class="text-2xl font-black text-slate-800 tracking-tight">${title}</h3><p class="text-xs text-slate-400 font-medium">Selecciona tu plan ideal</p></div></div><div class="overflow-y-auto flex-1 pb-24 px-4 scrollbar-hide"><div id="products-grid" class="grid grid-cols-2 gap-4 pb-4"><div class="col-span-full text-center py-20"><div class="inline-block w-8 h-8 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div></div></div></div>`;
             document.getElementById('modal-content').innerHTML = html; const m = document.getElementById('app-modal'); const mc = document.getElementById('modal-card'); m.classList.remove('items-center', 'justify-center', 'p-4'); m.classList.add('items-end', 'justify-center', 'p-0'); mc.className = "bg-white w-full max-w-4xl h-[85vh] rounded-t-[2.5rem] relative shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden slide-up border-t border-slate-100"; m.classList.remove('hidden'); m.classList.add('flex');
             
-            // Consulta estricta usando el slug
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), where('category', '==', categorySlug));
             
             onSnapshot(q, (snapshot) => {
                 const grid = document.getElementById('products-grid'); if(!grid) return; if(snapshot.empty) { grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="package-open" class="w-12 h-12 mb-2"></i><p class="text-sm">No hay productos en ${title}.</p></div>`; lucide.createIcons(); return; }
-                grid.innerHTML = ''; snapshot.forEach(doc => { const p = doc.data(); const safeDesc = encodeURIComponent(p.description || ''); let ribbon = ((p.stock||0) <= 0) ? `<div class="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-20 flex items-center justify-center"><span class="bg-rose-500 text-white text-[10px] font-bold px-3 py-1 rounded-full rotate-[-10deg] shadow-lg">AGOTADO</span></div>` : (((p.stock||0) <= 3) ? `<div class="absolute top-2 right-2 bg-amber-400 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-sm z-20">¡Pocos!</div>` : ''); const card = document.createElement('div'); card.className = "bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden cursor-pointer group hover:shadow-xl transition-all duration-300 relative bounce-enter"; card.innerHTML = `${ribbon}<div onclick="buyProduct('${doc.id}', '${p.name}', ${p.price}, ${p.stock||0}, '${safeDesc}', '${p.imageUrl}')" class="flex flex-col h-full"><div class="aspect-[4/3] overflow-hidden bg-slate-100 relative"><img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy"><div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div></div><div class="p-4 flex-1 flex flex-col justify-between"><div><h4 class="font-bold text-slate-800 text-sm leading-tight mb-1">${p.name}</h4><p class="text-[10px] text-slate-400 line-clamp-2">${p.description || 'Servicio digital premium'}</p></div><div class="flex justify-between items-center mt-3"><span class="bg-emerald-50 text-emerald-700 font-bold text-sm px-2.5 py-1 rounded-lg">$${p.price}</span><div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div></div></div></div>`; grid.appendChild(card); }); lucide.createIcons();
+                grid.innerHTML = ''; 
+                snapshot.forEach(doc => { 
+                    const p = doc.data(); 
+                    const safeDesc = encodeURIComponent(p.description || ''); 
+                    
+                    // DETERMINAR PRECIO SEGÚN ROL
+                    let effectivePrice = p.priceClient || p.price; // Default cliente
+                    let priceClass = 'bg-emerald-50 text-emerald-700';
+                    let label = '';
+
+                    if (currentUserRole === 'reseller') {
+                        effectivePrice = p.priceReseller || effectivePrice; // Si no tiene precio reseller, usa el normal
+                        priceClass = 'bg-indigo-50 text-indigo-700 border border-indigo-100';
+                        label = '<span class="text-[8px] uppercase font-bold text-indigo-400 block mb-0.5">Precio Rev.</span>';
+                    }
+
+                    let ribbon = ((p.stock||0) <= 0) ? `<div class="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-20 flex items-center justify-center"><span class="bg-rose-500 text-white text-[10px] font-bold px-3 py-1 rounded-full rotate-[-10deg] shadow-lg">AGOTADO</span></div>` : (((p.stock||0) <= 3) ? `<div class="absolute top-2 right-2 bg-amber-400 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-sm z-20">¡Pocos!</div>` : ''); 
+                    const card = document.createElement('div'); card.className = "bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden cursor-pointer group hover:shadow-xl transition-all duration-300 relative bounce-enter"; 
+                    card.innerHTML = `${ribbon}<div onclick="buyProduct('${doc.id}', '${p.name}', ${effectivePrice}, ${p.stock||0}, '${safeDesc}', '${p.imageUrl}')" class="flex flex-col h-full"><div class="aspect-[4/3] overflow-hidden bg-slate-100 relative"><img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy"><div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div></div><div class="p-4 flex-1 flex flex-col justify-between"><div><h4 class="font-bold text-slate-800 text-sm leading-tight mb-1">${p.name}</h4><p class="text-[10px] text-slate-400 line-clamp-2">${p.description || 'Servicio digital premium'}</p></div><div class="flex justify-between items-end mt-3"><div class="${priceClass} px-2.5 py-1 rounded-lg text-right">${label}<span class="font-bold text-sm">$${effectivePrice}</span></div><div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div></div></div></div>`; 
+                    grid.appendChild(card); 
+                }); 
+                lucide.createIcons();
             });
         };
 
         window.buyProduct = (id, name, price, stock, desc, imgUrl) => { 
+            // El precio que llega aquí es visual, la transacción real recalculará por seguridad
             openModal(`
                 <div class="text-center bounce-enter">
                     <div class="mx-auto mb-4 w-24 h-24 relative">
@@ -610,14 +805,14 @@
                         <div class="absolute -bottom-2 -right-2 bg-slate-900 text-white p-1.5 rounded-xl shadow-lg border-2 border-white"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div>
                     </div>
                     <h3 class="text-xl font-bold text-slate-800 mb-1">${name}</h3>
-                    <p class="text-emerald-500 font-bold text-lg mb-6">$${price.toLocaleString()}</p>
+                    <p class="text-emerald-500 font-bold text-lg mb-6">$${price.toLocaleString()} <span class="text-xs text-slate-400 font-normal">MXN</span></p>
                     <div class="bg-slate-50 p-4 rounded-2xl text-left mb-6 border border-slate-100"><p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Incluye</p><p class="text-sm text-slate-600 leading-relaxed">${decodeURIComponent(desc)}</p></div>
                     <button onclick="processPurchase('${id}', '${name}',${price})" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-xl hover:bg-slate-800 active:scale-95 transition-all btn-animate flex items-center justify-center gap-2" ${stock <= 0 ? 'disabled style="opacity:0.5; pointer-events:none;"' : ''}>${stock <= 0 ? 'Agotado' : `Confirmar Compra <i data-lucide="chevron-right" class="w-4 h-4"></i>`}</button>
                 </div>
             `);
         };
 
-        window.processPurchase = async (pid, name, price) => {
+        window.processPurchase = async (pid, name, visualPrice) => {
             if(!currentUser) return showToast('Inicia sesión', 'error');
             const btn = document.querySelector('button[onclick^="processPurchase"]'); btn.disabled = true; btn.innerHTML = `<span class="animate-spin">⌛</span>`;
             try {
@@ -626,18 +821,61 @@
                 const item = invSnap.docs[0].data(); const itemId = invSnap.docs[0].id;
 
                 await runTransaction(db, async (t) => {
-                    const wRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main'); const wSnap = await t.get(wRef);
-                    // FIX DE SALDO: Asegurar conversión numérica estricta
+                    // 1. Obtener Billetera Comprador
+                    const wRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main'); 
+                    const wSnap = await t.get(wRef);
                     const currentBalance = Number(wSnap.data().balance) || 0;
-                    const cost = Number(price);
+                    
+                    // 2. Obtener Producto y calcular precio
+                    const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', pid); 
+                    const pSnap = await t.get(pRef);
+                    const productData = pSnap.data();
+                    
+                    let finalPrice = productData.priceClient || productData.price;
+                    if (currentUserRole === 'reseller') {
+                        finalPrice = productData.priceReseller || finalPrice;
+                    }
+                    
+                    const cost = Number(finalPrice);
                     
                     if(currentBalance < cost) throw new Error("Saldo insuficiente");
                     
-                    const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', pid); const pSnap = await t.get(pRef);
+                    // 3. Verificar Referido (Para comisión del Revendedor)
+                    // Obtenemos los datos actuales del usuario en esta transacción o previamente
+                    // Para asegurar consistencia, lo mejor sería leer el doc de usuario dentro de la transacción, 
+                    // pero por simplicidad y performance leeremos la variable local currentUser + una query si es critico.
+                    // Aquí usamos una lectura directa al doc de usuario para ver el 'referredBy'
+                    const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+                    const userDocSnap = await t.get(userDocRef);
+                    const referrerId = userDocSnap.exists() ? userDocSnap.data().referredBy : null;
+
+                    // Ejecutar descuento
                     t.update(wRef, { balance: (currentBalance - cost) });
                     t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { status: 'sold', soldTo: currentUser.uid, soldAt: serverTimestamp() });
-                    t.update(pRef, { stock: (pSnap.data().stock || 0) - 1 });
+                    t.update(pRef, { stock: (productData.stock || 0) - 1 });
                     t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), { type: 'purchase', amount: cost, description: `Compra: ${name}`, details: { serviceName: item.serviceName, email: item.email, password: item.password, expiryDate: item.expiryDate, duration: item.duration || '1 Mes', terms: item.terms || '' }, itemId: itemId, timestamp: serverTimestamp() });
+
+                    // 4. COMISIÓN AL REVENDEDOR (1%)
+                    if (referrerId) {
+                        const commission = cost * 0.01; // 1%
+                        const resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
+                        const resellerSnap = await t.get(resellerWalletRef);
+                        
+                        if(resellerSnap.exists()) {
+                            const currentProfit = resellerSnap.data().profit || 0;
+                            t.update(resellerWalletRef, { profit: currentProfit + commission });
+                            
+                            // Opcional: Registrar transacción para el revendedor (para que vea de donde viene)
+                            const resellerTxRef = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
+                            t.set(resellerTxRef, {
+                                type: 'deposit', // O un nuevo tipo 'commission'
+                                amount: commission,
+                                description: `Comisión (1%) compra de referido`,
+                                timestamp: serverTimestamp(),
+                                status: 'approved'
+                            });
+                        }
+                    }
                 });
                 showToast('¡Compra exitosa!', 'success'); showTicketModal({...item, serviceName: name});
             } catch (e) { let m = e.message || "Error"; if(m.includes("Saldo")) openChargeModal(); showToast(m, 'error'); closeModal(); }
@@ -790,7 +1028,7 @@
                         <div class="bg-amber-50 border border-amber-100 rounded-xl p-4">
                             <p class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-3 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Datos para Transferir</p>
                             <div class="space-y-2 text-sm text-slate-700">
-                                <div class="flex justify-between"><span class="text-slate-500">Cuenta:</span><span class="font-mono font-bold select-all">123456789101</span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Cuenta:</span><span class="font-mono font-bold select-all">646180402324335362</span></div>
                                 <div class="flex justify-between"><span class="text-slate-500">Nombre:</span><span class="font-bold">Juan Zamora</span></div>
                                 <div class="flex justify-between"><span class="text-slate-500">Concepto:</span><span class="font-bold">Donativo</span></div>
                                 <div class="flex justify-between"><span class="text-slate-500">Referencia:</span><span class="bg-white px-2 py-0.5 rounded border border-amber-200 font-mono text-xs font-bold">RW${Math.floor(Math.random()*1000)}</span></div>
@@ -981,9 +1219,95 @@
 
         // Listeners
         document.getElementById('login-form').addEventListener('submit', async(e)=>{e.preventDefault(); try{await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); showToast('Bienvenido', 'success');}catch(e){showToast('Error credenciales', 'error');}});
-        document.getElementById('register-form').addEventListener('submit', async(e)=>{e.preventDefault(); const p1=document.getElementById('reg-password').value; const p2=document.getElementById('reg-confirm-password').value; if(p1!==p2)return showToast('Contraseñas no coinciden','error'); try{const c=await createUserWithEmailAndPassword(auth, document.getElementById('reg-email').value, p1); await setDoc(doc(db,'artifacts',appId,'users',c.user.uid,'wallet','main'),{balance:0,profit:0}); showToast('Cuenta creada','success');}catch(e){showToast('Error registro','error');}});
+        
+        // REGISTRO CON ROL DEFAULT Y LOGICA DE REFERIDOS
+        document.getElementById('register-form').addEventListener('submit', async(e)=>{
+            e.preventDefault(); 
+            const btn = document.querySelector('#register-form button');
+            const originalText = btn.innerText;
+            btn.disabled = true; btn.innerText = 'Registrando...';
+
+            const p1=document.getElementById('reg-password').value; 
+            const p2=document.getElementById('reg-confirm-password').value; 
+            const email = document.getElementById('reg-email').value;
+            
+            if(p1!==p2) {
+                btn.disabled=false; btn.innerText=originalText;
+                return showToast('Contraseñas no coinciden','error'); 
+            }
+
+            // Obtener referido de la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const referrerId = urlParams.get('ref');
+
+            try{
+                // 1. Crear Usuario Auth
+                const c=await createUserWithEmailAndPassword(auth, email, p1); 
+                const uid = c.user.uid;
+
+                // 2. Ejecutar Lógica (Referidos + Creación de Wallet) en Transacción si hay referido, o normal si no
+                if(referrerId) {
+                    try {
+                        await runTransaction(db, async (t) => {
+                            // Leer Billetera del Revendedor
+                            const resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
+                            const resellerSnap = await t.get(resellerWalletRef);
+                            
+                            if (!resellerSnap.exists()) throw new Error("Revendedor inválido");
+
+                            const resellerBalance = resellerSnap.data().balance || 0;
+                            
+                            if (resellerBalance < 40) throw new Error("El revendedor no tiene saldo suficiente para invitarte.");
+
+                            // Restar 40 al revendedor
+                            t.update(resellerWalletRef, { balance: resellerBalance - 40 });
+
+                            // Crear wallet del nuevo usuario con 40 de saldo
+                            const newWalletRef = doc(db,'artifacts',appId,'users',uid,'wallet','main');
+                            t.set(newWalletRef, { balance: 40, profit: 0, createdAt: serverTimestamp() });
+
+                            // Crear perfil del nuevo usuario
+                            const newUserProfileRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
+                            t.set(newUserProfileRef, { 
+                                email: email, 
+                                uid: uid, 
+                                role: 'client', // Siempre cliente al inicio
+                                referredBy: referrerId, // Guardar quién lo invitó
+                                suspended: false, 
+                                lastLogin: serverTimestamp() 
+                            }, {merge: true});
+
+                            // Registrar transacciones
+                            const resellerTx = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
+                            t.set(resellerTx, { type: 'charge', amount: -40, description: `Bono bienvenida referido: ${email}`, timestamp: serverTimestamp() });
+                            
+                            const newUserTx = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'));
+                            t.set(newUserTx, { type: 'deposit', amount: 40, description: 'Bono de Bienvenida', timestamp: serverTimestamp(), status: 'approved' });
+                        });
+                        showToast('¡Registro con bono exitoso!', 'success');
+                    } catch (txError) {
+                        // Si falla la transacción (ej: revendedor sin saldo), creamos usuario normal sin bono
+                        console.warn("Fallo referido:", txError);
+                        await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { email: email, uid: uid, role: 'client', suspended: false, lastLogin: serverTimestamp() }, {merge: true});
+                        showToast('Registrado (Sin bono: Revendedor sin saldo)', 'info');
+                    }
+                } else {
+                    // Registro Normal
+                    await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { email: email, uid: uid, role: 'client', suspended: false, lastLogin: serverTimestamp() }, {merge: true});
+                    showToast('Cuenta creada (Cliente)','success');
+                }
+
+            }catch(e){
+                console.error(e);
+                showToast('Error registro: ' + e.message,'error');
+                btn.disabled=false; btn.innerText=originalText;
+            }
+        });
+        
         window.handleLogout = async () => { await signOut(auth); document.getElementById('sidebar').classList.add('-translate-x-full'); };
-        document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+        document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); checkReferralParam(); });
     </script>
 </body>
 </html>
