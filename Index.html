@@ -153,6 +153,9 @@
                         <span class="text-sm font-medium">Respuestas Soporte</span>
                     </button>
                     <button onclick="openNotifications(); toggleSidebar();" class="w-full flex items-center gap-3 p-3.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all"><i data-lucide="clock" class="w-5 h-5"></i><span class="text-sm font-medium">Movimientos</span></button>
+                    <button onclick="openRenewalModal(); toggleSidebar();" class="w-full flex items-center gap-3 p-3.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i><span class="text-sm font-medium">Renovar</span>
+                    </button>
                 </div>
                 
                 <div id="admin-menu-items" class="hidden">
@@ -416,8 +419,7 @@
             let html = '';
             window.categoriesCache.forEach(cat => {
                 const color = cat.color || 'slate';
-                // USAMOS EL ID DE LA CATEGORIA, NO EL SLUG
-                html += `<div onclick="openCategoryModule('${cat.id}', '${cat.name}')" class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-5 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 group h-36"><div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-${color}-100 to-${color}-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-inner"><i data-lucide="${cat.icon || 'box'}" class="w-7 h-7 text-${color}-600"></i></div><span class="font-bold text-slate-600 text-xs text-center group-hover:text-slate-900 transition-colors uppercase tracking-wide">${cat.name}</span></div>`;
+                html += `<div onclick="openCategoryModule('${cat.slug || cat.id}', '${cat.name}')" class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-5 flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 group h-36"><div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-${color}-100 to-${color}-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-inner"><i data-lucide="${cat.icon || 'box'}" class="w-7 h-7 text-${color}-600"></i></div><span class="font-bold text-slate-600 text-xs text-center group-hover:text-slate-900 transition-colors uppercase tracking-wide">${cat.name}</span></div>`;
             });
             grid.innerHTML = html; lucide.createIcons();
         }
@@ -427,17 +429,16 @@
             if(!list) return;
             let html = '';
             window.categoriesCache.forEach(cat => {
-                html += `<div class="bg-white p-4 rounded-2xl border border-slate-100 flex flex-col gap-3 relative group"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-${cat.color || 'slate'}-100 flex items-center justify-center text-${cat.color || 'slate'}-600"><i data-lucide="${cat.icon || 'box'}" class="w-5 h-5"></i></div><div><p class="font-bold text-slate-700 text-sm">${cat.name}</p><p class="text-[10px] text-slate-400 font-mono">ID: ${cat.id.substring(0,6)}...</p></div></div><button onclick="deleteCategory('${cat.id}')" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
+                html += `<div class="bg-white p-4 rounded-2xl border border-slate-100 flex flex-col gap-3 relative group"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-${cat.color || 'slate'}-100 flex items-center justify-center text-${cat.color || 'slate'}-600"><i data-lucide="${cat.icon || 'box'}" class="w-5 h-5"></i></div><div><p class="font-bold text-slate-700 text-sm">${cat.name}</p><p class="text-[10px] text-slate-400 font-mono">slug: ${cat.slug}</p></div></div><button onclick="deleteCategory('${cat.id}')" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
             });
             list.innerHTML = html; lucide.createIcons();
         }
 
         window.openAddCategoryModal = () => {
-            // YA NO PEDIMOS SLUG, SOLO NOMBRE, ICONO, COLOR
-            openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Nuevo Servicio</h3><form onsubmit="saveCategory(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nombre</label><input type="text" id="cat-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="cat-icon" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required placeholder="ej: tv"></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Color</label><select id="cat-color" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm"><option value="amber">Ámbar</option><option value="blue">Azul</option><option value="emerald">Esmeralda</option><option value="rose">Rosa</option><option value="purple">Púrpura</option><option value="indigo">Índigo</option></select></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Crear Categoría</button></form></div>`);
+            openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Nuevo Servicio</h3><form onsubmit="saveCategory(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nombre</label><input type="text" id="cat-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Identificador (Slug)</label><input type="text" id="cat-slug" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required placeholder="ej: streaming"></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="cat-icon" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required placeholder="ej: tv"></div><div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Color</label><select id="cat-color" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm"><option value="amber">Ámbar</option><option value="blue">Azul</option><option value="emerald">Esmeralda</option><option value="rose">Rosa</option><option value="purple">Púrpura</option><option value="indigo">Índigo</option></select></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Crear Categoría</button></form></div>`);
         };
 
-        window.saveCategory = async (e) => { e.preventDefault(); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'categories'), { name: document.getElementById('cat-name').value, icon: document.getElementById('cat-icon').value, color: document.getElementById('cat-color').value, createdAt: serverTimestamp() }); showToast('Categoría creada', 'success'); closeModal(); } catch(err) { showToast('Error', 'error'); } };
+        window.saveCategory = async (e) => { e.preventDefault(); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'categories'), { name: document.getElementById('cat-name').value, slug: document.getElementById('cat-slug').value.toLowerCase().trim(), icon: document.getElementById('cat-icon').value, color: document.getElementById('cat-color').value, createdAt: serverTimestamp() }); showToast('Categoría creada', 'success'); closeModal(); } catch(err) { showToast('Error', 'error'); } };
         window.deleteCategory = async (id) => { if(confirm("¿Eliminar categoría?")) try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id)); showToast('Eliminada', 'success'); } catch(err) { showToast('Error', 'error'); } };
 
         // --- DATOS USUARIO ---
@@ -469,7 +470,7 @@
             });
             // Productos
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), (snapshot) => {
-                let html = ''; snapshot.forEach(doc => { const d = doc.data(); html += `<div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-center gap-3 slide-up"><img src="${d.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-slate-100"><div class="flex-1 overflow-hidden"><div class="flex justify-between"><p class="font-bold text-sm text-slate-800 truncate">${d.name}</p><p class="font-bold text-xs text-emerald-600">$${d.price}</p></div><p class="text-[10px] text-slate-400 bg-slate-50 px-1.5 rounded inline-block mt-0.5">${d.categoryName || 'Genérico'}</p><div class="mt-1 text-[10px]">Stock: <b>${d.stock||0}</b></div></div><div class="flex flex-col gap-1"><button onclick="openEditProductModal('${doc.id}')" class="p-2 text-blue-400 hover:bg-blue-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteProfile('${doc.id}')" class="p-2 text-rose-300 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`; });
+                let html = ''; snapshot.forEach(doc => { const d = doc.data(); html += `<div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-center gap-3 slide-up"><img src="${d.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-slate-100"><div class="flex-1 overflow-hidden"><div class="flex justify-between"><p class="font-bold text-sm text-slate-800 truncate">${d.name}</p><p class="font-bold text-xs text-emerald-600">$${d.price}</p></div><p class="text-[10px] text-slate-400 bg-slate-50 px-1.5 rounded inline-block mt-0.5">${d.category}</p><div class="mt-1 text-[10px]">Stock: <b>${d.stock||0}</b></div></div><div class="flex flex-col gap-1"><button onclick="openEditProductModal('${doc.id}')" class="p-2 text-blue-400 hover:bg-blue-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteProfile('${doc.id}')" class="p-2 text-rose-300 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`; });
                 document.getElementById('admin-stock-list').innerHTML = html || '<p class="text-center text-slate-400">Vacío</p>'; lucide.createIcons();
             });
             // Usuarios
@@ -520,14 +521,10 @@
         
         // --- ADMIN: EXPEDIENTE USUARIO MEJORADO ---
         window.openUserHistory = async (uid, email) => {
-            // 1. Obtener Billetera y Datos
+            // 1. Obtener Billetera
             const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'));
             const balance = walletSnap.exists() ? walletSnap.data().balance : 0;
-            const userSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid));
-            let joinedDate = 'Reciente';
-            // Intentar obtener fecha de creación
-            if(walletSnap.exists() && walletSnap.data().createdAt) joinedDate = walletSnap.data().createdAt.toDate().toLocaleDateString();
-            else if (userSnap.exists() && userSnap.data().lastLogin) joinedDate = userSnap.data().lastLogin.toDate().toLocaleDateString(); // Fallback
+            const joinedDate = walletSnap.exists() && walletSnap.data().createdAt ? walletSnap.data().createdAt.toDate().toLocaleDateString() : 'N/A';
 
             openModal(`
                 <div class="h-[80vh] flex flex-col bounce-enter">
@@ -536,14 +533,12 @@
                         <p class="text-sm text-slate-500 font-medium mb-4">${email}</p>
                         
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex flex-col items-center justify-center text-center shadow-sm">
-                                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2"><i data-lucide="wallet" class="w-4 h-4"></i></div>
-                                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Saldo Actual</p>
-                                <p class="text-2xl font-black text-emerald-700">$${balance.toLocaleString()}</p>
+                            <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Saldo Actual</p>
+                                <p class="text-lg font-black text-emerald-700">$${balance.toLocaleString()}</p>
                             </div>
-                            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-center shadow-sm">
-                                <div class="w-8 h-8 rounded-full bg-white text-slate-400 flex items-center justify-center mb-2 border border-slate-100"><i data-lucide="calendar" class="w-4 h-4"></i></div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Miembro desde</p>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Miembro desde</p>
                                 <p class="text-sm font-bold text-slate-700">${joinedDate}</p>
                             </div>
                         </div>
@@ -557,37 +552,27 @@
             const q = query(collection(db,'artifacts',appId,'users',uid,'transactions'), orderBy('timestamp','desc')); 
             const s = await getDocs(q); 
             let h=''; 
-            if(s.empty) h='<div class="text-center text-slate-400 py-10 text-xs">Sin movimientos registrados.</div>';
+            if(s.empty) h='<div class="text-center text-slate-400 py-10 text-xs">Sin movimientos.</div>';
             else {
-                s.forEach(d=>{ const t=d.data(); h+=`<div class="p-3 border rounded-xl bg-slate-50 text-xs flex justify-between items-center"><div class="flex-1"><p class="font-bold text-slate-700">${t.description}</p><span class="text-[10px] text-slate-400">${t.timestamp?.toDate().toLocaleString()}</span></div><span class="font-bold ${t.type==='deposit'?'text-emerald-600':'text-rose-600'} ml-2">${t.amount > 0 ? '$'+t.amount : ''}</span></div>`}); 
+                s.forEach(d=>{ const t=d.data(); h+=`<div class="p-3 border rounded-xl bg-slate-50 text-xs"><div class="flex justify-between"><p class="font-bold">${t.description}</p><span class="text-[10px] text-slate-400">${t.timestamp?.toDate().toLocaleString()}</span></div><p class="font-bold ${t.type==='deposit'?'text-emerald-600':'text-rose-600'} mt-1">${t.amount > 0 ? '$'+t.amount : 'Info'}</p></div>`}); 
             }
             document.getElementById('usr-hist-list').innerHTML=h; 
-            lucide.createIcons();
         };
 
         window.toggleSuspend = async (uid, val) => { await updateDoc(doc(db,'artifacts',appId,'public','data','all_users',uid), {suspended: val}); };
 
         // Producto
-        window.openAddProductModal = () => { 
-            // USAMOS EL ID DE LA CATEGORÍA COMO VALOR (NO EL SLUG, QUE YA ELIMINAMOS)
-            let optionsHTML = window.categoriesCache.length > 0 
-                ? window.categoriesCache.map(c => `<option value="${c.id}" data-name="${c.name}">${c.name}</option>`).join('') 
-                : `<option value="" disabled selected>¡Crea una categoría primero!</option>`; 
-                
-            openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Artículo</h3><form onsubmit="saveProduct(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría</label><select id="p-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none" required>${optionsHTML}</select></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Precio</label><input type="number" id="p-price" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label><textarea id="p-desc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20 resize-none"></textarea></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Guardar</button></form></div>`); 
-        };
+        window.openAddProductModal = () => { let optionsHTML = window.categoriesCache.length > 0 ? window.categoriesCache.map(c => `<option value="${c.slug}">${c.name}</option>`).join('') : `<option value="" disabled selected>Crea categorías primero</option>`; openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Agregar Artículo</h3><form onsubmit="saveProduct(event)" class="space-y-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría</label><select id="p-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required>${optionsHTML}</select></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Precio</label><input type="number" id="p-price" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" required></div></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label><textarea id="p-desc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm h-20 resize-none"></textarea></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2 btn-animate">Guardar</button></form></div>`); };
         
-        // --- GUARDADO ESTRICTO (POR ID) ---
+        // --- GUARDADO ESTRICTO DE CATEGORÍA ---
         window.saveProduct = async (e) => { 
             e.preventDefault(); 
-            const select = document.getElementById('p-category');
-            const catId = select.value; // ID único de Firebase
-            const catName = select.options[select.selectedIndex].text; // Nombre para mostrar
-
+            // Obtenemos el valor directo del select (que es el slug)
+            const selectedCategorySlug = document.getElementById('p-category').value;
+            
             try { 
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { 
-                    categoryId: catId, // ESTO ES LO QUE FILTRA
-                    categoryName: catName, // ESTO ES LO QUE SE VE EN ADMIN
+                    category: selectedCategorySlug, // Guarda el slug, ej: 'perfiles'
                     name: document.getElementById('p-name').value, 
                     imageUrl: document.getElementById('p-image').value, 
                     price: Number(document.getElementById('p-price').value), 
@@ -600,16 +585,16 @@
             } catch(err) { showToast('Error al guardar', 'error'); } 
         };
         
-        window.openEditProductModal = async (pid) => { const d = (await getDoc(doc(db,'artifacts',appId,'public','data','profiles',pid))).data(); let optionsHTML = window.categoriesCache.map(c => `<option value="${c.id}" ${c.id===d.categoryId?'selected':''}>${c.name}</option>`).join(''); openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Editar</h3><form onsubmit="updateProduct(event, '${pid}')" class="space-y-4"><div><label class="text-xs font-bold uppercase">Nombre</label><input type="text" id="e-name" value="${d.name}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Precio</label><input type="number" id="e-price" value="${d.price}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Categoría</label><select id="e-cat" class="w-full border rounded-xl p-3 text-sm">${optionsHTML}</select></div><div><label class="text-xs font-bold uppercase">Imagen</label><input type="url" id="e-img" value="${d.imageUrl}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Descripción</label><textarea id="e-desc" class="w-full border rounded-xl p-3 h-20">${d.description}</textarea></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">Guardar</button></form></div>`); };
-        window.updateProduct = async (e, pid) => { e.preventDefault(); const catSelect = document.getElementById('e-cat'); await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), { name: document.getElementById('e-name').value, price: Number(document.getElementById('e-price').value), categoryId: catSelect.value, categoryName: catSelect.options[catSelect.selectedIndex].text, imageUrl: document.getElementById('e-img').value, description: document.getElementById('e-desc').value }); showToast('Actualizado', 'success'); closeModal(); };
+        window.openEditProductModal = async (pid) => { const d = (await getDoc(doc(db,'artifacts',appId,'public','data','profiles',pid))).data(); let optionsHTML = window.categoriesCache.map(c => `<option value="${c.slug}" ${c.slug===d.category?'selected':''}>${c.name}</option>`).join(''); openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-slate-800 mb-4">Editar</h3><form onsubmit="updateProduct(event, '${pid}')" class="space-y-4"><div><label class="text-xs font-bold uppercase">Nombre</label><input type="text" id="e-name" value="${d.name}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Precio</label><input type="number" id="e-price" value="${d.price}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Categoría</label><select id="e-cat" class="w-full border rounded-xl p-3 text-sm">${optionsHTML}</select></div><div><label class="text-xs font-bold uppercase">Imagen</label><input type="url" id="e-img" value="${d.imageUrl}" class="w-full border rounded-xl p-3 text-sm"></div><div><label class="text-xs font-bold uppercase">Descripción</label><textarea id="e-desc" class="w-full border rounded-xl p-3 h-20">${d.description}</textarea></div><button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">Guardar</button></form></div>`); };
+        window.updateProduct = async (e, pid) => { e.preventDefault(); await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), { name: document.getElementById('e-name').value, price: Number(document.getElementById('e-price').value), category: document.getElementById('e-cat').value, imageUrl: document.getElementById('e-img').value, description: document.getElementById('e-desc').value }); showToast('Actualizado', 'success'); closeModal(); };
 
-        // --- COMPRA Y NAVEGACIÓN (FILTRADO POR ID) ---
-        window.openCategoryModule = (categoryId, title) => {
+        // --- COMPRA Y NAVEGACIÓN (FILTRADO ESTRICTO) ---
+        window.openCategoryModule = (categorySlug, title) => {
             const html = `<div class="relative h-full flex flex-col bg-slate-50"><div class="flex justify-between items-center mb-4 px-6 pt-6"><div><h3 class="text-2xl font-black text-slate-800 tracking-tight">${title}</h3><p class="text-xs text-slate-400 font-medium">Selecciona tu plan ideal</p></div></div><div class="overflow-y-auto flex-1 pb-24 px-4 scrollbar-hide"><div id="products-grid" class="grid grid-cols-2 gap-4 pb-4"><div class="col-span-full text-center py-20"><div class="inline-block w-8 h-8 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div></div></div></div>`;
             document.getElementById('modal-content').innerHTML = html; const m = document.getElementById('app-modal'); const mc = document.getElementById('modal-card'); m.classList.remove('items-center', 'justify-center', 'p-4'); m.classList.add('items-end', 'justify-center', 'p-0'); mc.className = "bg-white w-full max-w-4xl h-[85vh] rounded-t-[2.5rem] relative shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden slide-up border-t border-slate-100"; m.classList.remove('hidden'); m.classList.add('flex');
             
-            // AQUI ESTA LA MAGIA: FILTRA POR ID, NO POR TEXTO
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), where('categoryId', '==', categoryId));
+            // Consulta estricta usando el slug
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), where('category', '==', categorySlug));
             
             onSnapshot(q, (snapshot) => {
                 const grid = document.getElementById('products-grid'); if(!grid) return; if(snapshot.empty) { grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="package-open" class="w-12 h-12 mb-2"></i><p class="text-sm">No hay productos en ${title}.</p></div>`; lucide.createIcons(); return; }
@@ -765,14 +750,8 @@
             } else if (t.type === 'purchase' && t.details) {
                 showTicketModal({...t.details, serviceName: t.description});
             } else if (t.type === 'support_reply') {
-                openModal(`
-                    <div class="text-left bounce-enter p-2">
-                        <div class="flex items-center gap-2 mb-4"><i data-lucide="message-circle" class="text-blue-500"></i><h3 class="font-bold text-lg">Respuesta de Soporte</h3></div>
-                        <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl text-sm text-slate-700 whitespace-pre-wrap">${t.message}</div>
-                        <div class="mt-4 text-right"><span class="text-[10px] text-slate-400">${t.timestamp?.toDate().toLocaleString()}</span></div>
-                        <button onclick="openNotifications()" class="mt-4 w-full bg-slate-100 py-3 rounded-xl font-bold text-slate-500">Volver</button>
-                    </div>
-                `);
+                // Redirigir a la nueva vista detallada de soporte
+                openSupportReplyDetail(t.id);
             } else {
                  openModal(`<div class="p-4 text-center"><p class="text-slate-500">${t.description || t.message || t.title}</p></div>`);
             }
@@ -830,10 +809,10 @@
             } 
         };
 
-        // --- NUEVO: VER RESPUESTAS DE SOPORTE ---
+        // --- NUEVO: MEJORA RESPUESTAS SOPORTE (CLICKEABLES) ---
         window.openSupportReplies = () => {
             const replies = window.userTransactions.filter(t => t.type === 'support_reply');
-            let html = `<div class="text-center mb-4"><h3 class="text-xl font-bold text-slate-800">Respuestas de Soporte</h3></div>`;
+            let html = `<div class="text-center mb-4 bounce-enter"><h3 class="text-xl font-bold text-slate-800">Respuestas de Soporte</h3><p class="text-xs text-slate-400">Toca para leer</p></div>`;
             
             if (replies.length === 0) {
                 html += `<div class="flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="message-circle-off" class="w-12 h-12 mb-2 text-slate-300"></i><p class="text-sm text-slate-400">Sin respuestas nuevas</p></div>`;
@@ -841,19 +820,124 @@
                 html += `<div class="space-y-3">`;
                 replies.forEach(r => {
                     const time = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente';
+                    // Ahora cada tarjeta es un botón
                     html += `
-                        <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl text-left">
+                        <div onclick="openSupportReplyDetail('${r.id}')" class="bg-blue-50 border border-blue-100 p-4 rounded-xl text-left cursor-pointer hover:bg-blue-100 transition-colors group relative">
                             <div class="flex justify-between items-start mb-2">
-                                <span class="text-xs font-bold text-blue-600 uppercase bg-blue-100 px-2 py-0.5 rounded">Respuesta Admin</span>
+                                <span class="text-xs font-bold text-blue-600 uppercase bg-white/50 px-2 py-0.5 rounded flex items-center gap-1"><i data-lucide="mail-open" class="w-3 h-3"></i> Respuesta Admin</span>
                                 <span class="text-[10px] text-slate-400">${time}</span>
                             </div>
-                            <p class="text-sm text-slate-700 whitespace-pre-wrap">${r.message}</p>
+                            <p class="text-sm text-slate-700 line-clamp-2 font-medium">${r.message}</p>
+                            <div class="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="chevron-right" class="w-4 h-4 text-blue-400"></i></div>
                         </div>
                     `;
                 });
                 html += `</div>`;
             }
             openModal(html);
+        };
+
+        // --- NUEVO: DETALLE DE LA RESPUESTA ---
+        window.openSupportReplyDetail = (id) => {
+            const r = window.userTransactions.find(t => t.id === id);
+            if(!r) return;
+            openModal(`
+                <div class="text-left bounce-enter p-1 h-[70vh] flex flex-col">
+                    <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+                        <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center"><i data-lucide="message-circle" class="w-5 h-5"></i></div>
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-800 leading-tight">Mensaje de Soporte</h3>
+                            <p class="text-xs text-slate-400">${r.timestamp ? r.timestamp.toDate().toLocaleString() : ''}</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-sm text-slate-700 whitespace-pre-wrap flex-1 overflow-y-auto shadow-inner leading-relaxed font-medium">${r.message}</div>
+                    <button onclick="openSupportReplies()" class="mt-4 w-full bg-slate-800 text-white py-3.5 rounded-xl font-bold shadow-lg btn-animate flex items-center justify-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver</button>
+                </div>
+            `);
+        };
+
+        // --- NUEVO: SISTEMA DE RENOVACIONES ---
+        window.openRenewalModal = () => {
+            openModal(`
+                <div class="text-center bounce-enter">
+                    <div class="w-16 h-16 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="refresh-cw" class="w-8 h-8"></i></div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Renovar Servicio</h3>
+                    <p class="text-xs text-slate-400 mb-6 px-4">Ingresa el correo de la cuenta que compraste para verificar disponibilidad.</p>
+                    
+                    <form onsubmit="searchRenewal(event)" class="relative">
+                        <i data-lucide="search" class="absolute left-4 top-3.5 w-5 h-5 text-slate-300"></i>
+                        <input type="email" id="renew-email" class="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:border-indigo-400 focus:bg-white transition-all placeholder:text-slate-300" placeholder="ej: cliente@correo.com" required>
+                        <button type="submit" class="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 btn-animate flex items-center justify-center gap-2">Buscar Suscripción</button>
+                    </form>
+                    
+                    <div id="renewal-results" class="mt-6 text-left space-y-3 empty:hidden"></div>
+                </div>
+            `);
+        };
+
+        window.searchRenewal = (e) => {
+            e.preventDefault();
+            const emailQuery = document.getElementById('renew-email').value.trim().toLowerCase();
+            const container = document.getElementById('renewal-results');
+            container.innerHTML = '<div class="text-center py-4"><span class="animate-spin inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full"></span></div>';
+
+            // Buscar en transacciones de compra del usuario
+            const matches = window.userTransactions.filter(t => 
+                t.type === 'purchase' && 
+                t.details && 
+                t.details.email && 
+                t.details.email.toLowerCase() === emailQuery
+            );
+
+            if (matches.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-rose-50 border border-rose-100 p-4 rounded-xl text-center animate-pulse">
+                        <p class="text-xs font-bold text-rose-600 mb-1">No encontrado</p>
+                        <p class="text-[10px] text-slate-500">No tienes compras registradas con este correo.</p>
+                    </div>`;
+            } else {
+                let html = '';
+                matches.forEach(m => {
+                    const isRenewable = "SÍ"; 
+                    const platformName = m.details.serviceName || m.description.replace('Compra: ', '');
+                    
+                    html += `
+                        <div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex flex-col gap-3 slide-up">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-black text-slate-800 text-sm">${platformName}</p>
+                                    <p class="text-[10px] text-slate-400 font-mono mt-0.5">${m.details.email}</p>
+                                </div>
+                                <span class="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-lg border border-indigo-100">Renovable: ${isRenewable}</span>
+                            </div>
+                            
+                            <div class="flex gap-2 mt-1">
+                                <button onclick="requestRenewal('${m.id}', '${platformName}', '${m.details.email}')" class="flex-1 bg-slate-900 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 btn-animate">Solicitar Renovación</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+                lucide.createIcons();
+            }
+        };
+
+        window.requestRenewal = async (txId, platform, email) => {
+            if(!confirm(`¿Solicitar renovación para ${platform}?`)) return;
+            try {
+                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), { 
+                    uid: currentUser.uid, 
+                    email: currentUser.email, 
+                    type: 'renewal', 
+                    description: `Solicitud de renovación para: ${platform}\nCuenta: ${email}\nID Compra Original: ${txId}`, 
+                    timestamp: serverTimestamp(), 
+                    status: 'unread' 
+                });
+                showToast('Solicitud enviada al administrador', 'success');
+                closeModal();
+            } catch (e) {
+                showToast('Error al solicitar', 'error');
+            }
         };
 
         // --- UTILIDADES UI ---
