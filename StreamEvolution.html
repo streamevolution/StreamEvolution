@@ -426,6 +426,7 @@
         let isAdmin = false;
         let currentUserRole = 'client';
         let currentProfit = 0; 
+        let timerInterval;
 
         window.userTransactions = [];
         window.globalNotifications = []; 
@@ -722,16 +723,36 @@
 
         // --- ADMIN PANEL ---
         function initAdminPanel() {
-            // Solicitudes de Saldo
+            // Solicitudes de Saldo (ACTUALIZADO)
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
-                window.adminPendingRequests = []; let html = '';
-                snapshot.forEach(doc => { const d = doc.data(); if(d.status === 'pending') { 
-                    d.id = doc.id;
-                    window.adminPendingRequests.push(d); 
-                    html += `<div class="neumo-card p-4 flex flex-col md:flex-row justify-between items-center gap-3 slide-up" style="border-left: 4px solid var(--color-accent);"><div class="flex-1"><p class="font-bold text-gray-800 text-sm">${d.email}</p><span class="bg-accent/10 text-accent text-[10px] font-bold px-2 py-1 rounded-full neumo-flat">Pendiente</span></div><div class="flex items-center gap-3"><span class="font-bold text-lg text-success">$${d.amount.toLocaleString()}</span><button onclick="event.stopPropagation(); window.approveRecharge('${doc.id}', '${d.uid}', ${d.amount}, '${d.userTxId}')" class="neumo-button bg-gray-900 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-gray-700 flex items-center gap-1 z-10 relative">Aprobar</button></div></div>`; } 
+                window.adminPendingRequests = []; 
+                let html = '';
+                snapshot.forEach(doc => { 
+                    const d = doc.data(); 
+                    if(d.status === 'pending') { 
+                        d.id = doc.id;
+                        window.adminPendingRequests.push(d); 
+                        html += `
+                        <div class="neumo-card p-4 flex flex-col md:flex-row justify-between items-center gap-3 slide-up" style="border-left: 4px solid var(--color-accent);">
+                            <div class="flex-1">
+                                <p class="font-bold text-gray-800 text-sm">${d.email}</p>
+                                <span class="bg-accent/10 text-accent text-[10px] font-bold px-2 py-1 rounded-full neumo-flat">Pendiente</span>
+                                <p class="text-[10px] text-gray-400 mt-1">Expira: ${d.expiresAt ? d.expiresAt.toDate().toLocaleTimeString() : 'N/A'}</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="font-bold text-lg text-success">$${d.amount.toLocaleString()}</span>
+                                <div class="flex gap-2">
+                                    <button onclick="event.stopPropagation(); window.approveRecharge('${doc.id}', '${d.uid}', ${d.amount}, '${d.userTxId}')" class="neumo-button bg-success text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-emerald-600 flex items-center gap-1 shadow-lg" title="Aprobar"><i data-lucide="check" class="w-4 h-4"></i></button>
+                                    <button onclick="event.stopPropagation(); window.rejectRecharge('${doc.id}', '${d.uid}', '${d.userTxId}')" class="neumo-button bg-danger text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-red-600 flex items-center gap-1 shadow-lg" title="Rechazar"><i data-lucide="x" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                        </div>`; 
+                    } 
                 });
                 document.getElementById('admin-requests-list').innerHTML = html || '<div class="text-center py-4 text-gray-400">Sin solicitudes</div>';
-                const badge = document.getElementById('badge-requests'); if(window.adminPendingRequests.length>0){badge.textContent=window.adminPendingRequests.length; badge.classList.remove('hidden');} else badge.classList.add('hidden');
+                const badge = document.getElementById('badge-requests'); 
+                if(window.adminPendingRequests.length>0){badge.textContent=window.adminPendingRequests.length; badge.classList.remove('hidden');} else badge.classList.add('hidden');
+                lucide.createIcons();
             });
             
             // Solicitudes de Renovación
@@ -1456,8 +1477,9 @@
                 let icon='circle', color='text-gray-400', bg='bg-gray-100';
                 let desc = t.title||t.description||t.email;
                 if(t.type==='deposit'){
-                    if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){ icon='clock'; color='text-accent'; bg='bg-accent/10'; desc = 'Recarga Pendiente'; } else { icon='check-circle'; color='text-success'; bg='bg-success/10'; desc = 'Recarga Exitosa'; }
+                    if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){ icon='clock'; color='text-accent'; bg='bg-accent/10'; desc = 'Recarga Pendiente'; } else if (t.status === 'rejected' || t.status === 'cancelled' || t.status === 'Rechazado' || t.status === 'Cancelado') { icon='x-circle'; color='text-danger'; bg='bg-danger/10'; desc = 'Recarga Cancelada'; } else { icon='check-circle'; color='text-success'; bg='bg-success/10'; desc = 'Recarga Exitosa'; }
                 } else if(t.type==='purchase'){ icon='shopping-bag'; color='text-gray-600'; bg='bg-gray-200'; }
+                else if(t.type==='charge'){ icon='alert-octagon'; color='text-rose-600'; bg='bg-rose-100'; }
                 else if(t.type==='support_reply'){ icon='message-circle'; color='text-blue-500'; bg='bg-blue-100'; }
                 else if(t.type==='renewal'){ icon='refresh-cw'; color='text-indigo-500'; bg='bg-indigo-100'; desc = 'Solicitud de Renovación'; }
                 else if(t.isGlobal){ icon='bell'; color='text-indigo-500'; bg='bg-indigo-100'; }
@@ -1470,12 +1492,13 @@
             if(!t) return;
             if(t.type === 'deposit') {
                 let statusColor = 'text-success'; let statusText = 'Éxito';
-                if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){ statusColor = 'text-accent'; statusText = 'Pendiente'; } else if (t.status === 'rejected') { statusColor = 'text-danger'; statusText = 'Cancelado'; }
+                if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){ statusColor = 'text-accent'; statusText = 'Pendiente'; } 
+                else if (t.status === 'rejected' || t.status === 'cancelled' || t.status === 'Rechazado' || t.status === 'Cancelado') { statusColor = 'text-danger'; statusText = 'Cancelado'; }
                 openModal(` <div class="text-center bounce-enter pt-4"> <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="dollar-sign" class="w-8 h-8 text-gray-500"></i></div> <h3 class="text-xl font-bold text-gray-800 mb-1">Detalle de Recarga</h3> <p class="text-xs text-gray-400 mb-6">${t.timestamp?.toDate().toLocaleString()}</p> <div class="neumo-card neumo-inset p-5 space-y-3 text-left"> <div class="flex justify-between"><span class="text-xs font-bold text-gray-400 uppercase">Monto</span><span class="font-bold text-success text-lg">$${t.amount}</span></div> <div class="flex justify-between"><span class="text-xs font-bold text-gray-400 uppercase">Estado</span><span class="font-bold ${statusColor} uppercase text-sm">${statusText}</span></div> ${t.prevBalance ? `<div class="flex justify-between border-t border-gray-200 pt-2"><span class="text-xs text-gray-400">Saldo Anterior</span><span class="text-xs font-mono">$${t.prevBalance}</span></div>` : ''} </div> <button onclick="openNotifications()" class="neumo-button mt-4 text-gray-500 text-xs font-bold hover:text-gray-800">Volver</button> </div> `);
             } else if (t.type === 'purchase' && t.details) { showTicketModal({...t.details, serviceName: t.description}); } else if (t.type === 'support_reply') { openSupportReplyDetail(t.id); } else if (t.type === 'renewal') { if (isAdmin) { viewRenewalDetail(t.id); } else { openModal(`<div class="p-4 text-center"><p class="text-gray-500">Solicitud de Renovación enviada al administrador.</p><p class="text-xs text-gray-400 mt-2">${t.description}</p></div>`); } } else { openModal(`<div class="p-4 text-center"><p class="text-gray-500">${t.description || t.message || t.title}</p></div>`); }
         };
 
-        // --- CARGA SALDO ---
+        // --- CARGA SALDO CON TIMER Y SANCIÓN (NUEVO) ---
         window.openChargeModal = () => { 
             openModal(`
                 <div class="text-center bounce-enter">
@@ -1488,19 +1511,185 @@
             `); 
         };
 
-        window.processRecharge = async (amt) => { 
-            if(!amt) return;
+        window.processRecharge = async (amt) => {
+            if (!amt) return;
             const btn = document.getElementById('confirm-btn');
-            const originalHTML = btn.innerHTML; 
-            btn.innerHTML = `<div class="w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"></div>`; 
-            btn.disabled = true; 
-            try { 
-                const txRef = await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), { type: 'deposit', amount: Number(amt), description: 'Recarga Pendiente', timestamp: serverTimestamp(), status: 'Pending' }); 
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), { uid: currentUser.uid, email: currentUser.email, amount: Number(amt), status: 'pending', timestamp: serverTimestamp(), userTxId: txRef.id }); 
-                showToast('Solicitud enviada', 'success'); 
-                const infoContainer = document.getElementById('payment-info-container');
-                infoContainer.innerHTML = `<div class="mt-6 pt-6 border-t border-dashed border-gray-200 bounce-enter text-left"> <div class="neumo-card neumo-inset p-4"> <p class="text-xs font-bold text-accent uppercase tracking-wider mb-3 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Datos para Transferir</p> <div class="space-y-2 text-sm text-gray-700"> <div class="flex justify-between"><span class="text-gray-500">Cuenta:</span><span class="font-mono font-bold select-all">646180402324335362</span></div> <div class="flex justify-between"><span class="text-gray-500">Nombre:</span><span class="font-bold">Juan Zamora</span></div> <div class="flex justify-between"><span class="text-gray-500">Concepto:</span><span class="font-bold">Donativo</span></div> <div class="flex justify-between"><span class="text-gray-500">Referencia:</span><span class="neumo-card neumo-inset px-2 py-0.5 rounded font-mono text-xs font-bold">RW${Math.floor(Math.random()*1000)}</span></div> </div> </div> <p class="text-[10px] text-gray-400 text-center mt-3">Tu saldo se verá reflejado una vez validado el pago por el administrador.</p> </div>`; lucide.createIcons(); btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Solicitud Enviada`; btn.className = "neumo-button w-full bg-success/10 text-success font-bold py-3 rounded-xl shadow-none cursor-default flex items-center justify-center gap-2"; 
-            } catch(e){ showToast('Error al procesar', 'error'); btn.innerHTML = originalHTML; btn.disabled = false; } 
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<div class="w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"></div>`;
+            btn.disabled = true;
+
+            try {
+                // 1. Verificar sanciones previas (opcional, resetear contador si es otro día)
+                const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+                const userSnap = await getDoc(userDocRef);
+                let strikes = userSnap.data().rechargeStrikes || 0;
+                let lastStrike = userSnap.data().lastStrikeDate ? userSnap.data().lastStrikeDate.toDate() : new Date();
+                
+                // Resetear strikes si es un día nuevo
+                const today = new Date();
+                if(lastStrike.getDate() !== today.getDate() || lastStrike.getMonth() !== today.getMonth()) {
+                    strikes = 0;
+                    await updateDoc(userDocRef, { rechargeStrikes: 0 });
+                }
+
+                // 2. Crear la solicitud
+                const txRef = await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), {
+                    type: 'deposit',
+                    amount: Number(amt),
+                    description: 'Recarga Pendiente (En proceso)',
+                    timestamp: serverTimestamp(),
+                    status: 'Pending'
+                });
+
+                const reqRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    amount: Number(amt),
+                    status: 'pending',
+                    timestamp: serverTimestamp(),
+                    userTxId: txRef.id,
+                    expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutos futuro
+                });
+
+                showToast('Solicitud iniciada. Tienes 10 minutos.', 'info');
+                
+                // 3. Abrir Modal con Timer
+                showPaymentModalWithTimer(reqRef.id, txRef.id, Number(amt), strikes);
+
+            } catch (e) {
+                console.error(e);
+                showToast('Error al procesar solicitud', 'error');
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        };
+
+        window.showPaymentModalWithTimer = (reqId, txId, amount, strikes) => {
+            // Referencia aleatoria para identificar el pago
+            const refCode = `RW${Math.floor(Math.random() * 10000)}`;
+            const strikeWarning = strikes >= 2 
+                ? `<p class="text-rose-500 font-bold text-xs mt-2 animate-pulse">⚠️ ADVERTENCIA: Llevas ${strikes} cancelaciones hoy. Si esta se cancela, se te descontarán $50.</p>` 
+                : `<p class="text-gray-400 text-[10px] mt-2">Intentos fallidos hoy: ${strikes}/3</p>`;
+
+            openModal(`
+                <div class="text-center bounce-enter pt-2">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="text-lg font-bold text-gray-800">Completar Pago</h3>
+                        <div id="countdown-timer" class="text-xl font-black text-rose-500 font-mono bg-rose-50 px-3 py-1 rounded-lg border border-rose-100">10:00</div>
+                    </div>
+
+                    <div class="neumo-card neumo-inset p-4 text-left space-y-3 mb-4">
+                        <p class="text-xs font-bold text-accent uppercase flex items-center gap-2"><i data-lucide="landmark" class="w-4 h-4"></i> Datos Bancarios</p>
+                        
+                        <div class="bg-white/50 p-3 rounded-lg border border-gray-100 space-y-2 text-sm">
+                            <div class="flex justify-between"><span class="text-gray-500">Banco:</span><span class="font-bold">STP / Transferencia</span></div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500">Cuenta CLABE:</span>
+                                <div class="flex gap-2 items-center">
+                                    <span class="font-mono font-bold select-all">646180402324335362</span>
+                                    <i data-lucide="copy" class="w-3 h-3 text-gray-400 cursor-pointer" onclick="navigator.clipboard.writeText('646180402324335362'); showToast('Copiado','success')"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between"><span class="text-gray-500">Beneficiario:</span><span class="font-bold">Juan Zamora</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Monto exacto:</span><span class="font-black text-success">$${amount.toLocaleString()}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Concepto/Ref:</span><span class="font-mono font-bold bg-gray-200 px-1 rounded">${refCode}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 p-3 rounded-xl border border-yellow-100 text-left mb-4">
+                        <p class="text-xs text-yellow-800 font-bold flex items-center gap-1"><i data-lucide="alert-circle" class="w-4 h-4"></i> Importante</p>
+                        <p class="text-[10px] text-yellow-700 mt-1 leading-tight">
+                            Tienes 10 minutos para realizar la transferencia. Si el tiempo expira, la solicitud se cancelará automáticamente.
+                        </p>
+                        ${strikeWarning}
+                    </div>
+
+                    <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mb-2">Ya realicé el pago</button>
+                    <button onclick="cancelRechargeRequest('${reqId}', '${txId}', false)" class="neumo-button w-full text-rose-500 text-xs font-bold py-2">Cancelar Solicitud</button>
+                </div>
+            `);
+            lucide.createIcons();
+            startPaymentTimer(reqId, txId);
+        };
+
+        window.startPaymentTimer = (reqId, txId) => {
+            let timeLeft = 600; // 10 minutos en segundos
+            const display = document.getElementById('countdown-timer');
+            
+            if (timerInterval) clearInterval(timerInterval);
+
+            timerInterval = setInterval(() => {
+                if (!document.getElementById('countdown-timer')) {
+                    clearInterval(timerInterval); // Detener si el modal se cierra
+                    return;
+                }
+
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                display.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    display.textContent = "00:00";
+                    cancelRechargeRequest(reqId, txId, true); // true = fue por timeout
+                }
+            }, 1000);
+        };
+
+        window.cancelRechargeRequest = async (reqId, txId, isTimeout) => {
+            if (!isTimeout && !confirm("¿Seguro que deseas cancelar? Esto contará como intento fallido.")) return;
+
+            try {
+                // 1. Marcar como cancelada en BD
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pending_recharges', reqId), { status: 'cancelled' });
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions', txId), { status: 'Cancelado', description: isTimeout ? 'Recarga Expirada (Timeout)' : 'Recarga Cancelada por Usuario' });
+
+                // 2. Lógica de Sanción
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+                
+                await runTransaction(db, async (t) => {
+                    const userDoc = await t.get(userRef);
+                    let newStrikes = (userDoc.data().rechargeStrikes || 0) + 1;
+                    
+                    // Actualizar contador
+                    t.update(userRef, { 
+                        rechargeStrikes: newStrikes,
+                        lastStrikeDate: serverTimestamp()
+                    });
+
+                    // Aplicar multa si llega a 3
+                    if (newStrikes >= 3) {
+                        const walletRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main');
+                        const walletSnap = await t.get(walletRef);
+                        const currentBal = walletSnap.data().balance || 0;
+
+                        t.update(walletRef, { balance: currentBal - 50 });
+                        
+                        // Registrar transacción de multa
+                        const penaltyTx = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'));
+                        t.set(penaltyTx, {
+                            type: 'charge',
+                            amount: 50,
+                            description: 'MULTA: 3 Recargas Fallidas/Canceladas',
+                            timestamp: serverTimestamp()
+                        });
+                        
+                        // Resetear strikes tras multa (opcional, o dejar que sufra hoy)
+                         t.update(userRef, { rechargeStrikes: 0 }); 
+                    }
+                });
+
+                if (isTimeout) {
+                    alert("⏳ Tiempo agotado. La solicitud ha sido cancelada.");
+                } else {
+                    showToast("Solicitud cancelada.", "info");
+                }
+                closeModal();
+
+            } catch (e) {
+                console.error("Error al cancelar:", e);
+            }
         };
 
         // --- SOPORTE RESPUESTAS ---
@@ -1544,6 +1733,27 @@
                 if(txId) { await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'transactions', txId), { status: 'Éxito' }); }
                 showToast('Saldo cargado correctamente', 'success'); 
             } catch(e) { console.error(e); showToast('Error al aprobar', 'error'); }
+        };
+        
+        // --- RECHAZAR RECARGA (NUEVO) ---
+        window.rejectRecharge = async (reqId, uid, txId) => {
+            if(!confirm('¿Rechazar esta solicitud de recarga?')) return;
+            try {
+                // Actualizar solicitud pública
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pending_recharges', reqId), { status: 'rejected' });
+                
+                // Actualizar transacción del usuario
+                if(txId) { 
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'transactions', txId), { 
+                        status: 'Rechazado',
+                        description: 'Recarga Rechazada por Admin'
+                    }); 
+                }
+                showToast('Solicitud rechazada', 'info');
+            } catch(e) { 
+                console.error(e); 
+                showToast('Error al rechazar', 'error'); 
+            }
         };
 
         window.deleteProfile = async (id) => { if(confirm("¿Borrar producto?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', id)); };
