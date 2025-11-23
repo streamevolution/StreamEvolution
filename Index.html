@@ -13,7 +13,6 @@
         /* --- VARIABLES Y ESTILO BASE NEUMÓRFICO --- */
         :root {
             --color-bg-primary: #f0f0f0;
-            --color-bg-secondary: #f0f0f0; 
             --color-text-dark: #1F2937;
             --color-accent: #007AFF; /* Azul Minimalista */
             --color-success: #10B981;
@@ -51,7 +50,6 @@
             transition: all 0.3s ease;
         }
         
-        /* Efecto de hundimiento (Active/Hover) */
         .neumo-button:hover,
         .neumo-card:hover:not(.neumo-inset):not(.neumo-flat),
         .neumo-button:active {
@@ -59,7 +57,6 @@
             transform: scale(0.98);
         }
 
-        /* Estilo para inputs y elementos presionados (hundidos) */
         .neumo-inset {
             box-shadow: var(--shadow-inset-light), var(--shadow-inset-dark);
             background: var(--color-bg-primary);
@@ -67,21 +64,13 @@
             transition: all 0.3s ease;
         }
 
-        /* Estilo flat (para contenedores sin sombra de elevación) */
         .neumo-flat {
              background: var(--color-bg-primary);
              box-shadow: none;
              border-radius: 0;
         }
 
-        /* --- COLORES ACCENT (PARA TAILWIND) --- */
-        .text-accent { color: var(--color-accent); }
-        .bg-accent { background-color: var(--color-accent); }
-        .shadow-accent { box-shadow: 0 5px 15px rgba(0, 122, 255, 0.3); }
-
         /* --- ANIMACIONES --- */
-        
-        /* Animación Shimmer/Shine (minimalista) */
         .loader-text {
             background: linear-gradient(to right, var(--color-text-dark) 0%, #374151 50%, var(--color-text-dark) 100%);
             -webkit-background-clip: text;
@@ -93,40 +82,31 @@
         
         .pulse-ring { 
             animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; 
-            border: 1px solid rgba(0, 122, 255, 0.3); /* Base de color accent */
+            border: 1px solid rgba(0, 122, 255, 0.3); 
         }
         @keyframes pulse-ring {
             0% { transform: scale(0.7); opacity: 0.6; box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.5); }
             100% { transform: scale(1.3); opacity: 0; box-shadow: 0 0 0 10px rgba(0, 122, 255, 0); }
         }
 
-        /* Rebote para entradas (login/registro) */
-        .bounce-enter { 
-            animation: bounceIn 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000) both; 
-        }
+        .bounce-enter { animation: bounceIn 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000) both; }
         @keyframes bounceIn {
             0% { opacity: 0; transform: scale(0.95); }
             70% { transform: scale(1.02); }
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* Slide up para modales/contenedores */
-        .slide-up { 
-            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
-        }
-        @keyframes slideUp { 
-            from { opacity: 0; transform: translateY(50px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
+        .slide-up { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Ajuste de colores existentes para la paleta neumórfica */
-        .bg-amber-50 { background-color: rgba(0, 122, 255, 0.05); }
-        .text-amber-700 { color: var(--color-accent); }
-        .hover\:bg-amber-100:hover { background-color: rgba(0, 122, 255, 0.1); }
-        .bg-amber-400 { background-color: var(--color-accent); }
-        .text-amber-500 { color: var(--color-accent); }
-        .shadow-amber-200\/20 { box-shadow: 0 4px 6px rgba(0, 122, 255, 0.2); }
-        
+        /* Helpers */
+        .bg-accent { background-color: var(--color-accent); }
+        .text-accent { color: var(--color-accent); }
+        .text-success { color: var(--color-success); }
+        .bg-success { background-color: var(--color-success); }
+        .text-danger { color: var(--color-danger); }
+        .bg-danger { background-color: var(--color-danger); }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="text-gray-800 overflow-x-hidden min-h-screen relative bg-bg-primary selection:bg-accent">
@@ -147,9 +127,8 @@
 
     <div id="auth-container" class="min-h-screen flex flex-col items-center justify-center p-6 hidden bg-bg-primary">
         <div class="mb-10 text-center bounce-enter">
-            <div class="w-16 h-16 bg-gray-900 rounded-2xl flex items-center justify-center text-white font-bold shadow-2xl text-2xl mx-auto mb-5 transform rotate-3 neumo-card" style="box-shadow: 5px 5px 10px rgba(0,0,0,0.2);">SE</div>
+            <div class="w-16 h-16 bg-gray-900 rounded-2xl flex items-center justify-center text-white font-bold shadow-2xl text-2xl mx-auto mb-5 transform rotate-3 neumo-card">SE</div>
             <h1 class="text-3xl font-black text-gray-800 tracking-tight">STREAM <span class="text-accent">EVOLUTION</span></h1>
-            <p class="text-gray-400 text-sm mt-2 font-medium">Acceso al Portal Digital</p>
         </div>
 
         <div class="w-full max-w-sm space-y-6 slide-up" style="animation-delay: 0.1s;">
@@ -175,11 +154,9 @@
 
             <form id="register-form" class="space-y-4 hidden auth-view">
                 <h2 class="text-xl font-bold text-gray-800 mb-2">Registro</h2>
-                
                 <div id="referral-badge" class="hidden bg-indigo-50 text-indigo-600 p-3 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 neumo-card neumo-flat">
                     <i data-lucide="gift" class="w-4 h-4"></i> <span>¡Te han invitado! Recibe $40 de regalo.</span>
                 </div>
-
                 <input type="email" id="reg-email" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="Correo electrónico" required>
                 <input type="password" id="reg-password" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="Contraseña" required>
                 <input type="password" id="reg-confirm-password" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="Confirmar contraseña" required>
@@ -210,7 +187,7 @@
             <div class="flex items-center gap-3">
                 <button onclick="toggleSidebar()" class="neumo-button p-2.5 text-gray-600 hover:bg-gray-100"><i data-lucide="menu" class="w-5 h-5"></i></button>
                 <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center text-white font-bold text-xs neumo-card" style="box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">SE</div>
+                    <div class="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center text-white font-bold text-xs neumo-card">SE</div>
                     <div class="flex flex-col">
                         <h1 class="text-sm font-bold text-gray-700 tracking-tight leading-none">STREAM<span class="text-accent">EVO</span></h1>
                         <span id="header-role-badge" class="text-[8px] uppercase font-black tracking-widest text-gray-400 leading-none mt-0.5">Cliente</span>
@@ -218,7 +195,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <div id="online-badge" class="text-[10px] bg-success/10 text-success px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 border border-success/20 neumo-card neumo-flat"><div class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div> ONLINE</div>
+                <div class="text-[10px] bg-success/10 text-success px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 border border-success/20 neumo-card neumo-flat"><div class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div> ONLINE</div>
                 <button onclick="openNotifications()" class="neumo-button p-2 text-gray-500 hover:text-accent transition-colors relative">
                     <i data-lucide="bell" class="w-5 h-5"></i>
                     <span id="notification-dot" class="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full border border-bg-primary hidden animate-bounce"></span>
@@ -248,11 +225,9 @@
                     <button onclick="openNotifications(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-500 hover:text-gray-800">
                         <i data-lucide="clock" class="w-5 h-5"></i><span class="text-sm font-medium">Movimientos</span>
                     </button>
-                    
                     <button id="btn-invite-reseller" onclick="openInviteModal(); toggleSidebar();" class="neumo-button hidden w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 transition-all">
                         <i data-lucide="users" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
                     </button>
-
                     <button onclick="openRenewalModal(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-500 hover:text-gray-800">
                         <i data-lucide="refresh-cw" class="w-5 h-5"></i><span class="text-sm font-medium">Renovar</span>
                     </button>
@@ -289,7 +264,7 @@
                 </button>
             </section>
 
-            <section class="relative w-full h-44 rounded-[2rem] overflow-hidden shadow-lg group cursor-pointer neumo-card" style="animation-delay: 0.2s; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
+            <section class="relative w-full h-44 rounded-[2rem] overflow-hidden shadow-lg group cursor-pointer neumo-card" style="animation-delay: 0.2s;">
                 <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1593784991095-a205069470b6?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110"></div>
                 <div class="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/60 to-transparent flex items-center px-8">
                     <div class="z-10 max-w-[70%]">
@@ -312,7 +287,7 @@
 
         <main id="admin-view" class="hidden px-5 py-6 space-y-6 max-w-md mx-auto md:max-w-4xl bounce-enter">
             <div id="admin-dashboard-grid" class="space-y-6">
-                <div class="p-8 rounded-[2rem] relative overflow-hidden neumo-card" style="background: var(--color-text-dark); color: white; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
+                <div class="p-8 rounded-[2rem] relative overflow-hidden neumo-card" style="background: var(--color-text-dark); color: white;">
                     <div class="absolute right-0 top-0 w-48 h-48 bg-accent rounded-full blur-3xl opacity-10 transform translate-x-10 -translate-y-10"></div>
                     <h2 class="text-2xl font-bold mb-1 relative z-10">Panel de Control</h2>
                     <p class="text-gray-400 text-sm relative z-10">Gestión integral del ecosistema</p>
@@ -445,12 +420,12 @@
         const db = getFirestore(app);
         const appId = "mi-ecosistema-v1";
         const ADMIN_EMAIL = "mrandroidtutorialeshd@gmail.com";
-        const REFERRAL_COMMISSION_RATE = 0.10; // 10% de comisión
+        const REFERRAL_COMMISSION_RATE = 0.10; 
 
         let currentUser = null;
         let isAdmin = false;
-        let currentUserRole = 'client'; // Por defecto Cliente
-        let currentProfit = 0; // Para almacenar la ganancia actual y usarla en el modal
+        let currentUserRole = 'client';
+        let currentProfit = 0; 
 
         window.userTransactions = [];
         window.globalNotifications = []; 
@@ -460,7 +435,7 @@
         window.categoriesCache = []; 
         window.currentUserHistory = [];
         window.adminPendingRenewals = [];
-        window.inventoryCache = []; // Caché para items de inventario
+        window.inventoryCache = [];
 
         // Audio
         const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
@@ -472,7 +447,6 @@
             const authContainer = document.getElementById('auth-container');
             const dashboardContainer = document.getElementById('dashboard-container');
             
-            // VERIFICACIÓN DE CORREO: Bloquear acceso si no está verificado
             if (user && !user.emailVerified) {
                 await signOut(auth);
                 currentUser = null;
@@ -493,17 +467,15 @@
                         showToast('Cuenta suspendida por administración.', 'error');
                         return;
                     }
-                    // OBTENER ROL
                     currentUserRole = userData.role || 'client';
                 } else {
-                    currentUserRole = 'client'; // Fallback
+                    currentUserRole = 'client'; 
                 }
 
                 currentUser = user;
                 isAdmin = user.email === ADMIN_EMAIL;
                 document.getElementById('sidebar-email').textContent = user.email;
                 
-                // Actualizar UI de rol en sidebar y header
                 const roleLabel = currentUserRole === 'reseller' ? 'Revendedor' : 'Cliente';
                 const roleColor = currentUserRole === 'reseller' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500';
                 document.getElementById('sidebar-role-tag').className = `inline-block mt-2 text-[10px] px-2 py-0.5 rounded font-bold uppercase neumo-card neumo-flat ${currentUserRole === 'reseller' ? 'text-indigo-600' : 'text-gray-500'}`;
@@ -512,7 +484,6 @@
                 document.getElementById('header-role-badge').textContent = roleLabel;
                 document.getElementById('header-role-badge').className = `text-[8px] uppercase font-black tracking-widest leading-none mt-0.5 ${currentUserRole === 'reseller' ? 'text-indigo-500' : 'text-gray-400'}`;
 
-                // MOSTRAR BOTÓN DE INVITAR SI ES REVENDEDOR
                 const btnInvite = document.getElementById('btn-invite-reseller');
                 if(currentUserRole === 'reseller') btnInvite.classList.remove('hidden');
                 else btnInvite.classList.add('hidden');
@@ -540,10 +511,8 @@
                 isAdmin = false;
                 dashboardContainer.classList.add('hidden');
                 authContainer.classList.remove('hidden');
-                // MODIFICACIÓN: Limpiar campos de login al salir
                 document.getElementById('login-email').value = '';
                 document.getElementById('login-password').value = '';
-                // Verificar Referido en URL
                 checkReferralParam();
             }
             
@@ -553,7 +522,7 @@
             }, 1500);
         });
 
-        // --- SISTEMA DE REFERIDOS (URL CHECK) ---
+        // --- SISTEMA DE REFERIDOS ---
         function checkReferralParam() {
             const urlParams = new URLSearchParams(window.location.search);
             const refId = urlParams.get('ref');
@@ -643,7 +612,7 @@
                     const data = doc.data(); 
                     document.getElementById('balance-display').textContent = `$${(data.balance || 0).toLocaleString()}`; 
                     document.getElementById('profit-display').textContent = `$${(data.profit || 0).toLocaleString()}`; 
-                    currentProfit = data.profit || 0; // Almacenar ganancia
+                    currentProfit = data.profit || 0; 
                 } else {
                     setDoc(walletRef, { balance: 0, profit: 0 });
                     currentProfit = 0;
@@ -690,7 +659,6 @@
                     </div>
                 `;
             } else {
-                // MODIFICACIÓN: Nuevo mensaje cuando el saldo es $0.
                 modalContent = `
                     <div class="text-center bounce-enter">
                         <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="dollar-sign" class="w-8 h-8"></i></div>
@@ -731,13 +699,9 @@
                     if (currentProf < amount) {
                         throw new Error("Saldo de ganancia insuficiente (Error de concurrencia).");
                     }
-
-                    // 1. Descontar de Profit
                     t.update(wRef, { profit: currentProf - amount });
-                    // 2. Aumentar Balance
                     t.update(wRef, { balance: currentBal + amount });
                     
-                    // 3. Registrar Transacción
                     const txRef = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'));
                     t.set(txRef, { 
                         type: 'deposit', 
@@ -762,7 +726,6 @@
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
                 window.adminPendingRequests = []; let html = '';
                 snapshot.forEach(doc => { const d = doc.data(); if(d.status === 'pending') { 
-                    // Asignamos ID para poder aprobar
                     d.id = doc.id;
                     window.adminPendingRequests.push(d); 
                     html += `<div class="neumo-card p-4 flex flex-col md:flex-row justify-between items-center gap-3 slide-up" style="border-left: 4px solid var(--color-accent);"><div class="flex-1"><p class="font-bold text-gray-800 text-sm">${d.email}</p><span class="bg-accent/10 text-accent text-[10px] font-bold px-2 py-1 rounded-full neumo-flat">Pendiente</span></div><div class="flex items-center gap-3"><span class="font-bold text-lg text-success">$${d.amount.toLocaleString()}</span><button onclick="event.stopPropagation(); window.approveRecharge('${doc.id}', '${d.uid}', ${d.amount}, '${d.userTxId}')" class="neumo-button bg-gray-900 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-gray-700 flex items-center gap-1 z-10 relative">Aprobar</button></div></div>`; } 
@@ -796,7 +759,6 @@
                 const products = [];
                 snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
 
-                // Agrupar por categoría
                 const groupedProducts = products.reduce((acc, product) => {
                     const category = product.category || 'otros';
                     if (!acc[category]) acc[category] = [];
@@ -804,7 +766,6 @@
                     return acc;
                 }, {});
 
-                // Ordenar categorías por las solicitadas y luego alfabéticamente
                 const customOrder = ['perfiles', 'cuentas', 'música', 'libros', 'licencias', 'game pass', 'otros'];
                 const sortedCategories = Object.keys(groupedProducts).sort((a, b) => {
                     const indexA = customOrder.indexOf(a.toLowerCase());
@@ -850,10 +811,9 @@
                         html += `</div>`;
                     });
                 }
-                
                 document.getElementById('admin-stock-list').innerHTML = html; lucide.createIcons();
             });
-            // Usuarios (MODIFICADO PARA ROLES)
+            // Usuarios 
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'), (snapshot) => {
                 let html = ''; 
                 snapshot.forEach(doc => { 
@@ -861,7 +821,6 @@
                     const susp = d.suspended === true; 
                     const uRole = d.role || 'client';
                     const roleBadgeColor = uRole === 'reseller' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500';
-                    
                     html += `<div onclick="openUserHistory('${d.uid}', '${d.email}')" class="neumo-card p-3 flex flex-col gap-3 relative cursor-pointer hover:scale-105 transition-transform group slide-up">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs neumo-inset">${d.email.substring(0,2).toUpperCase()}</div>
@@ -886,18 +845,25 @@
             // Inventario
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('status', '==', 'available')), (snapshot) => {
                  let html = ''; 
-                 // Cacheamos los items de inventario para poder editarlos más tarde
                  window.inventoryCache = [];
                  snapshot.forEach(doc => { 
                     const i = doc.data(); 
                     i.id = doc.id;
                     window.inventoryCache.push(i);
 
+                    // Determinar qué mostrar en el listado según el tipo
+                    let detailInfo = '';
+                    if (i.link) {
+                        detailInfo = `<p class="text-xs text-indigo-500 mt-1 truncate">Libro: ${i.link}</p>`;
+                    } else {
+                        detailInfo = `<p class="text-xs text-gray-500 mt-1">Expira: ${i.expiryDate || 'N/A'}</p>`;
+                    }
+
                     html += `<div class="neumo-card p-3 flex flex-col gap-2 slide-up">
                         <div class="flex justify-between items-start">
                             <div>
                                 <p class="font-bold text-gray-800 text-sm">${i.serviceName}</p>
-                                <p class="text-xs text-gray-500 mt-1">Expira: ${i.expiryDate}</p>
+                                ${detailInfo}
                             </div>
                             <div class="flex gap-1">
                                 <button onclick="openEditInventoryModal('${doc.id}')" class="neumo-button text-blue-500 hover:text-accent p-1.5 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button>
@@ -908,7 +874,7 @@
                 });
                  document.getElementById('admin-inventory-list').innerHTML = html || '<p class="text-center text-gray-400">Inventario vacío</p>'; lucide.createIcons();
             });
-            // Soporte (Solo reportes de fallo/bug/pago)
+            // Soporte
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '!=', 'renewal'), orderBy('timestamp', 'desc')), (s) => {
                  window.adminPendingReports = []; window.adminReportsCache = []; let html = '';
                  s.forEach(doc => { const r = doc.data(); r.id = doc.id; window.adminReportsCache.push(r); if(r.status!=='replied') window.adminPendingReports.push(r);
@@ -919,9 +885,166 @@
             });
         }
 
-        // --- FUNCIONES DE INVENTARIO (EDITAR) ---
+        // --- FUNCIONES DE INVENTARIO MEJORADAS (NUEVA LÓGICA) ---
+
+        // Función para abrir el modal de Agregar Inventario (Modificada)
+        window.openAddInventoryModal = async () => {
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles')); 
+            const querySnapshot = await getDocs(q);
+            let options = '<option value="" data-category="">Selecciona un Artículo...</option>';
+            
+            querySnapshot.forEach((doc) => { 
+                const data = doc.data(); 
+                // Guardamos la categoría en un atributo data para usarlo en el JS
+                options += `<option value="${doc.id}" data-category="${data.category || 'otros'}" data-name="${data.name}">${data.name}</option>`; 
+            });
+
+            openModal(`
+                <div class="text-left bounce-enter">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Agregar al Inventario</h3>
+                    <form onsubmit="saveInventoryItem(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase">Artículo</label>
+                            <select id="inv-product-select" onchange="toggleInventoryFields()" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" required>
+                                ${options}
+                            </select>
+                        </div>
+
+                        <div id="fields-credentials">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Correo</label><input type="email" id="inv-email" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label><input type="text" id="inv-pass" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                            </div>
+                        </div>
+
+                        <div id="fields-profile-extra" class="hidden grid-cols-2 gap-2 mt-2">
+                             <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Nombre Perfil</label><input type="text" id="inv-profile-name" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                             <div><label class="block text-[10px] font-bold text-gray-400 uppercase">PIN</label><input type="text" id="inv-pin" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                        </div>
+
+                        <div id="fields-book" class="hidden mt-2">
+                           <label class="block text-[10px] font-bold text-gray-400 uppercase">Link del Libro</label>
+                           <input type="url" id="inv-link" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" placeholder="https://...">
+                        </div>
+
+                        <div id="fields-dates" class="grid grid-cols-2 gap-2 mt-2">
+                            <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                            <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Duración</label><select id="inv-duration" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"><option>1 Mes</option><option>3 Meses</option><option>6 Meses</option><option>1 Año</option><option>Permanente</option></select></div>
+                        </div>
+
+                        <div class="mt-2"><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none"></textarea></div>
+                        <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700">Guardar</button>
+                    </form>
+                </div>
+            `);
+        };
+
+        // Función para mostrar/ocultar campos según categoría
+        window.toggleInventoryFields = () => {
+            const select = document.getElementById('inv-product-select');
+            const selectedOption = select.options[select.selectedIndex];
+            const category = selectedOption.getAttribute('data-category');
+
+            const fieldsCreds = document.getElementById('fields-credentials');
+            const fieldsProfile = document.getElementById('fields-profile-extra');
+            const fieldsBook = document.getElementById('fields-book');
+            const fieldsDates = document.getElementById('fields-dates');
+            
+            // Resetear visibilidad
+            fieldsCreds.classList.remove('hidden');
+            fieldsProfile.classList.add('hidden');
+            fieldsBook.classList.add('hidden');
+            fieldsDates.classList.remove('hidden');
+
+            if (category === 'libros') {
+                // Configuración Libros: Solo Link, Pass (reutilizamos o mantenemos visible si se pide), Terminos.
+                // Ocultamos Credenciales (Correo/Pass) - Espera, el prompt dice "contraseña del libro".
+                // Entonces mostramos el input de pass pero ocultamos el de email.
+                document.getElementById('inv-email').parentNode.classList.add('hidden'); // Ocultar email
+                // Movemos Pass a una linea sola si queremos, o lo dejamos ahi.
+                
+                fieldsBook.classList.remove('hidden'); // Mostrar Link
+                fieldsDates.classList.add('hidden'); // Ocultar Fechas
+
+            } else if (category === 'perfiles' || category === 'cuentas') {
+                // Configuración Perfiles/Cuentas: Todo visible + Perfil y PIN
+                document.getElementById('inv-email').parentNode.classList.remove('hidden'); // Mostrar email
+                fieldsProfile.classList.remove('hidden'); // Mostrar Perfil y PIN
+                fieldsProfile.classList.remove('grid'); // Reset para que el add class funcione bien si tailwind purga
+                fieldsProfile.classList.add('grid');
+            } else {
+                // Configuración Default (Otros): Email, Pass, Fechas
+                document.getElementById('inv-email').parentNode.classList.remove('hidden');
+            }
+        };
+
+        // Función Guardar Item Modificada
+        window.saveInventoryItem = async (e) => { 
+            e.preventDefault(); 
+            try { 
+                const select = document.getElementById('inv-product-select'); 
+                const productId = select.value; 
+                const productName = select.options[select.selectedIndex].text; 
+                const category = select.options[select.selectedIndex].getAttribute('data-category');
+
+                let itemData = {
+                    productId, 
+                    serviceName: productName,
+                    category: category,
+                    terms: document.getElementById('inv-terms').value, 
+                    createdAt: serverTimestamp(), 
+                    status: 'available'
+                };
+
+                // Lógica de guardado según categoría
+                if (category === 'libros') {
+                    itemData.link = document.getElementById('inv-link').value;
+                    itemData.password = document.getElementById('inv-pass').value; // Contraseña del libro
+                    if(!itemData.link) return showToast('El link es obligatorio para libros', 'error');
+                } else {
+                    // Para Cuentas, Perfiles y Otros
+                    itemData.email = document.getElementById('inv-email').value;
+                    itemData.password = document.getElementById('inv-pass').value;
+                    itemData.expiryDate = document.getElementById('inv-expiry').value;
+                    itemData.duration = document.getElementById('inv-duration').value;
+                    
+                    if (category === 'perfiles' || category === 'cuentas') {
+                        itemData.profileName = document.getElementById('inv-profile-name').value;
+                        itemData.pin = document.getElementById('inv-pin').value;
+                    }
+                    
+                    if(!itemData.email || !itemData.password) return showToast('Correo y contraseña requeridos', 'error');
+                }
+
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), itemData); 
+                
+                const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId); 
+                await updateDoc(productRef, { stock: increment(1) }); 
+                
+                showToast('Item agregado correctamente', 'success'); 
+                closeModal(); 
+            } catch(e) { 
+                console.error(e);
+                showToast('Error al guardar item', 'error'); 
+            } 
+        };
+
+        window.deleteInventoryItem = async (id) => { 
+            if(confirm("¿Borrar? Reducirá el stock.")) { 
+                const itemRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', id); 
+                const s = await getDoc(itemRef); 
+                if (s.exists()) { 
+                    await deleteDoc(itemRef); 
+                    if (s.data().status === 'available') {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', s.data().productId), { stock: increment(-1) }); 
+                    }
+                    showToast('Eliminado', 'success'); 
+                } 
+            } 
+        };
 
         window.openEditInventoryModal = (id) => {
+            // Nota: Esta función es básica, si se requiere editar campos específicos (como PIN) habría que expandirla similar a saveInventoryItem
             const item = window.inventoryCache.find(i => i.id === id);
             if (!item) return showToast('Item no encontrado', 'error');
 
@@ -929,18 +1052,18 @@
             const durationOptions = durations.map(d => `<option value="${d}" ${d === item.duration ? 'selected' : ''}>${d}</option>`).join('');
 
             openModal(`
-                <div class="text-left bounce-enter"><h3 class="text-lg font-bold text-gray-800 mb-4">Editar Item de Inventario</h3>
+                <div class="text-left bounce-enter"><h3 class="text-lg font-bold text-gray-800 mb-4">Editar Item</h3>
                 <form onsubmit="updateInventoryItem(event, '${id}')" class="space-y-3">
                     <div class="neumo-card neumo-inset p-2 rounded-lg"><label class="block text-[10px] font-bold text-gray-400 uppercase">Artículo</label><p class="font-bold text-sm text-gray-700">${item.serviceName}</p></div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Correo</label><input type="email" id="e-inv-email" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.email}" required></div>
-                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label><input type="text" id="e-inv-pass" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.password}" required></div>
+                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Correo / Link</label><input type="text" id="e-inv-email" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.email || item.link || ''}" required></div>
+                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label><input type="text" id="e-inv-pass" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.password || ''}" required></div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="e-inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.expiryDate}"></div>
+                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="e-inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.expiryDate || ''}"></div>
                         <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Duración</label><select id="e-inv-duration" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm">${durationOptions}</select></div>
                     </div>
-                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="e-inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none">${item.terms}</textarea></div>
+                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="e-inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none">${item.terms || ''}</textarea></div>
                     <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700">Guardar Cambios</button>
                 </form></div>
             `);
@@ -949,14 +1072,19 @@
         window.updateInventoryItem = async (e, id) => {
             e.preventDefault();
             try {
+                // Detectar si es link o email basado en el contenido básico
+                const val = document.getElementById('e-inv-email').value;
+                const isLink = val.includes('http');
+                
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', id), {
-                    email: document.getElementById('e-inv-email').value,
+                    email: !isLink ? val : null,
+                    link: isLink ? val : null,
                     password: document.getElementById('e-inv-pass').value,
                     expiryDate: document.getElementById('e-inv-expiry').value,
                     duration: document.getElementById('e-inv-duration').value,
                     terms: document.getElementById('e-inv-terms').value,
                 });
-                showToast('Item de Inventario actualizado', 'success');
+                showToast('Item actualizado', 'success');
                 closeModal();
             } catch(e) {
                 showToast('Error al actualizar item', 'error');
@@ -984,77 +1112,48 @@
         };
 
         window.approveRenewal = async (id, uid) => {
-            if(!confirm("¿Confirmar que la renovación fue exitosa y cerrar el ticket?")) return;
+            if(!confirm("¿Confirmar renovación?")) return;
             try {
-                // El administrador debe realizar la acción de renovación fuera de la app (ej. dar nueva cuenta o extender).
-                // Aquí solo cerramos el ticket y notificamos al usuario.
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', id), { 
                     status: 'resolved', 
-                    adminReply: 'Su solicitud de renovación ha sido APROBADA y completada. Revise sus datos.',
+                    adminReply: 'Renovación APROBADA.',
                     resolvedAt: serverTimestamp() 
                 });
-                // Notificar al usuario (como una respuesta de soporte)
                 await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'), { 
                     type: 'support_reply', 
                     amount: 0, 
                     description: 'Renovación Aprobada', 
-                    message: 'Su solicitud de renovación ha sido **APROBADA**. El administrador ha realizado los cambios necesarios. Gracias.', 
+                    message: 'Su solicitud de renovación ha sido **APROBADA**.', 
                     timestamp: serverTimestamp() 
                 });
-                showToast('Renovación aprobada y ticket cerrado', 'success');
+                showToast('Renovación aprobada', 'success');
                 closeModal();
             } catch (e) {
-                showToast('Error al aprobar renovación: ' + e.message, 'error');
+                showToast('Error: ' + e.message, 'error');
             }
         };
 
         window.rejectRenewal = async (id) => {
-            if(!confirm("¿Rechazar esta solicitud de renovación?")) return;
+            if(!confirm("¿Rechazar solicitud?")) return;
             try {
                 const r = window.adminPendingRenewals.find(x => x.id === id);
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', id), { 
                     status: 'rejected', 
-                    adminReply: 'Su solicitud de renovación ha sido RECHAZADA. Contacte al administrador para más detalles.',
+                    adminReply: 'Renovación RECHAZADA.',
                     rejectedAt: serverTimestamp() 
                 });
-                // Notificar al usuario
                  await addDoc(collection(db, 'artifacts', appId, 'users', r.uid, 'transactions'), { 
                     type: 'support_reply', 
                     amount: 0, 
                     description: 'Renovación Rechazada', 
-                    message: 'Su solicitud de renovación ha sido **RECHAZADA**. Favor de contactar al administrador para más información.', 
+                    message: 'Su solicitud de renovación ha sido **RECHAZADA**.', 
                     timestamp: serverTimestamp() 
                 });
                 showToast('Renovación rechazada', 'info');
                 closeModal();
             } catch (e) {
-                showToast('Error al rechazar renovación', 'error');
+                showToast('Error', 'error');
             }
-        };
-        // --- FIN FUNCIONES DE RENOVACIÓN DE ADMIN ---
-
-        // --- FUNCIONES RESTAURADAS ---
-        
-        window.openAddInventoryModal = async () => {
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles')); const querySnapshot = await getDocs(q);
-            let options = '<option value="">Selecciona un Artículo...</option>';
-            querySnapshot.forEach((doc) => { const data = doc.data(); options += `<option value="${doc.id}" data-name="${data.name}">${data.name}</option>`; });
-            openModal(` <div class="text-left bounce-enter"><h3 class="text-lg font-bold text-gray-800 mb-4">Agregar al Inventario</h3><form onsubmit="saveInventoryItem(event)" class="space-y-3"><div><label class="block text-[10px] font-bold text-gray-400 uppercase">Artículo</label><select id="inv-product-select" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" required>${options}</select></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] font-bold text-gray-400 uppercase">Correo</label><input type="email" id="inv-email" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" required></div><div><label class="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label><input type="text" id="inv-pass" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" required></div></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div><div><label class="block text-[10px] font-bold text-gray-400 uppercase">Duración</label><select id="inv-duration" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"><option>1 Mes</option><option>3 Meses</option><option>6 Meses</option></select></div></div><div><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none"></textarea></div><button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700">Guardar</button></form></div> `);
-        };
-        window.saveInventoryItem = async (e) => { e.preventDefault(); try { const select = document.getElementById('inv-product-select'); const productId = select.value; const productName = select.options[select.selectedIndex].text; await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), { productId, serviceName: productName, email: document.getElementById('inv-email').value, password: document.getElementById('inv-pass').value, expiryDate: document.getElementById('inv-expiry').value, duration: document.getElementById('inv-duration').value, terms: document.getElementById('inv-terms').value, createdAt: serverTimestamp(), status: 'available' }); const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId); await updateDoc(productRef, { stock: increment(1) }); showToast('Item agregado', 'success'); closeModal(); } catch(e) { showToast('Error', 'error'); } };
-        window.deleteInventoryItem = async (id) => { 
-            if(confirm("¿Borrar? Reducirá el stock.")) { 
-                const itemRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', id); 
-                const s = await getDoc(itemRef); 
-                if (s.exists()) { 
-                    await deleteDoc(itemRef); 
-                    // Nota: Asumiendo que el stock se reduce solo si el item estaba 'available'
-                    if (s.data().status === 'available') {
-                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', s.data().productId), { stock: increment(-1) }); 
-                    }
-                    showToast('Eliminado', 'success'); 
-                } 
-            } 
         };
 
         // Soporte
@@ -1068,83 +1167,21 @@
         // Gestión Usuarios
         window.openAddUserModal = () => { openModal(` <div class="text-left bounce-enter"><h3 class="text-xl font-bold text-gray-800 mb-4">Agregar Usuario</h3><form onsubmit="registerUserByAdmin(event)" class="space-y-4"><div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Correo</label><input type="email" id="new-user-email" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contraseña</label><input type="text" id="new-user-pass" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required minlength="6"></div><button type="submit" class="neumo-button w-full bg-success text-white font-bold py-3 rounded-xl shadow-lg mt-2">Crear</button></form></div> `); };
         
-        // REGISTRO POR ADMIN CON ROL DEFAULT
         window.registerUserByAdmin = async (e) => { e.preventDefault(); const email = document.getElementById('new-user-email').value; const password = document.getElementById('new-user-pass').value; try { const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp"); const secondaryAuth = getAuth(secondaryApp); const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password); await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'wallet', 'main'), { balance: 0, profit: 0, createdAt: serverTimestamp() }); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', cred.user.uid), { email: email, uid: cred.user.uid, role: 'client', lastLogin: serverTimestamp(), suspended: false }, { merge: true }); await signOut(secondaryAuth); showToast('Usuario creado (Cliente)', 'success'); closeModal(); } catch (error) { showToast('Error: ' + error.message, 'error'); } };
-        
         window.openManualBalanceModal = (uid, email) => { openModal(`<div class="text-center bounce-enter"><h3 class="text-xl font-bold text-gray-800 mb-1">Cargar Saldo Manual</h3><p class="text-xs text-gray-400 mb-4">${email}</p><input type="number" id="manual-amount" class="neumo-inset w-full bg-transparent border-none rounded-xl px-4 py-3 text-lg font-bold text-center mb-4" placeholder="$0"><button onclick="confirmManualBalance('${uid}')" class="neumo-button w-full bg-success text-white font-bold py-3 rounded-xl shadow-lg">Confirmar Recarga</button></div>`); };
         window.confirmManualBalance = async (uid) => { const amt = Number(document.getElementById('manual-amount').value); if(!amt) return; const wRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'); await runTransaction(db, async (t) => { const s = await t.get(wRef); t.update(wRef, { balance: (s.data().balance||0) + amt }); const txRef = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions')); t.set(txRef, { type: 'deposit', amount: amt, description: 'Carga Manual Admin', timestamp: serverTimestamp(), prevBalance: s.data().balance, newBalance: (s.data().balance||0) + amt }); }); showToast('Saldo cargado', 'success'); closeModal(); };
-        
-        // --- ADMIN: FUNCIONES DE ROLES ---
-        window.toggleUserRole = async (docId, currentRole) => {
-            const newRole = currentRole === 'client' ? 'reseller' : 'client';
-            if(confirm(`¿Cambiar rol de ${currentRole.toUpperCase()} a ${newRole.toUpperCase()}?`)) {
-                try {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', docId), { role: newRole });
-                    showToast('Rol actualizado a ' + newRole, 'success');
-                } catch(e) {
-                    showToast('Error al cambiar rol', 'error');
-                }
-            }
-        };
-        
+        window.toggleUserRole = async (docId, currentRole) => { const newRole = currentRole === 'client' ? 'reseller' : 'client'; if(confirm(`¿Cambiar rol de ${currentRole.toUpperCase()} a ${newRole.toUpperCase()}?`)) { try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', docId), { role: newRole }); showToast('Rol actualizado a ' + newRole, 'success'); } catch(e) { showToast('Error al cambiar rol', 'error'); } } };
         window.toggleSuspend = async (uid, val) => { await updateDoc(doc(db,'artifacts',appId,'public','data','all_users',uid), {suspended: val}); };
+        window.openUserHistory = async (uid, email) => { const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main')); const balance = walletSnap.exists() ? walletSnap.data().balance : 0; const userDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid)); const role = userDoc.exists() ? (userDoc.data().role || 'client') : 'client'; openModal(`<div class="h-[80vh] flex flex-col bounce-enter"><div class="border-b border-gray-100 pb-4 mb-4"><h3 class="font-bold text-xl text-gray-800 mb-1">Expediente de Usuario</h3><p class="text-sm text-gray-500 font-medium mb-4 flex flex-col gap-1"><span>${email}</span></p><div class="grid grid-cols-2 gap-3"><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-success uppercase tracking-wider">Saldo Actual</p><p class="text-lg font-black text-success">$${balance.toLocaleString()}</p></div></div></div><div class="flex-1 overflow-y-auto scrollbar-hide space-y-2" id="usr-hist-list"><div class="text-center py-10"><div class="animate-spin w-6 h-6 border-2 border-gray-800 border-t-transparent rounded-full mx-auto"></div></div></div></div>`); const q = query(collection(db,'artifacts',appId,'users',uid,'transactions'), orderBy('timestamp','desc')); const s = await getDocs(q); let h=''; if(s.empty) h='<div class="text-center text-gray-400 py-10 text-xs">Sin movimientos.</div>'; else { s.forEach(d=>{ const t=d.data(); h+=`<div class="neumo-card p-3 text-xs"><div class="flex justify-between"><p class="font-bold">${t.description}</p><span class="text-[10px] text-gray-400">${t.timestamp?.toDate().toLocaleString()}</span></div><p class="font-bold ${t.type==='deposit'?'text-success':'text-danger'} mt-1">${t.amount > 0 ? '$'+t.amount : 'Info'}</p></div>`}); } document.getElementById('usr-hist-list').innerHTML=h; };
 
-        window.openUserHistory = async (uid, email) => {
-            const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'));
-            const balance = walletSnap.exists() ? walletSnap.data().balance : 0;
-            const joinedDate = walletSnap.exists() && walletSnap.data().createdAt ? walletSnap.data().createdAt.toDate().toLocaleDateString() : 'N/A';
-            const userDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid));
-            const role = userDoc.exists() ? (userDoc.data().role || 'client') : 'client';
-            const referredBy = userDoc.exists() ? userDoc.data().referredBy : null;
-
-            openModal(`
-                <div class="h-[80vh] flex flex-col bounce-enter">
-                    <div class="border-b border-gray-100 pb-4 mb-4">
-                        <h3 class="font-bold text-xl text-gray-800 mb-1">Expediente de Usuario</h3>
-                        <p class="text-sm text-gray-500 font-medium mb-4 flex flex-col gap-1">
-                            <span>${email}</span>
-                            <div class="flex gap-2">
-                                <span class="text-[10px] uppercase px-2 py-0.5 rounded font-bold bg-gray-100 neumo-flat ${role==='reseller'?'text-indigo-600 bg-indigo-50/50':'text-gray-500'}">${role}</span>
-                                ${referredBy ? `<span class="text-[10px] uppercase px-2 py-0.5 rounded font-bold bg-accent/10 text-accent neumo-flat">Referido: ${referredBy.substring(0,6)}...</span>` : ''}
-                            </div>
-                        </p>
-                        
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="neumo-card neumo-inset p-3">
-                                <p class="text-[10px] font-bold text-success uppercase tracking-wider">Saldo Actual</p>
-                                <p class="text-lg font-black text-success">$${balance.toLocaleString()}</p>
-                            </div>
-                            <div class="neumo-card neumo-inset p-3">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Miembro desde</p>
-                                <p class="text-sm font-bold text-gray-700">${joinedDate}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto scrollbar-hide space-y-2" id="usr-hist-list">
-                        <div class="text-center py-10"><div class="animate-spin w-6 h-6 border-2 border-gray-800 border-t-transparent rounded-full mx-auto"></div></div>
-                    </div>
-                </div>
-            `);
-            
-            const q = query(collection(db,'artifacts',appId,'users',uid,'transactions'), orderBy('timestamp','desc')); 
-            const s = await getDocs(q); 
-            let h=''; 
-            if(s.empty) h='<div class="text-center text-gray-400 py-10 text-xs">Sin movimientos.</div>';
-            else {
-                s.forEach(d=>{ const t=d.data(); h+=`<div class="neumo-card p-3 text-xs"><div class="flex justify-between"><p class="font-bold">${t.description}</p><span class="text-[10px] text-gray-400">${t.timestamp?.toDate().toLocaleString()}</span></div><p class="font-bold ${t.type==='deposit'?'text-success':'text-danger'} mt-1">${t.amount > 0 ? '$'+t.amount : 'Info'}</p></div>`}); 
-            }
-            document.getElementById('usr-hist-list').innerHTML=h; 
-        };
-
-        // --- MODAL INVITAR (SOLO REVENDEDOR) ---
+        // --- MODAL INVITAR ---
         window.openInviteModal = () => {
             const link = `${window.location.origin}${window.location.pathname}?ref=${currentUser.uid}`;
             openModal(`
                 <div class="text-center bounce-enter">
                     <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="users" class="w-8 h-8"></i></div>
                     <h3 class="text-xl font-bold text-gray-800 mb-1">Invita y Gana</h3>
-                    <p class="text-xs text-gray-500 mb-6 px-4">Comparte este enlace. Tu referido recibe <strong>$40</strong> de bienvenida (del saldo del Revendedor) y tú ganas el <strong>10%</strong> de todas sus compras.</p>
-                    
+                    <p class="text-xs text-gray-500 mb-6 px-4">Comparte este enlace. Tu referido recibe <strong>$40</strong> de bienvenida y tú ganas el <strong>10%</strong> de sus compras.</p>
                     <div class="neumo-card neumo-inset p-4 mb-4 flex items-center justify-between gap-3">
                         <span class="text-xs font-mono text-gray-600 truncate select-all">${link}</span>
                         <button onclick="navigator.clipboard.writeText('${link}').then(()=>showToast('Enlace copiado','success'))" class="neumo-button text-indigo-600 hover:bg-indigo-50/50 p-2 rounded-lg"><i data-lucide="copy" class="w-4 h-4"></i></button>
@@ -1153,7 +1190,6 @@
                 </div>
             `);
         }
-
 
         // --- MODALES DE PRODUCTO CON DOBLE PRECIO ---
         window.openAddProductModal = () => { 
@@ -1165,31 +1201,25 @@
                         <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría</label><select id="p-category" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required>${optionsHTML}</select></div>
                         <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
                         <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
-                        
                         <div class="grid grid-cols-2 gap-4">
                             <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Precio Cliente</label><input type="number" id="p-price-client" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="$ Alto"></div>
                             <div><label class="block text-xs font-bold text-indigo-500 uppercase mb-1">Precio Revendedor</label><input type="number" id="p-price-reseller" class="neumo-inset w-full bg-indigo-50/50 border-none rounded-xl p-3 text-sm text-indigo-700 font-bold" required placeholder="$ Bajo"></div>
                         </div>
-                        
                         <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción</label><textarea id="p-desc" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm h-20 resize-none"></textarea></div>
                         <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Guardar</button>
                     </form>
                 </div>`); 
         };
         
-        // GUARDADO DE PRODUCTO CON DOBLE PRECIO
         window.saveProduct = async (e) => { 
             e.preventDefault(); 
-            const selectedCategorySlug = document.getElementById('p-category').value;
-            
             try { 
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { 
-                    category: selectedCategorySlug, 
+                    category: document.getElementById('p-category').value, 
                     name: document.getElementById('p-name').value, 
                     imageUrl: document.getElementById('p-image').value, 
                     priceClient: Number(document.getElementById('p-price-client').value), 
                     priceReseller: Number(document.getElementById('p-price-reseller').value),
-                    // Guardamos priceClient como 'price' por compatibilidad con código viejo si hiciera falta
                     price: Number(document.getElementById('p-price-client').value), 
                     description: document.getElementById('p-desc').value, 
                     stock: 0, 
@@ -1203,8 +1233,6 @@
         window.openEditProductModal = async (pid) => { 
             const d = (await getDoc(doc(db,'artifacts',appId,'public','data','profiles',pid))).data(); 
             let optionsHTML = window.categoriesCache.map(c => `<option value="${c.slug}" ${c.slug===d.category?'selected':''}>${c.name}</option>`).join(''); 
-            
-            // Compatibilidad: Si no existen los campos nuevos, usar el viejo 'price'
             const valClient = d.priceClient || d.price;
             const valReseller = d.priceReseller || d.price;
 
@@ -1231,7 +1259,7 @@
                 name: document.getElementById('e-name').value, 
                 priceClient: Number(document.getElementById('e-price-client').value), 
                 priceReseller: Number(document.getElementById('e-price-reseller').value),
-                price: Number(document.getElementById('e-price-client').value), // Legacy update
+                price: Number(document.getElementById('e-price-client').value),
                 category: document.getElementById('e-cat').value, 
                 imageUrl: document.getElementById('e-img').value, 
                 description: document.getElementById('e-desc').value 
@@ -1240,7 +1268,7 @@
             closeModal(); 
         };
 
-        // --- COMPRA Y NAVEGACIÓN (CON LÓGICA DE ROLES) ---
+        // --- COMPRA Y NAVEGACIÓN ---
         window.openCategoryModule = (categorySlug, title) => {
             const html = `<div class="relative h-full flex flex-col bg-bg-primary"><div class="neumo-flat flex justify-between items-center mb-4 px-6 pt-6"><div><h3 class="text-2xl font-black text-gray-800 tracking-tight">${title}</h3><p class="text-xs text-gray-400 font-medium">Selecciona tu plan ideal</p></div></div><div class="overflow-y-auto flex-1 pb-24 px-4 scrollbar-hide"><div id="products-grid" class="grid grid-cols-2 gap-4 pb-4"><div class="col-span-full text-center py-20"><div class="inline-block w-8 h-8 border-4 border-gray-200 border-t-accent rounded-full animate-spin"></div></div></div></div></div>`;
             document.getElementById('modal-content').innerHTML = html; const m = document.getElementById('app-modal'); const mc = document.getElementById('modal-card'); m.classList.remove('items-center', 'justify-center', 'p-4'); m.classList.add('items-end', 'justify-center', 'p-0'); mc.className = "neumo-card w-full max-w-4xl h-[85vh] rounded-t-[2.5rem] relative shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden slide-up border-t border-gray-100"; m.classList.remove('hidden'); m.classList.add('flex');
@@ -1253,18 +1281,14 @@
                 snapshot.forEach(doc => { 
                     const p = doc.data(); 
                     const safeDesc = encodeURIComponent(p.description || ''); 
-                    
-                    // DETERMINAR PRECIO SEGÚN ROL
-                    let effectivePrice = p.priceClient || p.price; // Default cliente
+                    let effectivePrice = p.priceClient || p.price;
                     let priceClass = 'bg-success/10 text-success';
                     let label = '';
-
                     if (currentUserRole === 'reseller') {
-                        effectivePrice = p.priceReseller || effectivePrice; // Si no tiene precio reseller, usa el normal
+                        effectivePrice = p.priceReseller || effectivePrice;
                         priceClass = 'bg-indigo-50/50 text-indigo-700 border border-indigo-100';
                         label = '<span class="text-[8px] uppercase font-bold text-indigo-400 block mb-0.5">Precio Rev.</span>';
                     }
-
                     let ribbon = ((p.stock||0) <= 0) ? `<div class="absolute inset-0 bg-bg-primary/80 backdrop-blur-[1px] z-20 flex items-center justify-center"><span class="bg-danger text-white text-[10px] font-bold px-3 py-1 rounded-full rotate-[-10deg] shadow-lg neumo-flat">AGOTADO</span></div>` : (((p.stock||0) <= 3) ? `<div class="absolute top-2 right-2 bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-sm z-20 neumo-flat">¡Pocos!</div>` : ''); 
                     const card = document.createElement('div'); card.className = "neumo-card overflow-hidden cursor-pointer group hover:scale-105 relative bounce-enter"; 
                     card.innerHTML = `${ribbon}<div onclick="buyProduct('${doc.id}', '${p.name}', ${effectivePrice}, ${p.stock||0}, '${safeDesc}', '${p.imageUrl}')" class="flex flex-col h-full"><div class="aspect-[4/3] overflow-hidden bg-gray-100 relative"><img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy"><div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div></div><div class="p-4 flex-1 flex flex-col justify-between"><div><h4 class="font-bold text-gray-800 text-sm leading-tight mb-1">${p.name}</h4><p class="text-[10px] text-gray-400 line-clamp-2">${p.description || 'Servicio digital premium'}</p></div><div class="flex justify-between items-end mt-3"><div class="${priceClass} px-2.5 py-1 rounded-lg text-right neumo-flat">${label}<span class="font-bold text-sm">$${effectivePrice}</span></div><div class="neumo-button w-8 h-8 rounded-full bg-bg-primary flex items-center justify-center group-hover:bg-gray-900 group-hover:text-white"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div></div></div></div>`; 
@@ -1275,7 +1299,6 @@
         };
 
         window.buyProduct = (id, name, price, stock, desc, imgUrl) => { 
-            // El precio que llega aquí es visual, la transacción real recalculará por seguridad
             openModal(`
                 <div class="text-center bounce-enter">
                     <div class="mx-auto mb-4 w-24 h-24 relative">
@@ -1299,12 +1322,10 @@
                 const item = invSnap.docs[0].data(); const itemId = invSnap.docs[0].id;
 
                 await runTransaction(db, async (t) => {
-                    // 1. Obtener Billetera Comprador
                     const wRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main'); 
                     const wSnap = await t.get(wRef);
                     const currentBalance = Number(wSnap.data().balance) || 0;
                     
-                    // 2. Obtener Producto y calcular precio
                     const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', pid); 
                     const pSnap = await t.get(pRef);
                     const productData = pSnap.data();
@@ -1313,41 +1334,38 @@
                     if (currentUserRole === 'reseller') {
                         finalPrice = productData.priceReseller || finalPrice;
                     }
-                    
                     const cost = Number(finalPrice);
                     
                     if(currentBalance < cost) throw new Error("Saldo insuficiente");
                     
-                    // 3. Verificar Referido (Para comisión del Revendedor)
                     const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
                     const userDocSnap = await t.get(userDocRef);
                     const referrerId = userDocSnap.exists() ? userDocSnap.data().referredBy : null;
 
-                    // Ejecutar descuento
+                    // Crear detalles incluyendo campos nuevos si existen
+                    const purchaseDetails = { 
+                        serviceName: item.serviceName, 
+                        email: item.email || null, // Puede ser null en libros
+                        link: item.link || null,   // Nuevo campo Libros
+                        password: item.password, 
+                        expiryDate: item.expiryDate || null, 
+                        duration: item.duration || null, 
+                        profileName: item.profileName || null, // Nuevo campo Cuentas
+                        pin: item.pin || null, // Nuevo campo Cuentas
+                        terms: item.terms || '' 
+                    };
+
                     t.update(wRef, { balance: (currentBalance - cost) });
                     t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { status: 'sold', soldTo: currentUser.uid, soldAt: serverTimestamp() });
                     t.update(pRef, { stock: (productData.stock || 0) - 1 });
-                    t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), { type: 'purchase', amount: cost, description: `Compra: ${name}`, details: { serviceName: item.serviceName, email: item.email, password: item.password, expiryDate: item.expiryDate, duration: item.duration || '1 Mes', terms: item.terms || '' }, itemId: itemId, timestamp: serverTimestamp() });
+                    t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), { type: 'purchase', amount: cost, description: `Compra: ${name}`, details: purchaseDetails, itemId: itemId, timestamp: serverTimestamp() });
 
-                    // 4. COMISIÓN AL REVENDEDOR (10%)
                     if (referrerId) {
-                        const commission = cost * REFERRAL_COMMISSION_RATE; // Usar 10%
+                        const commission = cost * REFERRAL_COMMISSION_RATE; 
                         const resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
                         const resellerSnap = await t.get(resellerWalletRef);
-                        
                         if(resellerSnap.exists()) {
-                            const currentProfit = resellerSnap.data().profit || 0;
-                            t.update(resellerWalletRef, { profit: currentProfit + commission });
-                            
-                            // Opcional: Registrar transacción para el revendedor (para que vea de donde viene)
-                            const resellerTxRef = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
-                            t.set(resellerTxRef, {
-                                type: 'deposit', // O un nuevo tipo 'commission'
-                                amount: commission,
-                                description: `Comisión (10%) compra de referido`, 
-                                timestamp: serverTimestamp(),
-                                status: 'approved'
-                            });
+                            t.update(resellerWalletRef, { profit: (resellerSnap.data().profit || 0) + commission });
                         }
                     }
                 });
@@ -1359,6 +1377,30 @@
             const terms = item.terms || "Sin términos adicionales.";
             const safeTerms = encodeURIComponent(terms); 
             
+            // Lógica para mostrar Link (Libro) o Credenciales
+            let mainContent = '';
+            
+            if (item.link) {
+                // Es un Libro
+                mainContent = `
+                    <div class="neumo-card neumo-inset p-3 mb-2"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Enlace de Descarga</p><a href="${item.link}" target="_blank" class="text-sm font-bold text-blue-600 underline truncate block">${item.link}</a></div>
+                    <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-gray-800 font-bold select-all">${item.password}</p></div>
+                `;
+            } else {
+                // Es Cuenta/Perfil
+                mainContent = `
+                    <div class="grid gap-3">
+                        <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Correo</p><p class="font-mono text-sm text-gray-800 font-bold select-all break-all">${item.email}</p></div>
+                        <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-gray-800 font-bold select-all">${item.password}</p></div>
+                        ${item.profileName ? `<div class="grid grid-cols-2 gap-2"><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Perfil</p><p class="text-sm font-bold text-gray-800">${item.profileName}</p></div><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">PIN</p><p class="text-sm font-bold text-gray-800">${item.pin}</p></div></div>` : ''}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Expira</p><p class="text-sm font-bold text-gray-700">${item.expiryDate || 'N/A'}</p></div>
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Duración</p><p class="text-sm font-bold text-gray-700">${item.duration || 'N/A'}</p></div>
+                    </div>
+                `;
+            }
+
             openModal(`
                 <div class="text-center bounce-enter pt-4">
                     <div class="w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="check" class="w-8 h-8"></i></div>
@@ -1367,119 +1409,73 @@
                     
                     <div class="neumo-card neumo-inset p-5 text-left space-y-4 relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-1 h-full bg-success"></div>
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Plataforma</p><p class="text-lg font-black text-gray-800">${item.serviceName}</p></div>
-                        <div class="grid gap-3">
-                            <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Correo</p><p class="font-mono text-sm text-gray-800 font-bold select-all break-all">${item.email}</p></div>
-                            <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-gray-800 font-bold select-all">${item.password}</p></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 pt-2">
-                            <div><p class="text-[10px] font-bold text-gray-400 uppercase">Expira</p><p class="text-sm font-bold text-gray-700">${item.expiryDate || 'N/A'}</p></div>
-                            <div><p class="text-[10px] font-bold text-gray-400 uppercase">Duración</p><p class="text-sm font-bold text-gray-700">${item.duration || '1 Mes'}</p></div>
-                        </div>
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Producto</p><p class="text-lg font-black text-gray-800">${item.serviceName}</p></div>
+                        
+                        ${mainContent}
+                        
                         <div class="pt-3 border-t border-dashed border-gray-200"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Términos y Condiciones</p><p class="text-[10px] text-gray-500 leading-relaxed italic">${terms}</p></div>
                     </div>
 
                     <div class="mt-6 space-y-3">
-                        <button onclick="copyTicketData('${item.serviceName}', '${item.email}', '${item.password}', '${item.expiryDate}', '${item.duration || '1 Mes'}', '${safeTerms}')" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar Ticket</button>
+                        <button onclick="copyTicketData('${item.serviceName}', '${item.email||item.link}', '${item.password}', '${item.expiryDate||''}', '${item.duration || ''}', '${safeTerms}')" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar Ticket</button>
                         <button onclick="closeModal()" class="neumo-button w-full text-gray-500 font-bold text-xs py-2 hover:text-gray-800">Cerrar</button>
                     </div>
                 </div>
             `);
         };
 
-        window.copyTicketData = (srv, mail, pass, exp, dur, encTerms) => {
+        window.copyTicketData = (srv, mailOrLink, pass, exp, dur, encTerms) => {
             const terms = decodeURIComponent(encTerms);
-            const text = `📦 *COMPRA EXITOSA - STREAM EVOLUTION*\n\n📌 *Plataforma:* ${srv}\n📧 *Correo:* ${mail}\n🔑 *Contraseña:* ${pass}\n📅 *Expira:* ${exp}\n⏳ *Duración:* ${dur}\n\n📜 *Términos:* ${terms}\n\n¡Gracias por tu preferencia!`;
+            let text = `📦 *COMPRA EXITOSA - STREAM EVOLUTION*\n\n📌 *Producto:* ${srv}\n`;
+            
+            if(mailOrLink.includes('http')) {
+                 text += `🔗 *Link:* ${mailOrLink}\n`;
+            } else {
+                 text += `📧 *Correo:* ${mailOrLink}\n`;
+            }
+            
+            text += `🔑 *Contraseña:* ${pass}\n`;
+            
+            if(exp) text += `📅 *Expira:* ${exp}\n`;
+            if(dur) text += `⏳ *Duración:* ${dur}\n`;
+            
+            text += `\n📜 *Términos:* ${terms}\n\n¡Gracias por tu preferencia!`;
+            
             navigator.clipboard.writeText(text).then(() => showToast('¡Ticket copiado!', 'success')).catch(() => showToast('Error al copiar', 'error'));
         };
         
-        // --- NOTIFICACIONES Y DETALLES (CORREGIDO) ---
+        // --- NOTIFICACIONES ---
         window.openNotifications = () => { 
             const d = document.getElementById('notification-dot'); if(d) d.style.display='none'; 
             let h=`<div class="text-center mb-4"><h3 class="text-xl font-bold text-gray-800">Notificaciones</h3><p class="text-xs text-gray-400">Actividad Reciente</p></div><div class="space-y-3">`; 
             let all=[...window.globalNotifications, ...window.userTransactions]; 
             if(isAdmin){all=[...all,...window.adminPendingRequests, ...window.adminPendingReports, ...window.adminPendingRenewals]} 
             all.sort((a,b)=>(b.timestamp?.toMillis()||0)-(a.timestamp?.toMillis()||0)); 
-            
             if(all.length===0)h+=`<p class="text-center text-gray-400 py-8">Sin actividad reciente</p>`; 
             else all.forEach(t=>{ 
-                // Lógica visual de estado
                 let icon='circle', color='text-gray-400', bg='bg-gray-100';
                 let desc = t.title||t.description||t.email;
-                
                 if(t.type==='deposit'){
-                    if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){
-                        icon='clock'; color='text-accent'; bg='bg-accent/10'; desc = 'Recarga Pendiente';
-                    } else {
-                        icon='check-circle'; color='text-success'; bg='bg-success/10'; desc = 'Recarga Exitosa';
-                    }
+                    if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){ icon='clock'; color='text-accent'; bg='bg-accent/10'; desc = 'Recarga Pendiente'; } else { icon='check-circle'; color='text-success'; bg='bg-success/10'; desc = 'Recarga Exitosa'; }
                 } else if(t.type==='purchase'){ icon='shopping-bag'; color='text-gray-600'; bg='bg-gray-200'; }
                 else if(t.type==='support_reply'){ icon='message-circle'; color='text-blue-500'; bg='bg-blue-100'; }
                 else if(t.type==='renewal'){ icon='refresh-cw'; color='text-indigo-500'; bg='bg-indigo-100'; desc = 'Solicitud de Renovación'; }
                 else if(t.isGlobal){ icon='bell'; color='text-indigo-500'; bg='bg-indigo-100'; }
-
-                h+=`<div onclick="openTransactionDetail('${t.id}')" class="neumo-card p-3 flex justify-between items-center cursor-pointer hover:scale-105 transition-transform group">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl ${bg} flex items-center justify-center ${color} shadow-sm neumo-inset"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
-                        <div><p class="font-bold text-xs text-gray-700 line-clamp-1">${desc}</p><p class="text-[10px] text-gray-400">${t.timestamp?.toDate().toLocaleString()}</p></div>
-                    </div>
-                </div>`;
+                h+=`<div onclick="openTransactionDetail('${t.id}')" class="neumo-card p-3 flex justify-between items-center cursor-pointer hover:scale-105 transition-transform group"> <div class="flex items-center gap-3"> <div class="w-10 h-10 rounded-xl ${bg} flex items-center justify-center ${color} shadow-sm neumo-inset"><i data-lucide="${icon}" class="w-5 h-5"></i></div> <div><p class="font-bold text-xs text-gray-700 line-clamp-1">${desc}</p><p class="text-[10px] text-gray-400">${t.timestamp?.toDate().toLocaleString()}</p></div> </div> </div>`;
             }); 
-            h+=`</div>`; 
-            openModal(h); 
+            h+=`</div>`; openModal(h); 
         };
-
         window.openTransactionDetail = (id) => {
-            // Buscar en todas las listas posibles
-            let t = window.userTransactions.find(x => x.id === id) || 
-                    window.globalNotifications.find(x => x.id === id) || 
-                    window.adminPendingRequests.find(x => x.id === id) ||
-                    window.adminPendingRenewals.find(x => x.id === id); // Incluir renovaciones
-            
+            let t = window.userTransactions.find(x => x.id === id) || window.globalNotifications.find(x => x.id === id) || window.adminPendingRequests.find(x => x.id === id) || window.adminPendingRenewals.find(x => x.id === id); 
             if(!t) return;
-
             if(t.type === 'deposit') {
-                let statusColor = 'text-success';
-                let statusText = 'Éxito';
-                
-                if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){
-                    statusColor = 'text-accent'; statusText = 'Pendiente';
-                } else if (t.status === 'rejected') {
-                    statusColor = 'text-danger'; statusText = 'Cancelado';
-                }
-
-                openModal(`
-                    <div class="text-center bounce-enter pt-4">
-                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="dollar-sign" class="w-8 h-8 text-gray-500"></i></div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-1">Detalle de Recarga</h3>
-                        <p class="text-xs text-gray-400 mb-6">${t.timestamp?.toDate().toLocaleString()}</p>
-                        <div class="neumo-card neumo-inset p-5 space-y-3 text-left">
-                            <div class="flex justify-between"><span class="text-xs font-bold text-gray-400 uppercase">Monto</span><span class="font-bold text-success text-lg">$${t.amount}</span></div>
-                            <div class="flex justify-between"><span class="text-xs font-bold text-gray-400 uppercase">Estado</span><span class="font-bold ${statusColor} uppercase text-sm">${statusText}</span></div>
-                            ${t.prevBalance ? `<div class="flex justify-between border-t border-gray-200 pt-2"><span class="text-xs text-gray-400">Saldo Anterior</span><span class="text-xs font-mono">$${t.prevBalance}</span></div>` : ''}
-                        </div>
-                        <button onclick="openNotifications()" class="neumo-button mt-4 text-gray-500 text-xs font-bold hover:text-gray-800">Volver</button>
-                    </div>
-                `);
-            } else if (t.type === 'purchase' && t.details) {
-                showTicketModal({...t.details, serviceName: t.description});
-            } else if (t.type === 'support_reply') {
-                // Redirigir a la nueva vista detallada de soporte
-                openSupportReplyDetail(t.id);
-            } else if (t.type === 'renewal') {
-                 // Si es admin, mostramos detalle de renovación. Si es usuario, mostramos la respuesta de soporte.
-                 if (isAdmin) {
-                    viewRenewalDetail(t.id);
-                 } else {
-                    // Para el usuario, una solicitud de renovación es solo una entrada de historial.
-                    openModal(`<div class="p-4 text-center"><p class="text-gray-500">Solicitud de Renovación enviada al administrador.</p><p class="text-xs text-gray-400 mt-2">${t.description}</p></div>`);
-                 }
-            } else {
-                 openModal(`<div class="p-4 text-center"><p class="text-gray-500">${t.description || t.message || t.title}</p></div>`);
-            }
+                let statusColor = 'text-success'; let statusText = 'Éxito';
+                if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){ statusColor = 'text-accent'; statusText = 'Pendiente'; } else if (t.status === 'rejected') { statusColor = 'text-danger'; statusText = 'Cancelado'; }
+                openModal(` <div class="text-center bounce-enter pt-4"> <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="dollar-sign" class="w-8 h-8 text-gray-500"></i></div> <h3 class="text-xl font-bold text-gray-800 mb-1">Detalle de Recarga</h3> <p class="text-xs text-gray-400 mb-6">${t.timestamp?.toDate().toLocaleString()}</p> <div class="neumo-card neumo-inset p-5 space-y-3 text-left"> <div class="flex justify-between"><span class="text-xs font-bold text-gray-400 uppercase">Monto</span><span class="font-bold text-success text-lg">$${t.amount}</span></div> <div class="flex justify-between"><span class="text-xs font-bold text-gray-400 uppercase">Estado</span><span class="font-bold ${statusColor} uppercase text-sm">${statusText}</span></div> ${t.prevBalance ? `<div class="flex justify-between border-t border-gray-200 pt-2"><span class="text-xs text-gray-400">Saldo Anterior</span><span class="text-xs font-mono">$${t.prevBalance}</span></div>` : ''} </div> <button onclick="openNotifications()" class="neumo-button mt-4 text-gray-500 text-xs font-bold hover:text-gray-800">Volver</button> </div> `);
+            } else if (t.type === 'purchase' && t.details) { showTicketModal({...t.details, serviceName: t.description}); } else if (t.type === 'support_reply') { openSupportReplyDetail(t.id); } else if (t.type === 'renewal') { if (isAdmin) { viewRenewalDetail(t.id); } else { openModal(`<div class="p-4 text-center"><p class="text-gray-500">Solicitud de Renovación enviada al administrador.</p><p class="text-xs text-gray-400 mt-2">${t.description}</p></div>`); } } else { openModal(`<div class="p-4 text-center"><p class="text-gray-500">${t.description || t.message || t.title}</p></div>`); }
         };
 
-        // --- MODAL DE CARGA DE SALDO (Restaurado con datos bancarios) ---
+        // --- CARGA SALDO ---
         window.openChargeModal = () => { 
             openModal(`
                 <div class="text-center bounce-enter">
@@ -1498,169 +1494,32 @@
             const originalHTML = btn.innerHTML; 
             btn.innerHTML = `<div class="w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"></div>`; 
             btn.disabled = true; 
-            
             try { 
                 const txRef = await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), { type: 'deposit', amount: Number(amt), description: 'Recarga Pendiente', timestamp: serverTimestamp(), status: 'Pending' }); 
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), { uid: currentUser.uid, email: currentUser.email, amount: Number(amt), status: 'pending', timestamp: serverTimestamp(), userTxId: txRef.id }); 
-                
                 showToast('Solicitud enviada', 'success'); 
-                
-                // Actualizar UI con datos bancarios
                 const infoContainer = document.getElementById('payment-info-container');
-                infoContainer.innerHTML = `
-                    <div class="mt-6 pt-6 border-t border-dashed border-gray-200 bounce-enter text-left">
-                        <div class="neumo-card neumo-inset p-4">
-                            <p class="text-xs font-bold text-accent uppercase tracking-wider mb-3 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Datos para Transferir</p>
-                            <div class="space-y-2 text-sm text-gray-700">
-                                <div class="flex justify-between"><span class="text-gray-500">Cuenta:</span><span class="font-mono font-bold select-all">646180402324335362</span></div>
-                                <div class="flex justify-between"><span class="text-gray-500">Nombre:</span><span class="font-bold">Juan Zamora</span></div>
-                                <div class="flex justify-between"><span class="text-gray-500">Concepto:</span><span class="font-bold">Donativo</span></div>
-                                <div class="flex justify-between"><span class="text-gray-500">Referencia:</span><span class="neumo-card neumo-inset px-2 py-0.5 rounded font-mono text-xs font-bold">RW${Math.floor(Math.random()*1000)}</span></div>
-                            </div>
-                        </div>
-                        <p class="text-[10px] text-gray-400 text-center mt-3">Tu saldo se verá reflejado una vez validado el pago por el administrador.</p>
-                    </div>`; 
-                lucide.createIcons(); 
-                
-                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Solicitud Enviada`; 
-                btn.className = "neumo-button w-full bg-success/10 text-success font-bold py-3 rounded-xl shadow-none cursor-default flex items-center justify-center gap-2"; 
-            } catch(e){ 
-                showToast('Error al procesar', 'error'); 
-                btn.innerHTML = originalHTML; 
-                btn.disabled = false; 
-            } 
+                infoContainer.innerHTML = `<div class="mt-6 pt-6 border-t border-dashed border-gray-200 bounce-enter text-left"> <div class="neumo-card neumo-inset p-4"> <p class="text-xs font-bold text-accent uppercase tracking-wider mb-3 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Datos para Transferir</p> <div class="space-y-2 text-sm text-gray-700"> <div class="flex justify-between"><span class="text-gray-500">Cuenta:</span><span class="font-mono font-bold select-all">646180402324335362</span></div> <div class="flex justify-between"><span class="text-gray-500">Nombre:</span><span class="font-bold">Juan Zamora</span></div> <div class="flex justify-between"><span class="text-gray-500">Concepto:</span><span class="font-bold">Donativo</span></div> <div class="flex justify-between"><span class="text-gray-500">Referencia:</span><span class="neumo-card neumo-inset px-2 py-0.5 rounded font-mono text-xs font-bold">RW${Math.floor(Math.random()*1000)}</span></div> </div> </div> <p class="text-[10px] text-gray-400 text-center mt-3">Tu saldo se verá reflejado una vez validado el pago por el administrador.</p> </div>`; lucide.createIcons(); btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Solicitud Enviada`; btn.className = "neumo-button w-full bg-success/10 text-success font-bold py-3 rounded-xl shadow-none cursor-default flex items-center justify-center gap-2"; 
+            } catch(e){ showToast('Error al procesar', 'error'); btn.innerHTML = originalHTML; btn.disabled = false; } 
         };
 
-        // --- NUEVO: MEJORA RESPUESTAS SOPORTE (CLICKEABLES) ---
+        // --- SOPORTE RESPUESTAS ---
         window.openSupportReplies = () => {
             const replies = window.userTransactions.filter(t => t.type === 'support_reply');
             let html = `<div class="text-center mb-4 bounce-enter"><h3 class="text-xl font-bold text-gray-800">Respuestas de Soporte</h3><p class="text-xs text-gray-400">Toca para leer</p></div>`;
-            
-            if (replies.length === 0) {
-                html += `<div class="flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="message-circle-off" class="w-12 h-12 mb-2 text-gray-300"></i><p class="text-sm text-gray-400">Sin respuestas nuevas</p></div>`;
-            } else {
-                html += `<div class="space-y-3">`;
-                replies.forEach(r => {
-                    const time = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente';
-                    // Ahora cada tarjeta es un botón
-                    html += `
-                        <div onclick="openSupportReplyDetail('${r.id}')" class="neumo-card neumo-inset p-4 rounded-xl text-left cursor-pointer hover:scale-[0.99] transition-transform group relative">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="text-xs font-bold text-blue-600 uppercase bg-blue-50/50 px-2 py-0.5 rounded flex items-center gap-1 neumo-flat"><i data-lucide="mail-open" class="w-3 h-3"></i> Respuesta Admin</span>
-                                <span class="text-[10px] text-gray-400">${time}</span>
-                            </div>
-                            <p class="text-sm text-gray-700 line-clamp-2 font-medium">${r.message}</p>
-                            <div class="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="chevron-right" class="w-4 h-4 text-blue-400"></i></div>
-                        </div>
-                    `;
-                });
-                html += `</div>`;
-            }
-            openModal(html);
+            if (replies.length === 0) { html += `<div class="flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="message-circle-off" class="w-12 h-12 mb-2 text-gray-300"></i><p class="text-sm text-gray-400">Sin respuestas nuevas</p></div>`; } else { html += `<div class="space-y-3">`; replies.forEach(r => { const time = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente'; html += ` <div onclick="openSupportReplyDetail('${r.id}')" class="neumo-card neumo-inset p-4 rounded-xl text-left cursor-pointer hover:scale-[0.99] transition-transform group relative"> <div class="flex justify-between items-start mb-2"> <span class="text-xs font-bold text-blue-600 uppercase bg-blue-50/50 px-2 py-0.5 rounded flex items-center gap-1 neumo-flat"><i data-lucide="mail-open" class="w-3 h-3"></i> Respuesta Admin</span> <span class="text-[10px] text-gray-400">${time}</span> </div> <p class="text-sm text-gray-700 line-clamp-2 font-medium">${r.message}</p> <div class="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="chevron-right" class="w-4 h-4 text-blue-400"></i></div> </div> `; }); html += `</div>`; } openModal(html);
         };
-
-        // --- NUEVO: DETALLE DE LA RESPUESTA ---
         window.openSupportReplyDetail = (id) => {
-            const r = window.userTransactions.find(t => t.id === id);
-            if(!r) return;
-            openModal(`
-                <div class="text-left bounce-enter p-1 h-[70vh] flex flex-col">
-                    <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                        <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center neumo-card neumo-inset"><i data-lucide="message-circle" class="w-5 h-5"></i></div>
-                        <div>
-                            <h3 class="font-bold text-lg text-gray-800 leading-tight">Mensaje de Soporte</h3>
-                            <p class="text-xs text-gray-400">${r.timestamp ? r.timestamp.toDate().toLocaleString() : ''}</p>
-                        </div>
-                    </div>
-                    <div class="neumo-card neumo-inset p-5 rounded-2xl text-sm text-gray-700 whitespace-pre-wrap flex-1 overflow-y-auto leading-relaxed font-medium">${r.message}</div>
-                    <button onclick="openSupportReplies()" class="neumo-button mt-4 w-full bg-gray-900 text-white py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver</button>
-                </div>
-            `);
+            const r = window.userTransactions.find(t => t.id === id); if(!r) return;
+            openModal(` <div class="text-left bounce-enter p-1 h-[70vh] flex flex-col"> <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4"> <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center neumo-card neumo-inset"><i data-lucide="message-circle" class="w-5 h-5"></i></div> <div> <h3 class="font-bold text-lg text-gray-800 leading-tight">Mensaje de Soporte</h3> <p class="text-xs text-gray-400">${r.timestamp ? r.timestamp.toDate().toLocaleString() : ''}</p> </div> </div> <div class="neumo-card neumo-inset p-5 rounded-2xl text-sm text-gray-700 whitespace-pre-wrap flex-1 overflow-y-auto leading-relaxed font-medium">${r.message}</div> <button onclick="openSupportReplies()" class="neumo-button mt-4 w-full bg-gray-900 text-white py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver</button> </div> `);
         };
 
-        // --- NUEVO: SISTEMA DE RENOVACIONES ---
+        // --- RENOVACIONES CLIENTE ---
         window.openRenewalModal = () => {
-            openModal(`
-                <div class="text-center bounce-enter">
-                    <div class="w-16 h-16 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="refresh-cw" class="w-8 h-8"></i></div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">Renovar Servicio</h3>
-                    <p class="text-xs text-gray-400 mb-6 px-4">Ingresa el correo de la cuenta que compraste para verificar disponibilidad.</p>
-                    
-                    <form onsubmit="searchRenewal(event)" class="relative">
-                        <i data-lucide="search" class="absolute left-4 top-3.5 w-5 h-5 text-gray-300"></i>
-                        <input type="email" id="renew-email" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 pl-12 pr-4 text-gray-700 font-medium placeholder:text-gray-400 focus:ring-0 focus:outline-none" placeholder="ej: cliente@correo.com" required>
-                        <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 flex items-center justify-center gap-2">Buscar Suscripción</button>
-                    </form>
-                    
-                    <div id="renewal-results" class="mt-6 text-left space-y-3 empty:hidden"></div>
-                </div>
-            `);
+            openModal(` <div class="text-center bounce-enter"> <div class="w-16 h-16 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="refresh-cw" class="w-8 h-8"></i></div> <h3 class="text-xl font-bold text-gray-800 mb-2">Renovar Servicio</h3> <p class="text-xs text-gray-400 mb-6 px-4">Ingresa el correo de la cuenta que compraste para verificar disponibilidad.</p> <form onsubmit="searchRenewal(event)" class="relative"> <i data-lucide="search" class="absolute left-4 top-3.5 w-5 h-5 text-gray-300"></i> <input type="email" id="renew-email" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 pl-12 pr-4 text-gray-700 font-medium placeholder:text-gray-400 focus:ring-0 focus:outline-none" placeholder="ej: cliente@correo.com" required> <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 flex items-center justify-center gap-2">Buscar Suscripción</button> </form> <div id="renewal-results" class="mt-6 text-left space-y-3 empty:hidden"></div> </div> `);
         };
-
-        window.searchRenewal = (e) => {
-            e.preventDefault();
-            const emailQuery = document.getElementById('renew-email').value.trim().toLowerCase();
-            const container = document.getElementById('renewal-results');
-            container.innerHTML = '<div class="text-center py-4"><span class="animate-spin inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full"></span></div>';
-
-            // Buscar en transacciones de compra del usuario
-            const matches = window.userTransactions.filter(t => 
-                t.type === 'purchase' && 
-                t.details && 
-                t.details.email && 
-                t.details.email.toLowerCase() === emailQuery
-            );
-
-            if (matches.length === 0) {
-                container.innerHTML = `
-                    <div class="neumo-card neumo-inset p-4 rounded-xl text-center animate-pulse" style="border-left: 4px solid var(--color-danger);">
-                        <p class="text-xs font-bold text-danger mb-1">No encontrado</p>
-                        <p class="text-[10px] text-gray-500">No tienes compras registradas con este correo.</p>
-                    </div>`;
-            } else {
-                let html = '';
-                matches.forEach(m => {
-                    const isRenewable = "SÍ"; 
-                    const platformName = m.details.serviceName || m.description.replace('Compra: ', '');
-                    
-                    html += `
-                        <div class="neumo-card p-4 rounded-2xl shadow-sm flex flex-col gap-3 slide-up">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="font-black text-gray-800 text-sm">${platformName}</p>
-                                    <p class="text-[10px] text-gray-400 font-mono mt-0.5">${m.details.email}</p>
-                                </div>
-                                <span class="bg-indigo-50/50 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-lg neumo-flat">Renovable: ${isRenewable}</span>
-                            </div>
-                            
-                            <div class="flex gap-2 mt-1">
-                                <button onclick="requestRenewal('${m.id}', '${platformName}', '${m.details.email}')" class="neumo-button flex-1 bg-gray-900 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-gray-800">Solicitar Renovación</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-                lucide.createIcons();
-            }
-        };
-
-        window.requestRenewal = async (txId, platform, email) => {
-            if(!confirm(`¿Solicitar renovación para ${platform}?`)) return;
-            try {
-                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), { 
-                    uid: currentUser.uid, 
-                    email: currentUser.email, 
-                    type: 'renewal', 
-                    description: `Solicitud de renovación para: ${platform}\nCuenta: ${email}\nID Compra Original: ${txId}`, 
-                    timestamp: serverTimestamp(), 
-                    status: 'unread' 
-                });
-                showToast('Solicitud enviada al administrador', 'success');
-                closeModal();
-            } catch (e) {
-                showToast('Error al solicitar', 'error');
-            }
-        };
+        window.searchRenewal = (e) => { e.preventDefault(); const emailQuery = document.getElementById('renew-email').value.trim().toLowerCase(); const container = document.getElementById('renewal-results'); container.innerHTML = '<div class="text-center py-4"><span class="animate-spin inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full"></span></div>'; const matches = window.userTransactions.filter(t => t.type === 'purchase' && t.details && t.details.email && t.details.email.toLowerCase() === emailQuery); if (matches.length === 0) { container.innerHTML = ` <div class="neumo-card neumo-inset p-4 rounded-xl text-center animate-pulse" style="border-left: 4px solid var(--color-danger);"> <p class="text-xs font-bold text-danger mb-1">No encontrado</p> <p class="text-[10px] text-gray-500">No tienes compras registradas con este correo.</p> </div>`; } else { let html = ''; matches.forEach(m => { const platformName = m.details.serviceName || m.description.replace('Compra: ', ''); html += ` <div class="neumo-card p-4 rounded-2xl shadow-sm flex flex-col gap-3 slide-up"> <div class="flex justify-between items-start"> <div> <p class="font-black text-gray-800 text-sm">${platformName}</p> <p class="text-[10px] text-gray-400 font-mono mt-0.5">${m.details.email}</p> </div> <span class="bg-indigo-50/50 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-lg neumo-flat">Renovable: SÍ</span> </div> <div class="flex gap-2 mt-1"> <button onclick="requestRenewal('${m.id}', '${platformName}', '${m.details.email}')" class="neumo-button flex-1 bg-gray-900 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-gray-800">Solicitar Renovación</button> </div> </div> `; }); container.innerHTML = html; lucide.createIcons(); } };
+        window.requestRenewal = async (txId, platform, email) => { if(!confirm(`¿Solicitar renovación para ${platform}?`)) return; try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), { uid: currentUser.uid, email: currentUser.email, type: 'renewal', description: `Solicitud de renovación para: ${platform}\nCuenta: ${email}\nID Compra Original: ${txId}`, timestamp: serverTimestamp(), status: 'unread' }); showToast('Solicitud enviada al administrador', 'success'); closeModal(); } catch (e) { showToast('Error al solicitar', 'error'); } };
 
         // --- UTILIDADES UI ---
         window.toggleSidebar = () => { const s=document.getElementById('sidebar'); const o=document.getElementById('sidebar-overlay'); if(s.classList.contains('-translate-x-full')){s.classList.remove('-translate-x-full');o.classList.remove('opacity-0','pointer-events-none');}else{s.classList.add('-translate-x-full');o.classList.add('opacity-0','pointer-events-none');} } 
@@ -1672,171 +1531,83 @@
         window.returnToAdminDashboard = () => { document.getElementById('admin-dashboard-grid').classList.remove('hidden'); document.getElementById('admin-modules-container').classList.add('hidden'); };
         window.switchAuthView = (v) => { document.querySelectorAll('.auth-view').forEach(x=>x.classList.add('hidden')); document.getElementById(`${v==='login'?'login':v==='register'?'register':'forgot'}-form`).classList.remove('hidden'); };
         
-        // APROBAR RECARGA (FUNCIÓN GLOBAL RESTAURADA Y FIX DE CLIC)
         window.approveRecharge = async (reqId, uid, amt, txId) => { 
             if(!confirm('¿Aprobar saldo de $' + amt + '?')) return; 
-            
             const wRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'); 
-            
             try {
                 await runTransaction(db, async (t) => { 
                     const s = await t.get(wRef); 
-                    // FIX DE SALDO: asegurar numero en la aprobación también
                     const currentBal = Number(s.exists() ? s.data().balance : 0) || 0;
                     t.update(wRef, { balance: currentBal + Number(amt) }); 
                 }); 
-                
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pending_recharges', reqId), { status: 'approved' }); 
-                
-                if(txId) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'transactions', txId), { status: 'Éxito' }); 
-                }
-                
+                if(txId) { await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'transactions', txId), { status: 'Éxito' }); }
                 showToast('Saldo cargado correctamente', 'success'); 
-            } catch(e) {
-                console.error(e);
-                showToast('Error al aprobar', 'error');
-            }
+            } catch(e) { console.error(e); showToast('Error al aprobar', 'error'); }
         };
 
         window.deleteProfile = async (id) => { if(confirm("¿Borrar producto?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', id)); };
 
-        // Listeners
-        
-        // Listener de Login modificado
         document.getElementById('login-form').addEventListener('submit', async(e)=>{
             e.preventDefault(); 
             try {
                 const credential = await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); 
-                
-                // VERIFICACIÓN: Si no ha verificado correo, lo sacamos.
-                if (!credential.user.emailVerified) {
-                    await signOut(auth);
-                    showToast('📧 Por favor verifica tu correo electrónico para ingresar.', 'error');
-                    return;
-                }
-
+                if (!credential.user.emailVerified) { await signOut(auth); showToast('📧 Por favor verifica tu correo electrónico.', 'error'); return; }
                 showToast('Bienvenido', 'success');
-            } catch(e) {
-                console.error(e);
-                // Manejo básico de errores de Firebase para mensajes más claros
-                if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
-                    showToast('Correo o contraseña incorrectos', 'error');
-                } else {
-                    showToast('Error al iniciar sesión', 'error');
-                }
-            }
+            } catch(e) { showToast('Error al iniciar sesión', 'error'); }
         });
         
-        // REGISTRO CON ROL DEFAULT Y LOGICA DE REFERIDOS Y VERIFICACION DE EMAIL
         document.getElementById('register-form').addEventListener('submit', async(e)=>{
             e.preventDefault(); 
-            const btn = document.querySelector('#register-form button');
-            const originalText = btn.innerText;
-            btn.disabled = true; btn.innerText = 'Creando cuenta...';
-
+            const btn = document.querySelector('#register-form button'); const originalText = btn.innerText; btn.disabled = true; btn.innerText = 'Creando cuenta...';
             const p1=document.getElementById('reg-password').value; 
             const p2=document.getElementById('reg-confirm-password').value; 
             const email = document.getElementById('reg-email').value;
-            
-            if(p1!==p2) {
-                btn.disabled=false; btn.innerText=originalText;
-                return showToast('Contraseñas no coinciden','error'); 
-            }
-
-            // Obtener referido de la URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const referrerId = urlParams.get('ref');
+            if(p1!==p2) { btn.disabled=false; btn.innerText=originalText; return showToast('Contraseñas no coinciden','error'); }
+            const urlParams = new URLSearchParams(window.location.search); const referrerId = urlParams.get('ref');
 
             try{
-                // 1. Crear Usuario Auth
                 const c = await createUserWithEmailAndPassword(auth, email, p1); 
                 const uid = c.user.uid;
-
-                // 2. ENVIAR CORREO DE VERIFICACIÓN
                 await sendEmailVerification(c.user);
 
-                // 3. Ejecutar Lógica Firestore (Referidos + Wallet)
                 if(referrerId) {
                     try {
                         await runTransaction(db, async (t) => {
-                            // Leer Billetera del Revendedor
                             const resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
                             const resellerSnap = await t.get(resellerWalletRef);
-                            
                             if (!resellerSnap.exists()) throw new Error("Revendedor inválido");
-
                             const resellerBalance = resellerSnap.data().balance || 0;
-                            
-                            if (resellerBalance < 40) throw new Error("El revendedor no tiene saldo suficiente para invitarte.");
+                            if (resellerBalance < 40) throw new Error("Revendedor sin saldo");
 
-                            // Restar 40 al revendedor
                             t.update(resellerWalletRef, { balance: resellerBalance - 40 });
-
-                            // Crear wallet del nuevo usuario con 40 de saldo
                             const newWalletRef = doc(db,'artifacts',appId,'users',uid,'wallet','main');
                             t.set(newWalletRef, { balance: 40, profit: 0, createdAt: serverTimestamp() });
-
-                            // Crear perfil del nuevo usuario
                             const newUserProfileRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
-                            t.set(newUserProfileRef, { 
-                                email: email, 
-                                uid: uid, 
-                                role: 'client', // Siempre cliente al inicio
-                                referredBy: referrerId, // Guardar quién lo invitó
-                                suspended: false, 
-                                lastLogin: serverTimestamp() 
-                            }, {merge: true});
-
-                            // Registrar transacciones
+                            t.set(newUserProfileRef, { email: email, uid: uid, role: 'client', referredBy: referrerId, suspended: false, lastLogin: serverTimestamp() }, {merge: true});
                             const resellerTx = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
                             t.set(resellerTx, { type: 'charge', amount: -40, description: `Bono bienvenida referido: ${email}`, timestamp: serverTimestamp() });
-                            
                             const newUserTx = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'));
                             t.set(newUserTx, { type: 'deposit', amount: 40, description: 'Bono de Bienvenida', timestamp: serverTimestamp(), status: 'approved' });
                         });
                     } catch (txError) {
-                        // Si falla la transacción (ej: revendedor sin saldo), creamos usuario normal sin bono
-                        console.warn("Fallo referido:", txError);
                         await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
                         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { email: email, uid: uid, role: 'client', suspended: false, lastLogin: serverTimestamp() }, {merge: true});
                     }
                 } else {
-                    // Registro Normal
                     await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { email: email, uid: uid, role: 'client', suspended: false, lastLogin: serverTimestamp() }, {merge: true});
                 }
                 
-                // 4. IMPORTANTE: CERRAR SESIÓN PARA OBLIGAR LOGIN TRAS VERIFICAR
                 await signOut(auth);
-
-                // Limpiar campos
-                document.getElementById('reg-email').value = '';
-                document.getElementById('reg-password').value = '';
-                document.getElementById('reg-confirm-password').value = '';
-                
-                showToast('¡Registro exitoso! 📩 Hemos enviado un correo de verificación.', 'success');
-                alert("Hemos enviado un enlace de confirmación a tu correo.\n\nPor favor verifica tu bandeja de entrada (o Spam) y confirma tu cuenta para poder iniciar sesión.");
-                
+                document.getElementById('reg-email').value = ''; document.getElementById('reg-password').value = ''; document.getElementById('reg-confirm-password').value = '';
+                showToast('¡Registro exitoso! 📩 Verifica tu correo.', 'success');
                 switchAuthView('login');
                 btn.disabled=false; btn.innerText=originalText;
-
-            }catch(e){
-                console.error(e);
-                let msg = 'Error en registro';
-                if(e.code === 'auth/email-already-in-use') msg = 'El correo ya está registrado';
-                showToast(msg,'error');
-                btn.disabled=false; btn.innerText=originalText;
-            }
+            }catch(e){ showToast('Error en registro', 'error'); btn.disabled=false; btn.innerText=originalText; }
         });
         
-        window.handleLogout = async () => { 
-            await signOut(auth); 
-            document.getElementById('sidebar').classList.add('-translate-x-full'); 
-            // MODIFICACIÓN: Limpiar campos de login al cerrar sesión
-            document.getElementById('login-email').value = '';
-            document.getElementById('login-password').value = '';
-        };
+        window.handleLogout = async () => { await signOut(auth); document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('login-email').value = ''; document.getElementById('login-password').value = ''; };
         document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); checkReferralParam(); });
     </script>
 </body>
