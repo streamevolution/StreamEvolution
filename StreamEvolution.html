@@ -1327,7 +1327,10 @@
                         <div class="neumo-button absolute -bottom-2 -right-2 bg-gray-900 text-white p-1.5 rounded-xl shadow-lg border-2 border-bg-primary"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div>
                     </div>
                     <h3 class="text-xl font-bold text-gray-800 mb-1">${name}</h3>
-                    <p class="text-success font-bold text-lg mb-6">$${price.toLocaleString()} <span class="text-xs text-gray-400 font-normal">MXN</span></p>
+                    <p class="text-success font-bold text-lg mb-1">$${price.toLocaleString()} <span class="text-xs text-gray-400 font-normal">MXN</span></p>
+                    
+                    <p class="text-xs text-gray-500 font-medium mb-6">Stock disponible: <span class="text-gray-800 font-bold">${stock}</span></p>
+
                     <div class="neumo-card neumo-inset p-4 rounded-2xl text-left mb-6"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Incluye</p><p class="text-sm text-gray-600 leading-relaxed">${decodeURIComponent(desc)}</p></div>
                     <button onclick="processPurchase('${id}', '${name}',${price})" class="neumo-button w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-xl hover:bg-gray-800 active:scale-95 transition-all flex items-center justify-center gap-2" ${stock <= 0 ? 'disabled style="opacity:0.5; pointer-events:none;"' : ''}>${stock <= 0 ? 'Agotado' : `Confirmar Compra <i data-lucide="chevron-right" class="w-4 h-4"></i>`}</button>
                 </div>
@@ -1338,9 +1341,15 @@
             if(!currentUser) return showToast('Inicia sesión', 'error');
             const btn = document.querySelector('button[onclick^="processPurchase"]'); btn.disabled = true; btn.innerHTML = `<span class="animate-spin">⌛</span>`;
             try {
+                // Buscamos un item disponible
                 const qInv = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('productId', '==', pid), where('status', '==', 'available'), limit(1));
-                const invSnap = await getDocs(qInv); if(invSnap.empty) throw new Error("Stock agotado");
-                const item = invSnap.docs[0].data(); const itemId = invSnap.docs[0].id;
+                const invSnap = await getDocs(qInv); 
+                
+                // Si está vacío, lanzamos error
+                if(invSnap.empty) throw new Error("Stock agotado");
+                
+                const item = invSnap.docs[0].data(); 
+                const itemId = invSnap.docs[0].id;
 
                 await runTransaction(db, async (t) => {
                     const wRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main'); 
@@ -1376,9 +1385,18 @@
                         terms: item.terms || '' 
                     };
 
+                    // Descontar saldo
                     t.update(wRef, { balance: (currentBalance - cost) });
-                    t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { status: 'sold', soldTo: currentUser.uid, soldAt: serverTimestamp() });
-                    t.update(pRef, { stock: (productData.stock || 0) - 1 });
+                    
+                    // --- MODIFICACION: SOLO DESCONTAR STOCK SI NO ES LIBRO ---
+                    if (productData.category !== 'libros') {
+                        // Marcar item como vendido
+                        t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { status: 'sold', soldTo: currentUser.uid, soldAt: serverTimestamp() });
+                        // Restar stock del perfil
+                        t.update(pRef, { stock: (productData.stock || 0) - 1 });
+                    }
+                    // ---------------------------------------------------------
+
                     t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), { type: 'purchase', amount: cost, description: `Compra: ${name}`, details: purchaseDetails, itemId: itemId, timestamp: serverTimestamp() });
 
                     if (referrerId) {
