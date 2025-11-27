@@ -1456,32 +1456,41 @@
                     </div>
 
                     <div class="mt-6 space-y-3">
-                        <button onclick="copyTicketData('${item.serviceName}', '${item.email||item.link}', '${item.password}', '${item.expiryDate||''}', '${item.duration || ''}', '${safeTerms}')" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar Ticket</button>
+                        <button onclick="copyTicketData('${item.serviceName}', '${item.email||item.link}', '${item.password}', '${item.expiryDate||''}', '${item.duration || ''}', '${item.profileName || ''}', '${item.pin || ''}', '${safeTerms}')" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar Ticket</button>
                         <button onclick="closeModal()" class="neumo-button w-full text-gray-500 font-bold text-xs py-2 hover:text-gray-800">Cerrar</button>
                     </div>
                 </div>
             `);
         };
 
-        window.copyTicketData = (srv, mailOrLink, pass, exp, dur, encTerms) => {
-            const terms = decodeURIComponent(encTerms);
-            let text = `📦 *COMPRA EXITOSA - STREAM EVOLUTION*\n\n📌 *Producto:* ${srv}\n`;
-            
-            if(mailOrLink.includes('http')) {
-                 text += `🔗 *Link:* ${mailOrLink}\n`;
-            } else {
-                 text += `📧 *Correo:* ${mailOrLink}\n`;
-            }
-            
-            text += `🔑 *Contraseña:* ${pass}\n`;
-            
-            if(exp) text += `📅 *Expira:* ${exp}\n`;
-            if(dur) text += `⏳ *Duración:* ${dur}\n`;
-            
-            text += `\n📜 *Términos:* ${terms}\n\n¡Gracias por tu preferencia!`;
-            
-            navigator.clipboard.writeText(text).then(() => showToast('¡Ticket copiado!', 'success')).catch(() => showToast('Error al copiar', 'error'));
-        };
+        window.copyTicketData = (srv, mailOrLink, pass, exp, dur, profile, pin, encTerms) => {
+    const terms = decodeURIComponent(encTerms);
+    let text = `📦 *COMPRA EXITOSA - STREAM EVOLUTION*\n\n📌 *Producto:* ${srv}\n`;
+    
+    if(mailOrLink.includes('http')) {
+            text += `🔗 *Link:* ${mailOrLink}\n`;
+    } else {
+            text += `📧 *Correo:* ${mailOrLink}\n`;
+    }
+    
+    text += `🔑 *Contraseña:* ${pass}\n`;
+
+    // --- NUEVO CÓDIGO AGREGADO ---
+    if(profile && profile !== 'null' && profile !== 'undefined' && profile !== '') {
+        text += `👤 *Perfil:* ${profile}\n`;
+    }
+    if(pin && pin !== 'null' && pin !== 'undefined' && pin !== '') {
+        text += `🔒 *PIN:* ${pin}\n`;
+    }
+    // ----------------------------
+    
+    if(exp) text += `📅 *Expira:* ${exp}\n`;
+    if(dur) text += `⏳ *Duración:* ${dur}\n`;
+    
+    text += `\n📜 *Términos:* ${terms}\n\n¡Gracias por tu preferencia!`;
+    
+    navigator.clipboard.writeText(text).then(() => showToast('¡Ticket copiado!', 'success')).catch(() => showToast('Error al copiar', 'error'));
+};
         
         // --- NOTIFICACIONES ---
         window.openNotifications = () => { 
