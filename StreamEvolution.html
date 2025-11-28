@@ -944,7 +944,8 @@
                         </div>
 
                         <div id="fields-book" class="hidden mt-2">
-                           <label class="block text-[10px] font-bold text-gray-400 uppercase">Link del Libro</label>
+                           <label class="block text-[10px] font-bold text-gray-400 uppercase">Link Libro/Documento</label>
+
                            <input type="url" id="inv-link" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" placeholder="https://...">
                         </div>
 
@@ -961,6 +962,7 @@
         };
 
         // Función para mostrar/ocultar campos según categoría
+                // Función para mostrar/ocultar campos según categoría
         window.toggleInventoryFields = () => {
             const select = document.getElementById('inv-product-select');
             const selectedOption = select.options[select.selectedIndex];
@@ -977,29 +979,25 @@
             fieldsBook.classList.add('hidden');
             fieldsDates.classList.remove('hidden');
 
-            if (category === 'libros') {
-                // Configuración Libros: Solo Link, Pass (reutilizamos o mantenemos visible si se pide), Terminos.
-                // Ocultamos Credenciales (Correo/Pass) - Espera, el prompt dice "contraseña del libro".
-                // Entonces mostramos el input de pass pero ocultamos el de email.
+            // --- CAMBIO AQUÍ: Agregamos || category === 'documentos' ---
+            if (category === 'libros' || category === 'documentos') {
                 document.getElementById('inv-email').parentNode.classList.add('hidden'); // Ocultar email
-                // Movemos Pass a una linea sola si queremos, o lo dejamos ahi.
-                
                 fieldsBook.classList.remove('hidden'); // Mostrar Link
                 fieldsDates.classList.add('hidden'); // Ocultar Fechas
 
             } else if (category === 'perfiles' || category === 'cuentas') {
-                // Configuración Perfiles/Cuentas: Todo visible + Perfil y PIN
-                document.getElementById('inv-email').parentNode.classList.remove('hidden'); // Mostrar email
-                fieldsProfile.classList.remove('hidden'); // Mostrar Perfil y PIN
-                fieldsProfile.classList.remove('grid'); // Reset para que el add class funcione bien si tailwind purga
+                document.getElementById('inv-email').parentNode.classList.remove('hidden'); 
+                fieldsProfile.classList.remove('hidden'); 
+                fieldsProfile.classList.remove('grid'); 
                 fieldsProfile.classList.add('grid');
             } else {
-                // Configuración Default (Otros): Email, Pass, Fechas
                 document.getElementById('inv-email').parentNode.classList.remove('hidden');
             }
         };
 
+
         // Función Guardar Item Modificada
+                // Función Guardar Item Modificada
         window.saveInventoryItem = async (e) => { 
             e.preventDefault(); 
             try { 
@@ -1017,11 +1015,11 @@
                     status: 'available'
                 };
 
-                // Lógica de guardado según categoría
-                if (category === 'libros') {
+                // --- CAMBIO AQUÍ: Agregamos || category === 'documentos' ---
+                if (category === 'libros' || category === 'documentos') {
                     itemData.link = document.getElementById('inv-link').value;
-                    itemData.password = document.getElementById('inv-pass').value; // Contraseña del libro
-                    if(!itemData.link) return showToast('El link es obligatorio para libros', 'error');
+                    itemData.password = document.getElementById('inv-pass').value; 
+                    if(!itemData.link) return showToast('El link es obligatorio', 'error');
                 } else {
                     // Para Cuentas, Perfiles y Otros
                     itemData.email = document.getElementById('inv-email').value;
@@ -1049,6 +1047,7 @@
                 showToast('Error al guardar item', 'error'); 
             } 
         };
+
 
         window.deleteInventoryItem = async (id) => { 
             if(confirm("¿Borrar? Reducirá el stock.")) { 
@@ -1193,7 +1192,130 @@
         window.confirmManualBalance = async (uid) => { const amt = Number(document.getElementById('manual-amount').value); if(!amt) return; const wRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'); await runTransaction(db, async (t) => { const s = await t.get(wRef); t.update(wRef, { balance: (s.data().balance||0) + amt }); const txRef = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions')); t.set(txRef, { type: 'deposit', amount: amt, description: 'Carga Manual Admin', timestamp: serverTimestamp(), prevBalance: s.data().balance, newBalance: (s.data().balance||0) + amt }); }); showToast('Saldo cargado', 'success'); closeModal(); };
         window.toggleUserRole = async (docId, currentRole) => { const newRole = currentRole === 'client' ? 'reseller' : 'client'; if(confirm(`¿Cambiar rol de ${currentRole.toUpperCase()} a ${newRole.toUpperCase()}?`)) { try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', docId), { role: newRole }); showToast('Rol actualizado a ' + newRole, 'success'); } catch(e) { showToast('Error al cambiar rol', 'error'); } } };
         window.toggleSuspend = async (uid, val) => { await updateDoc(doc(db,'artifacts',appId,'public','data','all_users',uid), {suspended: val}); };
-        window.openUserHistory = async (uid, email) => { const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main')); const balance = walletSnap.exists() ? walletSnap.data().balance : 0; const userDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid)); const role = userDoc.exists() ? (userDoc.data().role || 'client') : 'client'; openModal(`<div class="h-[80vh] flex flex-col bounce-enter"><div class="border-b border-gray-100 pb-4 mb-4"><h3 class="font-bold text-xl text-gray-800 mb-1">Expediente de Usuario</h3><p class="text-sm text-gray-500 font-medium mb-4 flex flex-col gap-1"><span>${email}</span></p><div class="grid grid-cols-2 gap-3"><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-success uppercase tracking-wider">Saldo Actual</p><p class="text-lg font-black text-success">$${balance.toLocaleString()}</p></div></div></div><div class="flex-1 overflow-y-auto scrollbar-hide space-y-2" id="usr-hist-list"><div class="text-center py-10"><div class="animate-spin w-6 h-6 border-2 border-gray-800 border-t-transparent rounded-full mx-auto"></div></div></div></div>`); const q = query(collection(db,'artifacts',appId,'users',uid,'transactions'), orderBy('timestamp','desc')); const s = await getDocs(q); let h=''; if(s.empty) h='<div class="text-center text-gray-400 py-10 text-xs">Sin movimientos.</div>'; else { s.forEach(d=>{ const t=d.data(); h+=`<div class="neumo-card p-3 text-xs"><div class="flex justify-between"><p class="font-bold">${t.description}</p><span class="text-[10px] text-gray-400">${t.timestamp?.toDate().toLocaleString()}</span></div><p class="font-bold ${t.type==='deposit'?'text-success':'text-danger'} mt-1">${t.amount > 0 ? '$'+t.amount : 'Info'}</p></div>`}); } document.getElementById('usr-hist-list').innerHTML=h; };
+                window.openUserHistory = async (uid, email) => { 
+            const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main')); 
+            const balance = walletSnap.exists() ? walletSnap.data().balance : 0; 
+            
+            // Renderizar el modal principal del historial
+            openModal(`
+                <div class="h-[80vh] flex flex-col bounce-enter">
+                    <div class="border-b border-gray-100 pb-4 mb-4">
+                        <h3 class="font-bold text-xl text-gray-800 mb-1">Expediente de Usuario</h3>
+                        <p class="text-sm text-gray-500 font-medium mb-4 flex flex-col gap-1"><span>${email}</span></p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="neumo-card neumo-inset p-3">
+                                <p class="text-[10px] font-bold text-success uppercase tracking-wider">Saldo Actual</p>
+                                <p class="text-lg font-black text-success">$${balance.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto scrollbar-hide space-y-2" id="usr-hist-list">
+                        <div class="text-center py-10"><div class="animate-spin w-6 h-6 border-2 border-gray-800 border-t-transparent rounded-full mx-auto"></div></div>
+                    </div>
+                </div>
+            `); 
+            
+            const q = query(collection(db,'artifacts',appId,'users',uid,'transactions'), orderBy('timestamp','desc')); 
+            const s = await getDocs(q); 
+            let h=''; 
+            
+            if(s.empty) {
+                h='<div class="text-center text-gray-400 py-10 text-xs">Sin movimientos.</div>'; 
+            } else { 
+                s.forEach(d=>{ 
+                    const t=d.data(); 
+                    // AQUI ESTA EL CAMBIO: Se agrega onclick, cursor pointer y efectos hover
+                    h+=`
+                    <div onclick="openUserTransactionDetail('${d.id}', '${uid}', '${email}')" class="neumo-card p-3 text-xs cursor-pointer hover:scale-[0.99] transition-transform relative group">
+                        <div class="flex justify-between items-center">
+                            <p class="font-bold text-gray-700 truncate pr-4">${t.description}</p>
+                            <span class="text-[10px] text-gray-400 whitespace-nowrap">${t.timestamp?.toDate().toLocaleDateString()}</span>
+                        </div>
+                        <p class="font-bold ${t.type==='deposit'?'text-success':'text-danger'} mt-1">
+                            ${t.amount > 0 ? '$'+t.amount.toLocaleString() : (t.amount < 0 ? '-$'+Math.abs(t.amount).toLocaleString() : 'Info')}
+                        </p>
+                        <div class="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                        </div>
+                    </div>`;
+                }); 
+            } 
+            document.getElementById('usr-hist-list').innerHTML=h; 
+            lucide.createIcons();
+        };
+        window.openUserTransactionDetail = async (txId, uid, email) => {
+            // Obtener datos frescos de la transacción
+            const txDoc = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'transactions', txId));
+            if (!txDoc.exists()) return showToast('Transacción no encontrada', 'error');
+            const t = txDoc.data();
+            
+            let modalContent = '';
+
+            // --- DISEÑO PARA RECARGAS (DEPOSIT) ---
+            if (t.type === 'deposit') {
+                let statusColor = 'text-success'; let statusText = 'Éxito';
+                if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){ statusColor = 'text-accent'; statusText = 'Pendiente'; } 
+                else if (['rejected','cancelled','Rechazado','Cancelado'].includes(t.status)) { statusColor = 'text-danger'; statusText = 'Cancelado'; }
+                
+                modalContent = `
+                <div class="text-center bounce-enter pt-4">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="dollar-sign" class="w-8 h-8 text-gray-500"></i></div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">Detalle de Recarga</h3>
+                    <p class="text-xs text-gray-400 mb-6">${t.timestamp?.toDate().toLocaleString()}</p>
+                    <div class="neumo-card neumo-inset p-5 space-y-3 text-left">
+                        <div class="flex justify-between"><span class="text-xs font-bold text-gray-400 uppercase">Monto</span><span class="font-bold text-success text-lg">$${t.amount.toLocaleString()}</span></div>
+                        <div class="flex justify-between"><span class="text-xs font-bold text-gray-400 uppercase">Estado</span><span class="font-bold ${statusColor} uppercase text-sm">${statusText}</span></div>
+                        ${t.prevBalance ? `<div class="flex justify-between border-t border-gray-200 pt-2"><span class="text-xs text-gray-400">Saldo Anterior</span><span class="text-xs font-mono">$${t.prevBalance}</span></div>` : ''}
+                        <div class="flex justify-between border-t border-gray-200 pt-2"><span class="text-xs font-bold text-gray-400 uppercase">Descripción</span><span class="text-xs font-medium text-gray-700">${t.description}</span></div>
+                    </div>
+                    <button onclick="openUserHistory('${uid}', '${email}')" class="neumo-button mt-4 w-full bg-gray-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver al Expediente</button>
+                </div>`;
+
+            // --- DISEÑO PARA COMPRAS (PURCHASE) ---
+            } else if (t.type === 'purchase' && t.details) {
+                const item = t.details;
+                // Generar HTML de credenciales según si es Libro o Cuenta
+                let infoProducto = '';
+                if (item.link) {
+                    infoProducto = `<div class="neumo-card neumo-inset p-3 mb-2"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Enlace</p><a href="${item.link}" target="_blank" class="text-sm font-bold text-blue-600 underline truncate block">${item.link}</a></div>`;
+                } else {
+                    infoProducto = `
+                    <div class="grid gap-3">
+                        <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Correo</p><p class="font-mono text-sm text-gray-800 font-bold select-all break-all">${item.email || 'N/A'}</p></div>
+                        <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-gray-800 font-bold select-all">${item.password || 'N/A'}</p></div>
+                        ${item.profileName ? `<div class="grid grid-cols-2 gap-2"><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Perfil</p><p class="text-sm font-bold text-gray-800">${item.profileName}</p></div><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">PIN</p><p class="text-sm font-bold text-gray-800">${item.pin}</p></div></div>` : ''}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Expira</p><p class="text-sm font-bold text-gray-700">${item.expiryDate || 'N/A'}</p></div>
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Duración</p><p class="text-sm font-bold text-gray-700">${item.duration || 'N/A'}</p></div>
+                    </div>`;
+                }
+
+                modalContent = `
+                <div class="text-center bounce-enter pt-4">
+                    <div class="w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="shopping-bag" class="w-8 h-8"></i></div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">Detalle de Compra</h3>
+                    <p class="text-xs text-gray-400 mb-6">${t.timestamp?.toDate().toLocaleString()}</p>
+
+                    <div class="neumo-card neumo-inset p-5 text-left space-y-4 relative overflow-hidden mb-4">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-success"></div>
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Producto</p><p class="text-lg font-black text-gray-800">${item.serviceName || t.description}</p></div>
+                        <div class="flex justify-between items-center border-b border-gray-200 pb-2">
+                            <span class="text-xs font-bold text-gray-400 uppercase">Costo</span>
+                            <span class="font-bold text-gray-800 text-lg">$${t.amount.toLocaleString()}</span>
+                        </div>
+                        ${infoProducto}
+                    </div>
+                    <button onclick="openUserHistory('${uid}', '${email}')" class="neumo-button w-full bg-gray-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver al Expediente</button>
+                </div>`;
+            } else {
+                // Generico
+                modalContent = `<div class="p-5 text-center"><p class="text-gray-600 font-bold mb-2">${t.description}</p><p class="text-sm">$${t.amount}</p><button onclick="openUserHistory('${uid}', '${email}')" class="neumo-button mt-4 w-full bg-gray-900 text-white py-3 rounded-xl">Volver</button></div>`;
+            }
+
+            openModal(modalContent);
+        };
+        
 
         // --- MODAL INVITAR ---
         window.openInviteModal = () => {
@@ -1389,12 +1511,14 @@
                     t.update(wRef, { balance: (currentBalance - cost) });
                     
                     // --- MODIFICACION: SOLO DESCONTAR STOCK SI NO ES LIBRO ---
-                    if (productData.category !== 'libros') {
+                                        // --- MODIFICACION: SOLO DESCONTAR STOCK SI NO ES LIBRO NI DOCUMENTO ---
+                    if (productData.category !== 'libros' && productData.category !== 'documentos') {
                         // Marcar item como vendido
                         t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { status: 'sold', soldTo: currentUser.uid, soldAt: serverTimestamp() });
                         // Restar stock del perfil
                         t.update(pRef, { stock: (productData.stock || 0) - 1 });
                     }
+
                     // ---------------------------------------------------------
 
                     t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), { type: 'purchase', amount: cost, description: `Compra: ${name}`, details: purchaseDetails, itemId: itemId, timestamp: serverTimestamp() });
