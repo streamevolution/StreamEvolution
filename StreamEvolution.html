@@ -420,7 +420,20 @@
         const db = getFirestore(app);
         const appId = "mi-ecosistema-v1";
         const ADMIN_EMAIL = "mrandroidtutorialeshd@gmail.com";
-        const REFERRAL_COMMISSION_RATE = 0.10; 
+        const REFERRAL_COMMISSION_RATE = 0.10;
+                 // --- INICIO CONFIGURACIÓN JERARQUÍAS ---
+        const ROLE_DEFINITIONS = {
+            'lider': { label: 'Lider', icon: 'crown', color: 'text-amber-500', bg: 'bg-amber-100', rank: 4 },
+            'reseller': { label: 'Revendedor', icon: 'briefcase', color: 'text-indigo-600', bg: 'bg-indigo-100', rank: 3 },
+            'vip': { label: 'Cliente Vip', icon: 'star', color: 'text-purple-600', bg: 'bg-purple-100', rank: 2 },
+            'client': { label: 'Cliente', icon: 'user', color: 'text-gray-500', bg: 'bg-gray-100', rank: 1 }
+        };
+
+        function getRoleData(role) {
+            return ROLE_DEFINITIONS[role] || ROLE_DEFINITIONS['client'];
+        }
+        // --- FIN CONFIGURACIÓN JERARQUÍAS ---
+
 
         let currentUser = null;
         let isAdmin = false;
@@ -477,17 +490,25 @@
                 isAdmin = user.email === ADMIN_EMAIL;
                 document.getElementById('sidebar-email').textContent = user.email;
                 
-                const roleLabel = currentUserRole === 'reseller' ? 'Revendedor' : 'Cliente';
-                const roleColor = currentUserRole === 'reseller' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500';
-                document.getElementById('sidebar-role-tag').className = `inline-block mt-2 text-[10px] px-2 py-0.5 rounded font-bold uppercase neumo-card neumo-flat ${currentUserRole === 'reseller' ? 'text-indigo-600' : 'text-gray-500'}`;
-                document.getElementById('sidebar-role-tag').textContent = roleLabel;
-                
-                document.getElementById('header-role-badge').textContent = roleLabel;
-                document.getElementById('header-role-badge').className = `text-[8px] uppercase font-black tracking-widest leading-none mt-0.5 ${currentUserRole === 'reseller' ? 'text-indigo-500' : 'text-gray-400'}`;
+                                // --- INICIO NUEVA LÓGICA DE BADGES ---
+                const roleData = getRoleData(currentUserRole);
 
+                // Badge del Sidebar (Menú lateral)
+                const sidebarBadge = document.getElementById('sidebar-role-tag');
+                sidebarBadge.className = `inline-flex items-center gap-1 mt-2 text-[10px] px-2 py-0.5 rounded font-bold uppercase neumo-card neumo-flat ${roleData.bg} ${roleData.color}`;
+                sidebarBadge.innerHTML = `<i data-lucide="${roleData.icon}" class="w-3 h-3"></i> ${roleData.label}`;
+                
+                // Badge del Header (Arriba a la derecha)
+                const headerBadge = document.getElementById('header-role-badge');
+                headerBadge.className = `text-[8px] uppercase font-black tracking-widest leading-none mt-0.5 flex items-center gap-1 ${roleData.color}`;
+                headerBadge.innerHTML = `<i data-lucide="${roleData.icon}" class="w-3 h-3"></i> ${roleData.label}`;
+
+                // Botón invitar (Solo visible si NO es cliente normal)
                 const btnInvite = document.getElementById('btn-invite-reseller');
-                if(currentUserRole === 'reseller') btnInvite.classList.remove('hidden');
+                if(currentUserRole !== 'client') btnInvite.classList.remove('hidden');
                 else btnInvite.classList.add('hidden');
+                // --- FIN NUEVA LÓGICA DE BADGES ---
+
 
                 await initCategories();
 
@@ -534,11 +555,23 @@
         }
 
         // --- CATEGORÍAS DINÁMICAS ---
-        async function initCategories() {
+                async function initCategories() {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'categories')); 
             onSnapshot(q, (snapshot) => {
                 window.categoriesCache = [];
                 snapshot.forEach(doc => window.categoriesCache.push({ id: doc.id, ...doc.data() }));
+
+                // --- LÓGICA DE ORDENAMIENTO ---
+                window.categoriesCache.sort((a, b) => {
+                    // Si una categoría no tiene número (porque es vieja), le ponemos 999 para que se vaya al final
+                    const orderA = (a.order !== undefined && a.order !== null) ? Number(a.order) : 999;
+                    const orderB = (b.order !== undefined && b.order !== null) ? Number(b.order) : 999;
+                    
+                    // Ordena de menor a mayor (1, 2, 3...)
+                    return orderA - orderB;
+                });
+                // -----------------------------
+
                 renderUserCategories();
                 if(isAdmin) renderAdminCategories();
             });
@@ -576,7 +609,28 @@
         }
 
         window.openAddCategoryModal = () => {
-            openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-gray-800 mb-4">Nuevo Servicio</h3><form onsubmit="saveCategory(event)" class="space-y-4"><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre</label><input type="text" id="cat-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Identificador (Slug)</label><input type="text" id="cat-slug" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: streaming"></div><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: tv"></div><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm"><option value="amber">Ámbar</option><option value="blue">Azul</option><option value="emerald">Esmeralda</option><option value="rose">Rosa</option><option value="purple">Púrpura</option><option value="indigo">Índigo</option><option value="slate">Gris</option></select></div><button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Crear Categoría</button></form></div>`);
+            openModal(`
+            <div class="text-left bounce-enter">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Nuevo Servicio</h3>
+                <form onsubmit="saveCategory(event)" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre</label>
+                            <input type="text" id="cat-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-accent uppercase mb-1">Orden (1, 2, 3...)</label>
+                            <input type="number" id="cat-order" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold" placeholder="Ej: 1" required>
+                        </div>
+                    </div>
+                    
+                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Identificador (Slug)</label><input type="text" id="cat-slug" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: streaming"></div>
+                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: tv"></div>
+                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm"><option value="amber">Ámbar</option><option value="blue">Azul</option><option value="emerald">Esmeralda</option><option value="rose">Rosa</option><option value="purple">Púrpura</option><option value="indigo">Índigo</option><option value="slate">Gris</option></select></div>
+                    
+                    <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Crear Categoría</button>
+                </form>
+            </div>`);
         };
         
         window.openEditCategoryModal = (id) => {
@@ -585,7 +639,31 @@
             const colors = ['amber', 'blue', 'emerald', 'rose', 'purple', 'indigo', 'slate'];
             const colorOptions = colors.map(c => `<option value="${c}" ${c === cat.color ? 'selected' : ''}>${c.charAt(0).toUpperCase() + c.slice(1)}</option>`).join('');
 
-            openModal(`<div class="text-left bounce-enter"><h3 class="text-xl font-bold text-gray-800 mb-4">Editar Servicio</h3><form onsubmit="updateCategory(event, '${id}')" class="space-y-4"><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre</label><input type="text" id="edit-cat-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.name}" required></div><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Identificador (Slug)</label><input type="text" id="edit-cat-slug" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.slug}" required></div><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="edit-cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.icon}" required></div><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="edit-cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">${colorOptions}</select></div><button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Guardar Cambios</button></form></div>`);
+            // Si la categoría es vieja y no tiene orden, mostramos el campo vacío
+            const currentOrder = (cat.order !== undefined) ? cat.order : '';
+
+            openModal(`
+            <div class="text-left bounce-enter">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Editar Servicio</h3>
+                <form onsubmit="updateCategory(event, '${id}')" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre</label>
+                            <input type="text" id="edit-cat-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.name}" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-accent uppercase mb-1">Orden</label>
+                            <input type="number" id="edit-cat-order" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold" value="${currentOrder}" placeholder="Ej: 1" required>
+                        </div>
+                    </div>
+                    
+                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Identificador (Slug)</label><input type="text" id="edit-cat-slug" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.slug}" required></div>
+                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="edit-cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.icon}" required></div>
+                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="edit-cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">${colorOptions}</select></div>
+                    
+                    <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Guardar Cambios</button>
+                </form>
+            </div>`);
         };
 
         window.updateCategory = async (e, id) => {
@@ -596,13 +674,30 @@
                     slug: document.getElementById('edit-cat-slug').value.toLowerCase().trim(),
                     icon: document.getElementById('edit-cat-icon').value,
                     color: document.getElementById('edit-cat-color').value,
+                    // ACTUALIZAMOS EL NÚMERO EN LA BASE DE DATOS
+                    order: Number(document.getElementById('edit-cat-order').value), 
                 });
                 showToast('Categoría actualizada', 'success');
                 closeModal();
             } catch(err) { showToast('Error al actualizar', 'error'); }
         };
 
-        window.saveCategory = async (e) => { e.preventDefault(); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'categories'), { name: document.getElementById('cat-name').value, slug: document.getElementById('cat-slug').value.toLowerCase().trim(), icon: document.getElementById('cat-icon').value, color: document.getElementById('cat-color').value, createdAt: serverTimestamp() }); showToast('Categoría creada', 'success'); closeModal(); } catch(err) { showToast('Error', 'error'); } };
+        window.saveCategory = async (e) => { 
+            e.preventDefault(); 
+            try { 
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'categories'), { 
+                    name: document.getElementById('cat-name').value, 
+                    slug: document.getElementById('cat-slug').value.toLowerCase().trim(), 
+                    icon: document.getElementById('cat-icon').value, 
+                    color: document.getElementById('cat-color').value,
+                    // AQUÍ GUARDAMOS EL NÚMERO EN LA BASE DE DATOS
+                    order: Number(document.getElementById('cat-order').value), 
+                    createdAt: serverTimestamp() 
+                }); 
+                showToast('Categoría creada', 'success'); 
+                closeModal(); 
+            } catch(err) { showToast('Error', 'error'); } 
+        };
         window.deleteCategory = async (id) => { if(confirm("¿Eliminar categoría?")) try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id)); showToast('Eliminada', 'success'); } catch(err) { showToast('Error', 'error'); } };
 
         // --- DATOS USUARIO ---
@@ -810,20 +905,36 @@
                             <div class="space-y-3">
                         `;
                         groupedProducts[category].forEach(d => {
-                            html += `<div class="neumo-card p-3 flex items-center gap-3 slide-up">
-                                <img src="${d.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-gray-100 neumo-inset">
-                                <div class="flex-1 overflow-hidden">
-                                    <div class="flex justify-between">
-                                        <p class="font-bold text-sm text-gray-800 truncate">${d.name}</p>
+                            html += `<div class="neumo-card p-3 flex items-center gap-3 slide-up relative overflow-hidden">
+                                <img src="${d.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-gray-100 neumo-inset flex-shrink-0">
+                                
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start">
+                                        <p class="font-bold text-sm text-gray-800 truncate pr-2">${d.name}</p>
                                     </div>
-                                    <div class="flex gap-2">
-                                        <span class="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 rounded border border-gray-200 neumo-flat">Cli: $${d.priceClient}</span>
-                                        <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50/50 px-1.5 rounded border border-indigo-100 neumo-flat">Rev: $${d.priceReseller}</span>
+                                    
+                                    <div class="flex flex-wrap gap-1 mt-1 mb-1">
+                                        <span class="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 neumo-flat" title="Cliente">
+                                            Cli: $${d.priceClient || 0}
+                                        </span>
+                                        <span class="text-[9px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 neumo-flat" title="Vip">
+                                            Vip: $${d.priceVip || 0}
+                                        </span>
+                                        <span class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 neumo-flat" title="Revendedor">
+                                            Rev: $${d.priceReseller || 0}
+                                        </span>
+                                        <span class="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 neumo-flat" title="Lider">
+                                            Lid: $${d.priceLeader || 0}
+                                        </span>
                                     </div>
-                                    <p class="text-[10px] text-gray-400 mt-0.5">${d.category}</p>
-                                    <div class="mt-1 text-[10px]">Stock: <b>${d.stock||0}</b></div>
+
+                                    <div class="flex justify-between items-end">
+                                        <p class="text-[10px] text-gray-400 truncate max-w-[100px]">${d.category}</p>
+                                        <div class="text-[10px]">Stock: <b class="${(d.stock||0) < 1 ? 'text-danger' : 'text-gray-800'}">${d.stock||0}</b></div>
+                                    </div>
                                 </div>
-                                <div class="flex flex-col gap-1">
+
+                                <div class="flex flex-col gap-1 pl-1 border-l border-gray-100">
                                     <button onclick="openEditProductModal('${d.id}')" class="neumo-button p-2 text-blue-500 hover:text-accent"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                     <button onclick="deleteProfile('${d.id}')" class="neumo-button p-2 text-rose-500 hover:text-danger"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                 </div>
@@ -856,7 +967,8 @@
                         </div>
                         <div class="flex gap-2 pt-2 border-t border-gray-200" onclick="event.stopPropagation();">
                             <button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="neumo-button flex-1 bg-success/10 text-success py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="dollar-sign" class="w-3 h-3"></i> Cargar</button>
-                            <button onclick="toggleUserRole('${doc.id}', '${uRole}')" class="neumo-button px-3 bg-indigo-50/50 text-indigo-600 rounded-lg text-xs font-bold" title="Cambiar Rol"><i data-lucide="user-cog" class="w-3 h-3"></i></button>
+                            <button onclick="event.stopPropagation(); openChangeRoleModal('${doc.id}', '${uRole}', '${d.email}')" class="neumo-button px-3 bg-indigo-50/50 text-indigo-600 rounded-lg text-xs font-bold" title="Cambiar Rol"><i data-lucide="user-cog" class="w-3 h-3"></i></button>
+
                             <button onclick="toggleSuspend('${doc.id}', ${!susp})" class="neumo-button px-3 bg-gray-100 text-gray-500 rounded-lg text-xs font-bold">${susp?'Activar':'Suspender'}</button>
                         </div>
                     </div>`; 
@@ -1190,7 +1302,55 @@
         window.registerUserByAdmin = async (e) => { e.preventDefault(); const email = document.getElementById('new-user-email').value; const password = document.getElementById('new-user-pass').value; try { const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp"); const secondaryAuth = getAuth(secondaryApp); const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password); await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'wallet', 'main'), { balance: 0, profit: 0, createdAt: serverTimestamp() }); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', cred.user.uid), { email: email, uid: cred.user.uid, role: 'client', lastLogin: serverTimestamp(), suspended: false }, { merge: true }); await signOut(secondaryAuth); showToast('Usuario creado (Cliente)', 'success'); closeModal(); } catch (error) { showToast('Error: ' + error.message, 'error'); } };
         window.openManualBalanceModal = (uid, email) => { openModal(`<div class="text-center bounce-enter"><h3 class="text-xl font-bold text-gray-800 mb-1">Cargar Saldo Manual</h3><p class="text-xs text-gray-400 mb-4">${email}</p><input type="number" id="manual-amount" class="neumo-inset w-full bg-transparent border-none rounded-xl px-4 py-3 text-lg font-bold text-center mb-4" placeholder="$0"><button onclick="confirmManualBalance('${uid}')" class="neumo-button w-full bg-success text-white font-bold py-3 rounded-xl shadow-lg">Confirmar Recarga</button></div>`); };
         window.confirmManualBalance = async (uid) => { const amt = Number(document.getElementById('manual-amount').value); if(!amt) return; const wRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'); await runTransaction(db, async (t) => { const s = await t.get(wRef); t.update(wRef, { balance: (s.data().balance||0) + amt }); const txRef = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions')); t.set(txRef, { type: 'deposit', amount: amt, description: 'Carga Manual Admin', timestamp: serverTimestamp(), prevBalance: s.data().balance, newBalance: (s.data().balance||0) + amt }); }); showToast('Saldo cargado', 'success'); closeModal(); };
-        window.toggleUserRole = async (docId, currentRole) => { const newRole = currentRole === 'client' ? 'reseller' : 'client'; if(confirm(`¿Cambiar rol de ${currentRole.toUpperCase()} a ${newRole.toUpperCase()}?`)) { try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', docId), { role: newRole }); showToast('Rol actualizado a ' + newRole, 'success'); } catch(e) { showToast('Error al cambiar rol', 'error'); } } };
+                        // --- REEMPLAZA LA FUNCIÓN toggleUserRole POR ESTAS DOS: ---
+
+        // 1. Abrir modal con selector
+        window.openChangeRoleModal = (docId, currentRole, email) => {
+            // Generamos las opciones basándonos en tu configuración de roles existente
+            let optionsHTML = '';
+            for (const [key, val] of Object.entries(ROLE_DEFINITIONS)) {
+                const selected = key === currentRole ? 'selected' : '';
+                optionsHTML += `<option value="${key}" ${selected}>${val.label}</option>`;
+            }
+
+            openModal(`
+                <div class="text-left bounce-enter">
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">Cambiar Rol</h3>
+                    <p class="text-xs text-gray-400 mb-4">Usuario: ${email}</p>
+                    
+                    <form onsubmit="saveUserRole(event, '${docId}')">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Selecciona el nuevo rol</label>
+                        <div class="neumo-inset p-1 rounded-xl mb-6">
+                            <select id="role-selector" class="w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold text-gray-700 focus:ring-0">
+                                ${optionsHTML}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition-all">
+                            Guardar Cambio
+                        </button>
+                    </form>
+                </div>
+            `);
+        };
+
+        // 2. Guardar el cambio
+        window.saveUserRole = async (e, docId) => {
+            e.preventDefault();
+            const newRole = document.getElementById('role-selector').value;
+            const roleLabel = ROLE_DEFINITIONS[newRole].label;
+            
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', docId), { role: newRole });
+                showToast(`Rol actualizado a ${roleLabel}`, 'success');
+                closeModal();
+            } catch(error) {
+                console.error(error);
+                showToast('Error al actualizar el rol', 'error');
+            }
+        };
+
+
         window.toggleSuspend = async (uid, val) => { await updateDoc(doc(db,'artifacts',appId,'public','data','all_users',uid), {suspended: val}); };
                 window.openUserHistory = async (uid, email) => { 
             const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main')); 
@@ -1324,7 +1484,7 @@
                 <div class="text-center bounce-enter">
                     <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="users" class="w-8 h-8"></i></div>
                     <h3 class="text-xl font-bold text-gray-800 mb-1">Invita y Gana</h3>
-                    <p class="text-xs text-gray-500 mb-6 px-4">Comparte este enlace. Tu referido recibe <strong>$40</strong> de bienvenida y tú ganas el <strong>10%</strong> de sus compras.</p>
+                    <p class="text-xs text-gray-500 mb-6 px-4">Comparte este enlace. Tu referido recibe <strong>$40</strong> de bienvenida <strong>de tu saldo</strong> y tú ganas el <strong>10%</strong> de sus compras.</p>
                     <div class="neumo-card neumo-inset p-4 mb-4 flex items-center justify-between gap-3">
                         <span class="text-xs font-mono text-gray-600 truncate select-all">${link}</span>
                         <button onclick="navigator.clipboard.writeText('${link}').then(()=>showToast('Enlace copiado','success'))" class="neumo-button text-indigo-600 hover:bg-indigo-50/50 p-2 rounded-lg"><i data-lucide="copy" class="w-4 h-4"></i></button>
@@ -1335,7 +1495,7 @@
         }
 
         // --- MODALES DE PRODUCTO CON DOBLE PRECIO ---
-        window.openAddProductModal = () => { 
+                window.openAddProductModal = () => { 
             let optionsHTML = window.categoriesCache.length > 0 ? window.categoriesCache.map(c => `<option value="${c.slug}">${c.name}</option>`).join('') : `<option value="" disabled selected>Crea categorías primero</option>`; 
             openModal(`
                 <div class="text-left bounce-enter">
@@ -1344,26 +1504,35 @@
                         <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría</label><select id="p-category" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required>${optionsHTML}</select></div>
                         <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
                         <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Precio Cliente</label><input type="number" id="p-price-client" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="$ Alto"></div>
-                            <div><label class="block text-xs font-bold text-indigo-500 uppercase mb-1">Precio Revendedor</label><input type="number" id="p-price-reseller" class="neumo-inset w-full bg-indigo-50/50 border-none rounded-xl p-3 text-sm text-indigo-700 font-bold" required placeholder="$ Bajo"></div>
+                        
+                        <div class="neumo-inset p-3 rounded-xl grid grid-cols-2 gap-3">
+                            <p class="col-span-2 text-[10px] font-bold text-gray-400 uppercase text-center mb-1">Lista de Precios</p>
+                            <div><label class="block text-[10px] font-bold text-gray-500 uppercase">Cliente</label><input type="number" id="p-price-client" class="neumo-flat border border-gray-200 w-full rounded-lg p-2 text-sm" required placeholder="$ Base"></div>
+                            <div><label class="block text-[10px] font-bold text-purple-600 uppercase">Vip</label><input type="number" id="p-price-vip" class="neumo-flat border border-purple-200 w-full rounded-lg p-2 text-sm text-purple-700 font-bold" required placeholder="$ Vip"></div>
+                            <div><label class="block text-[10px] font-bold text-indigo-600 uppercase">Revendedor</label><input type="number" id="p-price-reseller" class="neumo-flat border border-indigo-200 w-full rounded-lg p-2 text-sm text-indigo-700 font-bold" required placeholder="$ Rev"></div>
+                            <div><label class="block text-[10px] font-bold text-amber-600 uppercase">Lider</label><input type="number" id="p-price-leader" class="neumo-flat border border-amber-200 w-full rounded-lg p-2 text-sm text-amber-700 font-bold" required placeholder="$ Lider"></div>
                         </div>
+
                         <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción</label><textarea id="p-desc" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm h-20 resize-none"></textarea></div>
-                        <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Guardar</button>
+                        <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Guardar Producto</button>
                     </form>
                 </div>`); 
         };
+
         
-        window.saveProduct = async (e) => { 
+                window.saveProduct = async (e) => { 
             e.preventDefault(); 
             try { 
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { 
                     category: document.getElementById('p-category').value, 
                     name: document.getElementById('p-name').value, 
                     imageUrl: document.getElementById('p-image').value, 
+                    // AQUÍ GUARDAMOS LOS 4 PRECIOS
                     priceClient: Number(document.getElementById('p-price-client').value), 
+                    priceVip: Number(document.getElementById('p-price-vip').value),
                     priceReseller: Number(document.getElementById('p-price-reseller').value),
-                    price: Number(document.getElementById('p-price-client').value), 
+                    priceLeader: Number(document.getElementById('p-price-leader').value),
+                    price: Number(document.getElementById('p-price-client').value), // Mantenemos este por compatibilidad
                     description: document.getElementById('p-desc').value, 
                     stock: 0, 
                     createdAt: serverTimestamp() 
@@ -1372,43 +1541,98 @@
                 closeModal(); 
             } catch(err) { showToast('Error al guardar', 'error'); } 
         };
-        
-        window.openEditProductModal = async (pid) => { 
-            const d = (await getDoc(doc(db,'artifacts',appId,'public','data','profiles',pid))).data(); 
-            let optionsHTML = window.categoriesCache.map(c => `<option value="${c.slug}" ${c.slug===d.category?'selected':''}>${c.name}</option>`).join(''); 
-            const valClient = d.priceClient || d.price;
-            const valReseller = d.priceReseller || d.price;
 
+        
+                // Reemplaza la función existente con esta versión mejorada
+        window.openEditProductModal = async (pid) => { 
+            // 1. Obtener datos del producto
+            const docSnap = await getDoc(doc(db,'artifacts',appId,'public','data','profiles',pid));
+            if (!docSnap.exists()) return showToast('Producto no encontrado', 'error');
+            const d = docSnap.data(); 
+
+            // 2. Generar opciones de categoría
+            let optionsHTML = window.categoriesCache.map(c => `<option value="${c.slug}" ${c.slug===d.category?'selected':''}>${c.name}</option>`).join(''); 
+
+            // 3. Obtener los valores actuales de los precios (usando un fallback si no existen)
+            // Se usa d.priceClient o d.price como base si los específicos no existen aún.
+            const valClient = d.priceClient || d.price || 0;
+            const valVip = d.priceVip || valClient || 0;
+            const valReseller = d.priceReseller || valClient || 0;
+            const valLeader = d.priceLeader || valReseller || 0;
+
+            // 4. Abrir el modal con el NUEVO diseño de rejilla de precios
             openModal(`
                 <div class="text-left bounce-enter">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">Editar</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Editar Producto</h3>
                     <form onsubmit="updateProduct(event, '${pid}')" class="space-y-4">
-                        <div><label class="text-xs font-bold uppercase">Nombre</label><input type="text" id="e-name" value="${d.name}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm"></div>
-                        <div class="grid grid-cols-2 gap-4">
-                             <div><label class="text-xs font-bold uppercase">Precio Cliente</label><input type="number" id="e-price-client" value="${valClient}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm"></div>
-                             <div><label class="text-xs font-bold uppercase text-indigo-600">Precio Revendedor</label><input type="number" id="e-price-reseller" value="${valReseller}" class="neumo-inset w-full bg-indigo-50/50 border-none rounded-xl p-3 text-sm text-indigo-700"></div>
+                        
+                        <div><label class="text-xs font-bold uppercase text-gray-500">Nombre</label><input type="text" id="e-name" value="${d.name}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
+
+                        <div class="neumo-inset p-3 rounded-xl grid grid-cols-2 gap-3">
+                            <p class="col-span-2 text-[10px] font-bold text-gray-400 uppercase text-center mb-1">Precios por Jerarquía</p>
+                            
+                            <div><label class="block text-[10px] font-bold text-gray-500 uppercase">Cliente</label><input type="number" id="e-price-client" value="${valClient}" class="neumo-flat border border-gray-200 w-full rounded-lg p-2 text-sm" required step="0.01"></div>
+                            
+                            <div><label class="block text-[10px] font-bold text-purple-600 uppercase">Vip</label><input type="number" id="e-price-vip" value="${valVip}" class="neumo-flat border border-purple-200 w-full rounded-lg p-2 text-sm text-purple-700 font-bold" required step="0.01"></div>
+                            
+                            <div><label class="block text-[10px] font-bold text-indigo-600 uppercase">Revendedor</label><input type="number" id="e-price-reseller" value="${valReseller}" class="neumo-flat border border-indigo-200 w-full rounded-lg p-2 text-sm text-indigo-700 font-bold" required step="0.01"></div>
+                            
+                            <div><label class="block text-[10px] font-bold text-amber-600 uppercase">Lider</label><input type="number" id="e-price-leader" value="${valLeader}" class="neumo-flat border border-amber-200 w-full rounded-lg p-2 text-sm text-amber-700 font-bold" required step="0.01"></div>
                         </div>
-                        <div><label class="text-xs font-bold uppercase">Categoría</label><select id="e-cat" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">${optionsHTML}</select></div>
-                        <div><label class="text-xs font-bold uppercase">Imagen</label><input type="url" id="e-img" value="${d.imageUrl}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm"></div>
-                        <div><label class="text-xs font-bold uppercase">Descripción</label><textarea id="e-desc" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 h-20">${d.description}</textarea></div>
-                        <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl">Guardar</button>
+                        <div><label class="text-xs font-bold uppercase text-gray-500">Categoría</label><select id="e-cat" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">${optionsHTML}</select></div>
+                        <div><label class="text-xs font-bold uppercase text-gray-500">URL Imagen</label><input type="url" id="e-img" value="${d.imageUrl}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
+                        <div><label class="text-xs font-bold uppercase text-gray-500">Descripción</label><textarea id="e-desc" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 h-24 resize-none">${d.description}</textarea></div>
+                        
+                        <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Guardar Cambios</button>
                     </form>
                 </div>`); 
         };
 
+                // Reemplaza la función existente con esta versión para guardar los 4 precios
         window.updateProduct = async (e, pid) => { 
             e.preventDefault(); 
-            await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), { 
-                name: document.getElementById('e-name').value, 
-                priceClient: Number(document.getElementById('e-price-client').value), 
-                priceReseller: Number(document.getElementById('e-price-reseller').value),
-                price: Number(document.getElementById('e-price-client').value),
-                category: document.getElementById('e-cat').value, 
-                imageUrl: document.getElementById('e-img').value, 
-                description: document.getElementById('e-desc').value 
-            }); 
-            showToast('Actualizado', 'success'); 
-            closeModal(); 
+
+            // Validar inputs numéricos
+            const pClient = Number(document.getElementById('e-price-client').value);
+            const pVip = Number(document.getElementById('e-price-vip').value);
+            const pReseller = Number(document.getElementById('e-price-reseller').value);
+            const pLeader = Number(document.getElementById('e-price-leader').value);
+
+            if (isNaN(pClient) || isNaN(pVip) || isNaN(pReseller) || isNaN(pLeader)) {
+                return showToast('Por favor, ingresa valores numéricos válidos para los precios.', 'error');
+            }
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Guardando...";
+
+            try {
+                await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), { 
+                    name: document.getElementById('e-name').value, 
+                    
+                    // --- ACTUALIZAMOS LOS 4 PRECIOS ---
+                    priceClient: pClient,
+                    priceVip: pVip,
+                    priceReseller: pReseller,
+                    priceLeader: pLeader,
+                    price: pClient, // Mantenemos 'price' genérico igual al de cliente por compatibilidad
+                    // ----------------------------------
+
+                    category: document.getElementById('e-cat').value, 
+                    imageUrl: document.getElementById('e-img').value, 
+                    description: document.getElementById('e-desc').value,
+                    updatedAt: serverTimestamp()
+                }); 
+
+                showToast('Producto actualizado correctamente', 'success'); 
+                closeModal(); 
+            } catch (error) {
+                console.error("Error al actualizar producto:", error);
+                showToast('Error al guardar cambios: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
         };
 
         // --- COMPRA Y NAVEGACIÓN ---
@@ -1422,20 +1646,35 @@
                 const grid = document.getElementById('products-grid'); if(!grid) return; if(snapshot.empty) { grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="package-open" class="w-12 h-12 mb-2"></i><p class="text-sm">No hay productos en ${title}.</p></div>`; lucide.createIcons(); return; }
                 grid.innerHTML = ''; 
                 snapshot.forEach(doc => { 
-                    const p = doc.data(); 
+                                        const p = doc.data(); 
                     const safeDesc = encodeURIComponent(p.description || ''); 
-                    let effectivePrice = p.priceClient || p.price;
-                    let priceClass = 'bg-success/10 text-success';
+                    
+                    // --- LÓGICA: ELEGIR PRECIO SEGÚN JERARQUÍA ---
+                    let effectivePrice = p.priceClient || p.price; // Precio base
+                    
+                    // Si el usuario tiene rango y el producto tiene precio especial, úsalo
+                    if (currentUserRole === 'lider' && p.priceLeader) effectivePrice = p.priceLeader;
+                    else if (currentUserRole === 'reseller' && p.priceReseller) effectivePrice = p.priceReseller;
+                    else if (currentUserRole === 'vip' && p.priceVip) effectivePrice = p.priceVip;
+
+                    // --- LÓGICA: ESTILO DEL PRECIO E ICONO ---
+                    const roleInfo = getRoleData(currentUserRole);
+                    let priceClass = 'bg-gray-100 text-gray-800'; // Estilo normal
                     let label = '';
-                    if (currentUserRole === 'reseller') {
-                        effectivePrice = p.priceReseller || effectivePrice;
-                        priceClass = 'bg-indigo-50/50 text-indigo-700 border border-indigo-100';
-                        label = '<span class="text-[8px] uppercase font-bold text-indigo-400 block mb-0.5">Precio Rev.</span>';
+
+                    // Si NO es cliente normal, ponemos colores e icono
+                    if (currentUserRole !== 'client') {
+                        priceClass = `${roleInfo.bg} ${roleInfo.color} border border-current/20`;
+                        label = `<span class="text-[8px] uppercase font-bold opacity-80 block mb-0.5 flex items-center gap-1"><i data-lucide="${roleInfo.icon}" class="w-2 h-2"></i> ${roleInfo.label}</span>`;
                     }
+
+                    // Renderizado de tarjeta
                     let ribbon = ((p.stock||0) <= 0) ? `<div class="absolute inset-0 bg-bg-primary/80 backdrop-blur-[1px] z-20 flex items-center justify-center"><span class="bg-danger text-white text-[10px] font-bold px-3 py-1 rounded-full rotate-[-10deg] shadow-lg neumo-flat">AGOTADO</span></div>` : (((p.stock||0) <= 3) ? `<div class="absolute top-2 right-2 bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-sm z-20 neumo-flat">¡Pocos!</div>` : ''); 
+                    
                     const card = document.createElement('div'); card.className = "neumo-card overflow-hidden cursor-pointer group hover:scale-105 relative bounce-enter"; 
-                    card.innerHTML = `${ribbon}<div onclick="buyProduct('${doc.id}', '${p.name}', ${effectivePrice}, ${p.stock||0}, '${safeDesc}', '${p.imageUrl}')" class="flex flex-col h-full"><div class="aspect-[4/3] overflow-hidden bg-gray-100 relative"><img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy"><div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div></div><div class="p-4 flex-1 flex flex-col justify-between"><div><h4 class="font-bold text-gray-800 text-sm leading-tight mb-1">${p.name}</h4><p class="text-[10px] text-gray-400 line-clamp-2">${p.description || 'Servicio digital premium'}</p></div><div class="flex justify-between items-end mt-3"><div class="${priceClass} px-2.5 py-1 rounded-lg text-right neumo-flat">${label}<span class="font-bold text-sm">$${effectivePrice}</span></div><div class="neumo-button w-8 h-8 rounded-full bg-bg-primary flex items-center justify-center group-hover:bg-gray-900 group-hover:text-white"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div></div></div></div>`; 
+                    card.innerHTML = `${ribbon}<div onclick="buyProduct('${doc.id}', '${p.name}', ${effectivePrice}, ${p.stock||0}, '${safeDesc}', '${p.imageUrl}')" class="flex flex-col h-full"><div class="aspect-[4/3] overflow-hidden bg-gray-100 relative"><img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy"><div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div></div><div class="p-4 flex-1 flex flex-col justify-between"><div><h4 class="font-bold text-gray-800 text-sm leading-tight mb-1">${p.name}</h4><p class="text-[10px] text-gray-400 line-clamp-2">${p.description || 'Servicio digital premium'}</p></div><div class="flex justify-between items-end mt-3"><div class="${priceClass} px-2.5 py-1 rounded-lg text-right neumo-flat min-w-[70px]">${label}<span class="font-bold text-sm">$${effectivePrice}</span></div><div class="neumo-button w-8 h-8 rounded-full bg-bg-primary flex items-center justify-center group-hover:bg-gray-900 group-hover:text-white"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div></div></div></div>`; 
                     grid.appendChild(card); 
+ 
                 }); 
                 lucide.createIcons();
             });
@@ -1478,14 +1717,23 @@
                     const wSnap = await t.get(wRef);
                     const currentBalance = Number(wSnap.data().balance) || 0;
                     
+                                        // Obtener datos del producto
                     const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', pid); 
                     const pSnap = await t.get(pRef);
                     const productData = pSnap.data();
                     
+                    // Determinar precio base
                     let finalPrice = productData.priceClient || productData.price;
-                    if (currentUserRole === 'reseller') {
-                        finalPrice = productData.priceReseller || finalPrice;
+                    
+                    // Aplicar descuento según jerarquía
+                    if (currentUserRole === 'lider' && productData.priceLeader) {
+                        finalPrice = productData.priceLeader;
+                    } else if (currentUserRole === 'reseller' && productData.priceReseller) {
+                        finalPrice = productData.priceReseller;
+                    } else if (currentUserRole === 'vip' && productData.priceVip) {
+                        finalPrice = productData.priceVip;
                     }
+                    
                     const cost = Number(finalPrice);
                     
                     if(currentBalance < cost) throw new Error("Saldo insuficiente");
