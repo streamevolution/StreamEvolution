@@ -1509,14 +1509,31 @@
         }
 
         // --- MODALES DE PRODUCTO CON DOBLE PRECIO ---
-                window.openAddProductModal = () => { 
+                        // ======================================================
+        // INICIO BLOQUE 1: AGREGAR PRODUCTO (NUEVO)
+        // ======================================================
+        window.openAddProductModal = () => { 
             let optionsHTML = window.categoriesCache.length > 0 ? window.categoriesCache.map(c => `<option value="${c.slug}">${c.name}</option>`).join('') : `<option value="" disabled selected>Crea categorías primero</option>`; 
+            
             openModal(`
                 <div class="text-left bounce-enter">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Agregar Artículo</h3>
                     <form onsubmit="saveProduct(event)" class="space-y-4">
-                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría</label><select id="p-category" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required>${optionsHTML}</select></div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría</label>
+                            <select id="p-category" onchange="toggleForbiddenField()" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required>${optionsHTML}</select>
+                        </div>
+                        
                         <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label><input type="text" id="p-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
+                        
+                        <div id="field-forbidden" class="hidden bg-rose-50 p-2 rounded-xl border border-rose-100">
+                            <label class="block text-xs font-bold text-rose-500 uppercase mb-1">¿Producto Prohibido?</label>
+                            <select id="p-forbidden" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold text-rose-600">
+                                <option value="false">No (Normal)</option>
+                                <option value="true">Sí (Mostrar alerta)</option>
+                            </select>
+                        </div>
+
                         <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">URL Imagen</label><input type="url" id="p-image" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
                         
                         <div class="neumo-inset p-3 rounded-xl grid grid-cols-2 gap-3">
@@ -1531,22 +1548,39 @@
                         <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Guardar Producto</button>
                     </form>
                 </div>`); 
+                
+            // Verifica si debe mostrar el campo al abrir
+            setTimeout(window.toggleForbiddenField, 100);
         };
 
-        
-                window.saveProduct = async (e) => { 
+        // Función auxiliar para mostrar/ocultar
+        window.toggleForbiddenField = () => {
+            const cat = document.getElementById('p-category').value;
+            const field = document.getElementById('field-forbidden');
+            // Si la categoría tiene la palabra "libros"
+            if(cat && cat.toLowerCase().includes('libros')) {
+                field.classList.remove('hidden');
+            } else {
+                field.classList.add('hidden');
+                document.getElementById('p-forbidden').value = "false"; 
+            }
+        };
+
+        window.saveProduct = async (e) => { 
             e.preventDefault(); 
             try { 
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { 
                     category: document.getElementById('p-category').value, 
                     name: document.getElementById('p-name').value, 
+                    // GUARDAR SI ES PROHIBIDO
+                    isForbidden: document.getElementById('p-forbidden').value === 'true',
+                    
                     imageUrl: document.getElementById('p-image').value, 
-                    // AQUÍ GUARDAMOS LOS 4 PRECIOS
                     priceClient: Number(document.getElementById('p-price-client').value), 
                     priceVip: Number(document.getElementById('p-price-vip').value),
                     priceReseller: Number(document.getElementById('p-price-reseller').value),
                     priceLeader: Number(document.getElementById('p-price-leader').value),
-                    price: Number(document.getElementById('p-price-client').value), // Mantenemos este por compatibilidad
+                    price: Number(document.getElementById('p-price-client').value), 
                     description: document.getElementById('p-desc').value, 
                     stock: 0, 
                     createdAt: serverTimestamp() 
@@ -1555,26 +1589,30 @@
                 closeModal(); 
             } catch(err) { showToast('Error al guardar', 'error'); } 
         };
+        // ======================================================
+        // FIN BLOQUE 1
+        // ======================================================
+
 
         
                 // Reemplaza la función existente con esta versión mejorada
+                // ======================================================
+        // INICIO BLOQUE 2: EDITAR PRODUCTO (NUEVO)
+        // ======================================================
         window.openEditProductModal = async (pid) => { 
-            // 1. Obtener datos del producto
             const docSnap = await getDoc(doc(db,'artifacts',appId,'public','data','profiles',pid));
             if (!docSnap.exists()) return showToast('Producto no encontrado', 'error');
             const d = docSnap.data(); 
 
-            // 2. Generar opciones de categoría
             let optionsHTML = window.categoriesCache.map(c => `<option value="${c.slug}" ${c.slug===d.category?'selected':''}>${c.name}</option>`).join(''); 
-
-            // 3. Obtener los valores actuales de los precios (usando un fallback si no existen)
-            // Se usa d.priceClient o d.price como base si los específicos no existen aún.
             const valClient = d.priceClient || d.price || 0;
             const valVip = d.priceVip || valClient || 0;
             const valReseller = d.priceReseller || valClient || 0;
             const valLeader = d.priceLeader || valReseller || 0;
 
-            // 4. Abrir el modal con el NUEVO diseño de rejilla de precios
+            // Revisamos si es un libro para mostrar el campo
+            const showForbiddenClass = d.category && d.category.toLowerCase().includes('libros') ? '' : 'hidden';
+
             openModal(`
                 <div class="text-left bounce-enter">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Editar Producto</h3>
@@ -1582,18 +1620,26 @@
                         
                         <div><label class="text-xs font-bold uppercase text-gray-500">Nombre</label><input type="text" id="e-name" value="${d.name}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
 
+                        <div id="e-field-forbidden" class="${showForbiddenClass} bg-rose-50 p-2 rounded-xl border border-rose-100">
+                            <label class="block text-xs font-bold text-rose-500 uppercase mb-1">¿Producto Prohibido?</label>
+                            <select id="e-forbidden" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold text-rose-600">
+                                <option value="false" ${d.isForbidden === false ? 'selected' : ''}>No</option>
+                                <option value="true" ${d.isForbidden === true ? 'selected' : ''}>Sí (Alerta Roja)</option>
+                            </select>
+                        </div>
+
                         <div class="neumo-inset p-3 rounded-xl grid grid-cols-2 gap-3">
                             <p class="col-span-2 text-[10px] font-bold text-gray-400 uppercase text-center mb-1">Precios por Jerarquía</p>
-                            
                             <div><label class="block text-[10px] font-bold text-gray-500 uppercase">Cliente</label><input type="number" id="e-price-client" value="${valClient}" class="neumo-flat border border-gray-200 w-full rounded-lg p-2 text-sm" required step="0.01"></div>
-                            
                             <div><label class="block text-[10px] font-bold text-purple-600 uppercase">Vip</label><input type="number" id="e-price-vip" value="${valVip}" class="neumo-flat border border-purple-200 w-full rounded-lg p-2 text-sm text-purple-700 font-bold" required step="0.01"></div>
-                            
                             <div><label class="block text-[10px] font-bold text-indigo-600 uppercase">Revendedor</label><input type="number" id="e-price-reseller" value="${valReseller}" class="neumo-flat border border-indigo-200 w-full rounded-lg p-2 text-sm text-indigo-700 font-bold" required step="0.01"></div>
-                            
                             <div><label class="block text-[10px] font-bold text-amber-600 uppercase">Lider</label><input type="number" id="e-price-leader" value="${valLeader}" class="neumo-flat border border-amber-200 w-full rounded-lg p-2 text-sm text-amber-700 font-bold" required step="0.01"></div>
                         </div>
-                        <div><label class="text-xs font-bold uppercase text-gray-500">Categoría</label><select id="e-cat" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">${optionsHTML}</select></div>
+
+                        <div>
+                            <label class="text-xs font-bold uppercase text-gray-500">Categoría</label>
+                            <select id="e-cat" onchange="toggleEditForbiddenField()" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">${optionsHTML}</select>
+                        </div>
                         <div><label class="text-xs font-bold uppercase text-gray-500">URL Imagen</label><input type="url" id="e-img" value="${d.imageUrl}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
                         <div><label class="text-xs font-bold uppercase text-gray-500">Descripción</label><textarea id="e-desc" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 h-24 resize-none">${d.description}</textarea></div>
                         
@@ -1602,54 +1648,52 @@
                 </div>`); 
         };
 
-                // Reemplaza la función existente con esta versión para guardar los 4 precios
+        // Auxiliar edición
+        window.toggleEditForbiddenField = () => {
+            const cat = document.getElementById('e-cat').value;
+            const field = document.getElementById('e-field-forbidden');
+            if(cat && cat.toLowerCase().includes('libros')) field.classList.remove('hidden');
+            else field.classList.add('hidden');
+        };
+
         window.updateProduct = async (e, pid) => { 
             e.preventDefault(); 
-
-            // Validar inputs numéricos
-            const pClient = Number(document.getElementById('e-price-client').value);
-            const pVip = Number(document.getElementById('e-price-vip').value);
-            const pReseller = Number(document.getElementById('e-price-reseller').value);
-            const pLeader = Number(document.getElementById('e-price-leader').value);
-
-            if (isNaN(pClient) || isNaN(pVip) || isNaN(pReseller) || isNaN(pLeader)) {
-                return showToast('Por favor, ingresa valores numéricos válidos para los precios.', 'error');
-            }
-
             const btn = e.target.querySelector('button[type="submit"]');
             const originalText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = "Guardando...";
+            btn.disabled = true; btn.innerText = "Guardando...";
 
             try {
                 await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), { 
                     name: document.getElementById('e-name').value, 
+                    // ACTUALIZAR SI ES PROHIBIDO
+                    isForbidden: document.getElementById('e-forbidden').value === 'true',
                     
-                    // --- ACTUALIZAMOS LOS 4 PRECIOS ---
-                    priceClient: pClient,
-                    priceVip: pVip,
-                    priceReseller: pReseller,
-                    priceLeader: pLeader,
-                    price: pClient, // Mantenemos 'price' genérico igual al de cliente por compatibilidad
-                    // ----------------------------------
-
+                    priceClient: Number(document.getElementById('e-price-client').value),
+                    priceVip: Number(document.getElementById('e-price-vip').value),
+                    priceReseller: Number(document.getElementById('e-price-reseller').value),
+                    priceLeader: Number(document.getElementById('e-price-leader').value),
+                    price: Number(document.getElementById('e-price-client').value), 
                     category: document.getElementById('e-cat').value, 
                     imageUrl: document.getElementById('e-img').value, 
                     description: document.getElementById('e-desc').value,
                     updatedAt: serverTimestamp()
                 }); 
-
                 showToast('Producto actualizado correctamente', 'success'); 
                 closeModal(); 
             } catch (error) {
-                console.error("Error al actualizar producto:", error);
-                showToast('Error al guardar cambios: ' + error.message, 'error');
-                btn.disabled = false;
-                btn.innerText = originalText;
+                showToast('Error: ' + error.message, 'error');
+                btn.disabled = false; btn.innerText = originalText;
             }
         };
+        // ======================================================
+        // FIN BLOQUE 2
+        // ======================================================
+
 
         // --- COMPRA Y NAVEGACIÓN ---
+                // ======================================================
+        // INICIO BLOQUE 3: VISTA TIENDA (CON TEXTO ROJO)
+        // ======================================================
         window.openCategoryModule = (categorySlug, title) => {
             const html = `<div class="relative h-full flex flex-col bg-bg-primary"><div class="neumo-flat flex justify-between items-center mb-4 px-6 pt-6"><div><h3 class="text-2xl font-black text-gray-800 tracking-tight">${title}</h3><p class="text-xs text-gray-400 font-medium">Selecciona tu plan ideal</p></div></div><div class="overflow-y-auto flex-1 pb-24 px-4 scrollbar-hide"><div id="products-grid" class="grid grid-cols-2 gap-4 pb-4"><div class="col-span-full text-center py-20"><div class="inline-block w-8 h-8 border-4 border-gray-200 border-t-accent rounded-full animate-spin"></div></div></div></div></div>`;
             document.getElementById('modal-content').innerHTML = html; const m = document.getElementById('app-modal'); const mc = document.getElementById('modal-card'); m.classList.remove('items-center', 'justify-center', 'p-4'); m.classList.add('items-end', 'justify-center', 'p-0'); mc.className = "neumo-card w-full max-w-4xl h-[85vh] rounded-t-[2.5rem] relative shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden slide-up border-t border-gray-100"; m.classList.remove('hidden'); m.classList.add('flex');
@@ -1657,49 +1701,51 @@
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), where('category', '==', categorySlug));
             
             onSnapshot(q, (snapshot) => {
-                const grid = document.getElementById('products-grid'); if(!grid) return; if(snapshot.empty) { grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="package-open" class="w-12 h-12 mb-2"></i><p class="text-sm">No hay productos en ${title}.</p></div>`; lucide.createIcons(); return; }
+                const grid = document.getElementById('products-grid'); if(!grid) return; 
+                if(snapshot.empty) { grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="package-open" class="w-12 h-12 mb-2"></i><p class="text-sm">No hay productos en ${title}.</p></div>`; lucide.createIcons(); return; }
+                
                 grid.innerHTML = ''; 
                 snapshot.forEach(doc => { 
-                                        const p = doc.data(); 
+                    const p = doc.data(); 
                     const safeDesc = encodeURIComponent(p.description || ''); 
                     
-                    // --- LÓGICA: ELEGIR PRECIO SEGÚN JERARQUÍA ---
-                    let effectivePrice = p.priceClient || p.price; // Precio base
-                    
-                    // Si el usuario tiene rango y el producto tiene precio especial, úsalo
+                    let effectivePrice = p.priceClient || p.price; 
                     if (currentUserRole === 'lider' && p.priceLeader) effectivePrice = p.priceLeader;
                     else if (currentUserRole === 'reseller' && p.priceReseller) effectivePrice = p.priceReseller;
                     else if (currentUserRole === 'vip' && p.priceVip) effectivePrice = p.priceVip;
 
-                    // --- LÓGICA: ESTILO DEL PRECIO E ICONO ---
                     const roleInfo = getRoleData(currentUserRole);
-                    let priceClass = 'bg-gray-100 text-gray-800'; // Estilo normal
+                    let priceClass = 'bg-gray-100 text-gray-800'; 
                     let label = '';
 
-                    // Si NO es cliente normal, ponemos colores e icono
                     if (currentUserRole !== 'client') {
                         priceClass = `${roleInfo.bg} ${roleInfo.color} border border-current/20`;
                         label = `<span class="text-[8px] uppercase font-bold opacity-80 block mb-0.5 flex items-center gap-1"><i data-lucide="${roleInfo.icon}" class="w-2 h-2"></i> ${roleInfo.label}</span>`;
                     }
 
-                    // Renderizado de tarjeta
-                                        // CÓDIGO NUEVO: Listón de "Agotado" estilo esquina sin desenfoque
                     let ribbon = ((p.stock || 0) <= 0)
-                        ? `<div class="absolute top-0 left-0 z-20 w-[100px] h-[100px] overflow-hidden pointer-events-none">
-                                <div class="bg-danger shadow-md text-white text-[10px] tracking-wider font-black uppercase py-1.5 text-center transform -rotate-45 absolute top-[20px] -left-[35px] w-[140px] neumo-flat" style="box-shadow: 0 5px 10px rgba(0,0,0,0.2);">
-                                    AGOTADO
-                                </div>
-                           </div>`
+                        ? `<div class="absolute top-0 left-0 z-20 w-[100px] h-[100px] overflow-hidden pointer-events-none"><div class="bg-danger shadow-md text-white text-[10px] tracking-wider font-black uppercase py-1.5 text-center transform -rotate-45 absolute top-[20px] -left-[35px] w-[140px] neumo-flat" style="box-shadow: 0 5px 10px rgba(0,0,0,0.2);">AGOTADO</div></div>`
                         : (((p.stock || 0) <= 3) ? `<div class="absolute top-2 right-2 bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-sm z-20 neumo-flat">¡Pocos!</div>` : ''); 
                     
+                    // --- AQUI ESTA EL TEXTO ROJO QUE APARECERA ---
+                    let forbiddenHtml = '';
+                    if (p.isForbidden === true) {
+                        forbiddenHtml = `<span class="block mt-1 text-[10px] font-black text-rose-600 uppercase tracking-widest animate-pulse flex items-center gap-1"><i data-lucide="ban" class="w-3 h-3"></i> DEEP WEB</span>`;
+                    }
+                    // ------------------------------------------
+
                     const card = document.createElement('div'); card.className = "neumo-card overflow-hidden cursor-pointer group hover:scale-105 relative bounce-enter"; 
-                    card.innerHTML = `${ribbon}<div onclick="buyProduct('${doc.id}', '${p.name}', ${effectivePrice}, ${p.stock||0}, '${safeDesc}', '${p.imageUrl}')" class="flex flex-col h-full"><div class="aspect-[4/3] overflow-hidden bg-gray-100 relative"><img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy"><div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div></div><div class="p-4 flex-1 flex flex-col justify-between"><div><h4 class="font-bold text-gray-800 text-sm leading-tight mb-1">${p.name}</h4><p class="text-[10px] text-gray-400 line-clamp-2">${p.description || 'Servicio digital premium'}</p></div><div class="flex justify-between items-end mt-3"><div class="${priceClass} px-2.5 py-1 rounded-lg text-right neumo-flat min-w-[70px]">${label}<span class="font-bold text-sm">$${effectivePrice}</span></div><div class="neumo-button w-8 h-8 rounded-full bg-bg-primary flex items-center justify-center group-hover:bg-gray-900 group-hover:text-white"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div></div></div></div>`; 
+                    card.innerHTML = `${ribbon}<div onclick="buyProduct('${doc.id}', '${p.name}', ${effectivePrice}, ${p.stock||0}, '${safeDesc}', '${p.imageUrl}')" class="flex flex-col h-full"><div class="aspect-[4/3] overflow-hidden bg-gray-100 relative"><img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy"><div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div></div><div class="p-4 flex-1 flex flex-col justify-between"><div><h4 class="font-bold text-gray-800 text-sm leading-tight mb-1">${p.name}</h4>${forbiddenHtml}<p class="text-[10px] text-gray-400 line-clamp-2 mt-1">${p.description || 'Servicio digital premium'}</p></div><div class="flex justify-between items-end mt-3"><div class="${priceClass} px-2.5 py-1 rounded-lg text-right neumo-flat min-w-[70px]">${label}<span class="font-bold text-sm">$${effectivePrice}</span></div><div class="neumo-button w-8 h-8 rounded-full bg-bg-primary flex items-center justify-center group-hover:bg-gray-900 group-hover:text-white"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div></div></div></div>`; 
                     grid.appendChild(card); 
  
                 }); 
                 lucide.createIcons();
             });
         };
+        // ======================================================
+        // FIN BLOQUE 3
+        // ======================================================
+
 
         window.buyProduct = (id, name, price, stock, desc, imgUrl) => { 
             openModal(`
