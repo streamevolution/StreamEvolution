@@ -132,7 +132,7 @@
         </div>
 
         <div class="w-full max-w-sm space-y-6 slide-up" style="animation-delay: 0.1s;">
-            <form id="login-form" class="space-y-4 auth-view">
+                        <form id="login-form" class="space-y-4 auth-view">
                 <div class="relative group neumo-inset">
                     <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-gray-400 transition-colors group-focus-within:text-accent"></i>
                     <input type="email" id="login-email" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 pl-12 pr-4 text-gray-700 font-medium placeholder:text-gray-400 focus:ring-0 focus:outline-none" placeholder="Correo electrónico" required>
@@ -144,9 +144,15 @@
                 <div class="text-right">
                     <button type="button" onclick="switchAuthView('forgot')" class="text-xs text-gray-500 font-bold hover:text-accent transition-colors">¿Olvidaste tu contraseña?</button>
                 </div>
+                
                 <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-gray-800 flex justify-center items-center gap-2 mt-2">
                     <span>Ingresar</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
+
+                <a href="https://www.mediafire.com/file/tweka8kkm1jg5sx/StreamEvolution.apk/file" target="_blank" class="neumo-button w-full bg-emerald-600 text-white font-bold py-3 rounded-2xl shadow-lg hover:bg-emerald-700 flex justify-center items-center gap-2 mt-3 no-underline transition-all active:scale-95">
+                    <i data-lucide="smartphone" class="w-5 h-5"></i>
+                    <span>Descargar Aplicación Android</span>
+                </a>
                 <div class="text-center text-sm text-gray-500 mt-6">
                     ¿Nuevo aquí? <button type="button" onclick="switchAuthView('register')" class="text-accent font-bold hover:underline ml-1">Crear Cuenta</button>
                 </div>
