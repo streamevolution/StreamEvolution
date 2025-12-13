@@ -1919,7 +1919,7 @@
                                         // --- MODIFICACION: SOLO DESCONTAR STOCK SI NO ES LIBRO NI DOCUMENTO ---
                                         // --- LÓGICA DE STOCK INFINITO ---
                     // Lista de categorías que NUNCA se agotan ni se marcan como vendidas
-                    const infiniteCategories = ['libros', 'documentos', 'herramientas', 'cursos'];
+                    const infiniteCategories = ['libros', 'documentos', 'herramientas', 'cursos', 'liberación móvil', 'liberacion-movil', 'liberacion movil'];
 
                     if (!infiniteCategories.includes(productData.category)) {
                         // SI NO ES INFINITO (Ej: Netflix):
