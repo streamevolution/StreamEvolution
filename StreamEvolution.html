@@ -2063,13 +2063,23 @@
         };
 
         // --- CARGA SALDO CON TIMER Y SANCIÓN (NUEVO) ---
-        window.openChargeModal = () => { 
+                window.openChargeModal = () => { 
             openModal(`
                 <div class="text-center bounce-enter">
                     <div class="w-16 h-16 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="wallet" class="w-8 h-8"></i></div>
                     <h3 class="text-xl font-bold text-gray-800 mb-2">Cargar Saldo</h3>
                     <input type="number" id="charge-amount" class="neumo-inset w-full bg-transparent border-none rounded-xl px-4 py-3 text-lg font-bold text-center mb-4" placeholder="$0">
+                    
                     <button id="confirm-btn" onclick="processRecharge(document.getElementById('charge-amount').value)" class="neumo-button w-full bg-accent text-white font-bold py-3 rounded-xl shadow-accent">Solicitar</button>
+                    
+                    <div class="mt-4 bg-amber-50 border border-amber-100 p-3 rounded-xl text-left shadow-sm slide-up" style="animation-delay: 0.1s;">
+                         <p class="text-xs text-amber-800 font-black uppercase flex items-center gap-1 mb-1">
+                            <i data-lucide="alert-triangle" class="w-3 h-3"></i> Nota Importante
+                        </p>
+                        <p class="text-[10px] text-amber-700 font-medium leading-relaxed">
+                            La recarga mínima es de <strong class="text-amber-900">$50</strong>. Si recargan menos de $50 el banco les cobrará una comisión de <strong class="text-rose-600">$10</strong> el cual se descontará de su saldo.
+                        </p>
+                    </div>
                     <div id="payment-info-container"></div>
                 </div>
             `); 
