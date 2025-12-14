@@ -1027,36 +1027,87 @@
                 document.getElementById('admin-users-list').innerHTML = html; lucide.createIcons();
             });
             // Inventario
+                        // Inventario (ORGANIZADO POR CATEGORÍAS)
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('status', '==', 'available')), (snapshot) => {
-                 let html = ''; 
                  window.inventoryCache = [];
+                 const items = [];
+                 
+                 // 1. Recolectamos todos los datos primero
                  snapshot.forEach(doc => { 
                     const i = doc.data(); 
                     i.id = doc.id;
+                    items.push(i);
                     window.inventoryCache.push(i);
+                 });
 
-                    // Determinar qué mostrar en el listado según el tipo
-                    let detailInfo = '';
-                    if (i.link) {
-                        detailInfo = `<p class="text-xs text-indigo-500 mt-1 truncate">Libro: ${i.link}</p>`;
-                    } else {
-                        detailInfo = `<p class="text-xs text-gray-500 mt-1">Expira: ${i.expiryDate || 'N/A'}</p>`;
-                    }
+                 // 2. Agrupamos por categoría
+                 const groupedItems = items.reduce((acc, item) => {
+                     // Si es viejo y no tiene categoría, lo mandamos a 'Varios'
+                     const cat = item.category || 'varios';
+                     if (!acc[cat]) acc[cat] = [];
+                     acc[cat].push(item);
+                     return acc;
+                 }, {});
 
-                    html += `<div class="neumo-card p-3 flex flex-col gap-2 slide-up">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-bold text-gray-800 text-sm">${i.serviceName}</p>
-                                ${detailInfo}
+                 // 3. Generamos el HTML ordenado
+                 let html = '';
+                 
+                 // Obtenemos las categorías y las ordenamos alfabéticamente
+                 const sortedCategories = Object.keys(groupedItems).sort();
+
+                 if (items.length === 0) {
+                     html = '<div class="text-center py-10 opacity-50"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i><p class="text-gray-400 text-sm">El inventario está vacío</p></div>';
+                 } else {
+                     sortedCategories.forEach(cat => {
+                         // Formato bonito para el título (ej: "game-pass" -> "Game Pass")
+                         const displayTitle = cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ');
+
+                         // Separador de categoría
+                         html += `
+                            <div class="mt-6 mb-3 flex items-center gap-3 slide-up">
+                                <div class="h-px bg-gray-300 flex-1"></div>
+                                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-bg-primary px-2">${displayTitle}</span>
+                                <div class="h-px bg-gray-300 flex-1"></div>
                             </div>
-                            <div class="flex gap-1">
-                                <button onclick="openEditInventoryModal('${doc.id}')" class="neumo-button text-blue-500 hover:text-accent p-1.5 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                <button onclick="deleteInventoryItem('${doc.id}')" class="neumo-button text-rose-500 hover:text-danger p-1.5 rounded-lg"><i data-lucide="trash" class="w-4 h-4"></i></button>
-                            </div>
-                        </div>
-                    </div>`; 
-                });
-                 document.getElementById('admin-inventory-list').innerHTML = html || '<p class="text-center text-gray-400">Inventario vacío</p>'; lucide.createIcons();
+                            <div class="space-y-3">
+                         `;
+
+                         // Renderizamos los items de esta categoría
+                         groupedItems[cat].forEach(i => {
+                            let detailInfo = '';
+                            if (i.link) {
+                                detailInfo = `<p class="text-[10px] text-indigo-500 mt-1 truncate font-medium bg-indigo-50 inline-block px-2 py-0.5 rounded border border-indigo-100"><i data-lucide="link" class="w-3 h-3 inline align-middle"></i> Digital / Link</p>`;
+                            } else if (i.description && !i.email) {
+                                // Caso Game Pass / Liberaciones (Solo descripción)
+                                detailInfo = `<p class="text-[10px] text-gray-400 mt-1 line-clamp-1 italic">${i.description}</p>`;
+                            } else {
+                                detailInfo = `<p class="text-[10px] text-gray-400 mt-1 font-mono">Expira: <span class="text-gray-600 font-bold">${i.expiryDate || 'N/A'}</span></p>`;
+                            }
+
+                            html += `
+                            <div class="neumo-card p-3 flex flex-col gap-2 slide-up relative group hover:scale-[1.01] transition-transform">
+                                <div class="flex justify-between items-start">
+                                    <div class="overflow-hidden pr-2">
+                                        <p class="font-bold text-gray-800 text-sm truncate">${i.serviceName}</p>
+                                        ${detailInfo}
+                                    </div>
+                                    <div class="flex gap-2 flex-shrink-0">
+                                        <button onclick="openEditInventoryModal('${i.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-blue-500 hover:text-white hover:bg-blue-500 rounded-lg transition-colors shadow-sm"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                        <button onclick="deleteInventoryItem('${i.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-rose-500 hover:text-white hover:bg-rose-500 rounded-lg transition-colors shadow-sm"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-end border-t border-gray-100 pt-2 mt-1">
+                                    <span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Creado: ${i.createdAt ? i.createdAt.toDate().toLocaleDateString() : 'Reciente'}</span>
+                                </div>
+                            </div>`; 
+                         });
+
+                         html += `</div>`; // Cierre del contenedor de la categoría
+                     });
+                 }
+
+                 document.getElementById('admin-inventory-list').innerHTML = html; 
+                 lucide.createIcons();
             });
             // Soporte
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '!=', 'renewal'), orderBy('timestamp', 'desc')), (s) => {
@@ -1072,64 +1123,103 @@
         // --- FUNCIONES DE INVENTARIO MEJORADAS (NUEVA LÓGICA) ---
 
         // Función para abrir el modal de Agregar Inventario (Modificada)
-        window.openAddInventoryModal = async () => {
-    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles')); 
-    const querySnapshot = await getDocs(q);
-    let options = '<option value="" data-category="">Selecciona un Artículo...</option>';
-    
-    querySnapshot.forEach((doc) => { 
-        const data = doc.data(); 
-        // Guardamos la categoría en un atributo data para usarlo en el JS
-        options += `<option value="${doc.id}" data-category="${data.category || 'otros'}" data-name="${data.name}">${data.name}</option>`; 
-    });
+                window.openAddInventoryModal = async () => {
+            // 1. Obtenemos los productos
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles')); 
+            const querySnapshot = await getDocs(q);
+            
+            // 2. Agrupamos los productos por categoría en un objeto
+            const groupedProducts = {};
+            
+            querySnapshot.forEach((doc) => { 
+                const data = doc.data(); 
+                // Usamos la categoría del producto o 'Otros' si no tiene
+                const cat = data.category || 'otros';
+                
+                if (!groupedProducts[cat]) {
+                    groupedProducts[cat] = [];
+                }
+                
+                // Guardamos el producto en su categoría correspondiente
+                groupedProducts[cat].push({
+                    id: doc.id,
+                    name: data.name,
+                    category: cat // Guardamos la categoría raw para el data-attribute
+                });
+            });
 
-    openModal(`
-        <div class="text-left bounce-enter">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Agregar al Inventario</h3>
-            <form onsubmit="saveInventoryItem(event)" class="space-y-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase">Artículo</label>
-                    <select id="inv-product-select" onchange="toggleInventoryFields()" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" required>
-                        ${options}
-                    </select>
-                </div>
+            // 3. Generamos el HTML del Select con <optgroup>
+            let options = '<option value="" data-category="">Selecciona un Artículo...</option>';
+            
+            // Ordenamos las categorías alfabéticamente para que se vea ordenado
+            const sortedCategories = Object.keys(groupedProducts).sort();
 
-                <div id="flexible-fields-container" class="space-y-3">
-                    <div id="fields-credentials">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Correo</label><input type="email" id="inv-email" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
-                            <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label><input type="text" id="inv-pass" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+            sortedCategories.forEach(categoryName => {
+                // Formateamos el nombre de la categoría (Primera mayúscula, guiones por espacios)
+                const displayTitle = categoryName.charAt(0).toUpperCase() + categoryName.slice(1).replace(/-/g, ' ');
+                
+                // Abrimos el grupo
+                options += `<optgroup label="${displayTitle}">`;
+                
+                // Ordenamos los productos dentro de la categoría alfabéticamente
+                const productsInCat = groupedProducts[categoryName].sort((a, b) => a.name.localeCompare(b.name));
+                
+                productsInCat.forEach(prod => {
+                    options += `<option value="${prod.id}" data-category="${prod.category}" data-name="${prod.name}">${prod.name}</option>`;
+                });
+                
+                // Cerramos el grupo
+                options += `</optgroup>`;
+            });
+
+            // 4. Abrimos el modal con el HTML generado
+            openModal(`
+                <div class="text-left bounce-enter">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Agregar al Inventario</h3>
+                    <form onsubmit="saveInventoryItem(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase">Artículo</label>
+                            <select id="inv-product-select" onchange="toggleInventoryFields()" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" required>
+                                ${options}
+                            </select>
                         </div>
-                    </div>
 
-                    <div id="fields-profile-extra" class="hidden grid-cols-2 gap-2">
-                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Nombre Perfil</label><input type="text" id="inv-profile-name" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
-                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">PIN</label><input type="text" id="inv-pin" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
-                    </div>
+                        <div id="flexible-fields-container" class="space-y-3">
+                            <div id="fields-credentials">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Correo</label><input type="email" id="inv-email" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label><input type="text" id="inv-pass" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                                </div>
+                            </div>
 
-                    <div id="fields-book" class="hidden">
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase">Link Libro/Documento</label>
-                        <input type="url" id="inv-link" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" placeholder="https://...">
-                    </div>
+                            <div id="fields-profile-extra" class="hidden grid-cols-2 gap-2">
+                                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Nombre Perfil</label><input type="text" id="inv-profile-name" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">PIN</label><input type="text" id="inv-pin" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                            </div>
 
-                    <div id="fields-dates" class="grid grid-cols-2 gap-2">
-                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
-                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Duración</label><select id="inv-duration" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"><option>1 Mes</option><option>3 Meses</option><option>6 Meses</option><option>1 Año</option><option>Permanente</option></select></div>
-                    </div>
-                    
-                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none"></textarea></div>
-                    
-                    <div id="fields-gamepass-desc" class="hidden">
-                        <label class="block text-[10px] font-bold text-accent uppercase">Descripción</label>
-                        <textarea id="inv-gamepass-desc" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none" placeholder="Ingresa una descripción del plan"></textarea>
-                    </div>
+                            <div id="fields-book" class="hidden">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase">Link Libro/Documento</label>
+                                <input type="url" id="inv-link" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" placeholder="https://...">
+                            </div>
+
+                            <div id="fields-dates" class="grid grid-cols-2 gap-2">
+                                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Duración</label><select id="inv-duration" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"><option>1 Mes</option><option>3 Meses</option><option>6 Meses</option><option>1 Año</option><option>Permanente</option></select></div>
+                            </div>
+                            
+                            <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none"></textarea></div>
+                            
+                            <div id="fields-gamepass-desc" class="hidden">
+                                <label class="block text-[10px] font-bold text-accent uppercase">Descripción</label>
+                                <textarea id="inv-gamepass-desc" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none" placeholder="Ingresa una descripción del plan"></textarea>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700">Guardar</button>
+                    </form>
                 </div>
-
-                <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700">Guardar</button>
-            </form>
-        </div>
-    `);
-};
+            `);
+        };
 
         // Función para mostrar/ocultar campos según categoría
                 // Función para mostrar/ocultar campos según categoría
