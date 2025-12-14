@@ -1104,138 +1104,134 @@
         // Función para mostrar/ocultar campos según categoría
                 // Función para mostrar/ocultar campos según categoría
                 // --- CÓDIGO NUEVO PARA VISUALIZACIÓN DE CAMPOS ---
-        window.toggleInventoryFields = () => {
-    const select = document.getElementById('inv-product-select');
-    const selectedOption = select.options[select.selectedIndex];
-    
-    // Si no hay opción seleccionada, salir
-    if (!selectedOption) return;
+                window.toggleInventoryFields = () => {
+            const select = document.getElementById('inv-product-select');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if (!selectedOption) return;
 
-    const category = selectedOption.getAttribute('data-category');
+            // Convertimos a minúsculas para comparar
+            const category = (selectedOption.getAttribute('data-category') || '').toLowerCase();
+            const productName = (selectedOption.getAttribute('data-name') || '').toLowerCase();
 
-    const fieldsCreds = document.getElementById('fields-credentials');
-    const fieldsProfile = document.getElementById('fields-profile-extra');
-    const fieldsBook = document.getElementById('fields-book');
-    const fieldsDates = document.getElementById('fields-dates');
-    const fieldsTerms = document.getElementById('inv-terms').parentNode; // Contenedor de Términos
-    const fieldsGamePassDesc = document.getElementById('fields-gamepass-desc');
+            const fieldsCreds = document.getElementById('fields-credentials');
+            const fieldsProfile = document.getElementById('fields-profile-extra');
+            const fieldsBook = document.getElementById('fields-book');
+            const fieldsDates = document.getElementById('fields-dates');
+            const fieldsTerms = document.getElementById('inv-terms').parentNode; 
+            const fieldsGamePassDesc = document.getElementById('fields-gamepass-desc');
 
-    // 1. Resetear todo a estado "normal" (Streaming)
-    fieldsCreds.classList.remove('hidden');
-    fieldsProfile.classList.add('hidden');
-    fieldsProfile.classList.remove('grid'); 
-    fieldsBook.classList.add('hidden');     
-    fieldsDates.classList.remove('hidden'); 
-    fieldsTerms.classList.remove('hidden');
-    fieldsGamePassDesc.classList.add('hidden');
-    
-    // Mostrar Email y Password por defecto
-    document.getElementById('inv-email').parentNode.classList.remove('hidden');
-    document.getElementById('inv-pass').parentNode.classList.remove('hidden');
+            // 1. Resetear todo a visible/oculto por defecto (Estilo Streaming)
+            fieldsCreds.classList.remove('hidden');
+            fieldsProfile.classList.add('hidden');
+            fieldsProfile.classList.remove('grid'); 
+            fieldsBook.classList.add('hidden');     
+            fieldsDates.classList.remove('hidden'); 
+            fieldsTerms.classList.remove('hidden');
+            fieldsGamePassDesc.classList.add('hidden');
+            
+            document.getElementById('inv-email').parentNode.classList.remove('hidden');
+            document.getElementById('inv-pass').parentNode.classList.remove('hidden');
 
-    // 2. Aplicar lógica según categoría
-    if (category === 'libros' || category === 'documentos' || category === 'herramientas') {
-        // CASO LINK (Libros, Herramientas, Documentos)
-        document.getElementById('inv-email').parentNode.classList.add('hidden'); // Ocultar Email
-        fieldsBook.classList.remove('hidden');       // Mostrar Link
-        fieldsDates.classList.add('hidden');         // Ocultar Fechas (Expiración)
-        // Se queda visible: Contraseña y Términos
+            // 2. Aplicar lógica: Si es Game Pass O contiene la palabra 'liberación'
+            if (category === 'game pass' || category.includes('liberacion') || category.includes('liberación') || productName.includes('liberacion') || productName.includes('liberación')) {
+                // MODO SOLO DESCRIPCIÓN
+                fieldsCreds.classList.add('hidden');
+                fieldsProfile.classList.add('hidden');
+                fieldsBook.classList.add('hidden');
+                fieldsDates.classList.add('hidden');
+                fieldsTerms.classList.add('hidden'); 
+                fieldsGamePassDesc.classList.remove('hidden'); 
 
-    } else if (category === 'perfiles' || category === 'cuentas') {
-        // CASO CUENTAS (Netflix, Disney, etc)
-        fieldsProfile.classList.remove('hidden');
-        fieldsProfile.classList.add('grid');
-        // Se queda visible: Email, Pass, Fechas, Términos
+            } else if (category === 'libros' || category === 'documentos' || category === 'herramientas') {
+                // MODO LINK
+                document.getElementById('inv-email').parentNode.classList.add('hidden'); 
+                fieldsBook.classList.remove('hidden');       
+                fieldsDates.classList.add('hidden');         
 
-    } else if (category === 'game pass') {
-        // CASO GAME PASS (Solo Descripción)
-        fieldsCreds.classList.add('hidden');
-        fieldsProfile.classList.add('hidden');
-        fieldsBook.classList.add('hidden');
-        fieldsDates.classList.add('hidden');
-        fieldsTerms.classList.add('hidden'); // Ocultar Términos
-        fieldsGamePassDesc.classList.remove('hidden'); // Mostrar Descripción
-
-    }
-    // Si es 'otros' o cualquier otra cosa, se queda con la config por defecto (Email + Pass + Fechas + Términos)
-    lucide.createIcons();
-};
+            } else if (category === 'perfiles' || category === 'cuentas') {
+                // MODO CUENTAS CON PERFIL
+                fieldsProfile.classList.remove('hidden');
+                fieldsProfile.classList.add('grid');
+            }
+            
+            lucide.createIcons();
+        };
 
 
         // Función Guardar Item Modificada
                 // Función Guardar Item Modificada
                 // --- CÓDIGO NUEVO PARA GUARDAR ITEM ---
-        window.saveInventoryItem = async (e) => { 
-    e.preventDefault(); 
-    try { 
-        const select = document.getElementById('inv-product-select'); 
-        const productId = select.value; 
-        const productName = select.options[select.selectedIndex].text; 
-        const category = select.options[select.selectedIndex].getAttribute('data-category');
+                window.saveInventoryItem = async (e) => { 
+            e.preventDefault(); 
+            try { 
+                const select = document.getElementById('inv-product-select'); 
+                const productId = select.value; 
+                const productName = select.options[select.selectedIndex].text; 
+                const rawCategory = select.options[select.selectedIndex].getAttribute('data-category');
+                
+                // Usamos minúsculas para validar
+                const category = (rawCategory || '').toLowerCase();
+                const pNameLower = productName.toLowerCase();
 
-        let itemData = {
-            productId, 
-            serviceName: productName,
-            category: category,
-            createdAt: serverTimestamp(), 
-            status: 'available',
-            // Inicializar con nulos para evitar errores si no se usan
-            email: null,
-            password: null,
-            link: null,
-            expiryDate: null,
-            duration: null,
-            profileName: null,
-            pin: null,
-            terms: null,
-            description: null // Nuevo campo para Game Pass
+                let itemData = {
+                    productId, 
+                    serviceName: productName,
+                    category: rawCategory, 
+                    createdAt: serverTimestamp(), 
+                    status: 'available',
+                    email: null,
+                    password: null,
+                    link: null,
+                    expiryDate: null,
+                    duration: null,
+                    profileName: null,
+                    pin: null,
+                    terms: null,
+                    description: null 
+                };
+
+                // Lógica de guardado
+                if (category === 'game pass' || category.includes('liberacion') || category.includes('liberación') || pNameLower.includes('liberacion') || pNameLower.includes('liberación')) {
+                    // TIPO SOLO DESCRIPCIÓN
+                    itemData.description = document.getElementById('inv-gamepass-desc').value;
+                    if(!itemData.description) return showToast('La descripción es obligatoria', 'error');
+
+                } else if (category === 'libros' || category === 'documentos' || category === 'herramientas') {
+                    // TIPO LINK
+                    itemData.link = document.getElementById('inv-link').value;
+                    itemData.password = document.getElementById('inv-pass').value; 
+                    itemData.terms = document.getElementById('inv-terms').value;
+                    if(!itemData.link) return showToast('El Link es obligatorio', 'error');
+
+                } else {
+                    // TIPO CUENTA NORMAL
+                    itemData.email = document.getElementById('inv-email').value;
+                    itemData.password = document.getElementById('inv-pass').value;
+                    itemData.expiryDate = document.getElementById('inv-expiry').value;
+                    itemData.duration = document.getElementById('inv-duration').value;
+                    itemData.terms = document.getElementById('inv-terms').value;
+                    
+                    if (category === 'perfiles' || category === 'cuentas') {
+                        itemData.profileName = document.getElementById('inv-profile-name').value;
+                        itemData.pin = document.getElementById('inv-pin').value;
+                    }
+                    
+                    if(!itemData.email || !itemData.password) return showToast('Correo y contraseña requeridos', 'error');
+                }
+
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), itemData); 
+                
+                const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId); 
+                await updateDoc(productRef, { stock: increment(1) }); 
+                
+                showToast('Item agregado correctamente', 'success'); 
+                closeModal(); 
+            } catch(e) { 
+                console.error(e);
+                showToast('Error al guardar: ' + e.message, 'error'); 
+            } 
         };
-
-        // Lógica de llenado de datos
-        if (category === 'libros' || category === 'documentos' || category === 'herramientas') {
-            // TIPO "LINK"
-            itemData.link = document.getElementById('inv-link').value;
-            itemData.password = document.getElementById('inv-pass').value; 
-            itemData.terms = document.getElementById('inv-terms').value;
-            
-            if(!itemData.link) return showToast('El Link es obligatorio', 'error');
-
-        } else if (category === 'game pass') {
-            // TIPO "GAME PASS" (Solo descripción)
-            itemData.description = document.getElementById('inv-gamepass-desc').value;
-            
-            if(!itemData.description) return showToast('La Descripción es obligatoria para Game Pass', 'error');
-
-        } else {
-            // TIPO "CUENTA" (Streaming, etc)
-            itemData.email = document.getElementById('inv-email').value;
-            itemData.password = document.getElementById('inv-pass').value;
-            itemData.expiryDate = document.getElementById('inv-expiry').value;
-            itemData.duration = document.getElementById('inv-duration').value;
-            itemData.terms = document.getElementById('inv-terms').value;
-            
-            if (category === 'perfiles' || category === 'cuentas') {
-                itemData.profileName = document.getElementById('inv-profile-name').value;
-                itemData.pin = document.getElementById('inv-pin').value;
-            }
-            
-            if(!itemData.email || !itemData.password) return showToast('Correo y contraseña requeridos', 'error');
-        }
-
-        // Guardar en Inventario
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), itemData); 
-        
-        // Sumar 1 al stock visual (Opcional, ya que será infinito, pero sirve para saber que hay items)
-        const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId); 
-        await updateDoc(productRef, { stock: increment(1) }); 
-        
-        showToast('Item agregado correctamente', 'success'); 
-        closeModal(); 
-    } catch(e) { 
-        console.error(e);
-        showToast('Error al guardar item: ' + e.message, 'error'); 
-    } 
-};
 
 
         window.deleteInventoryItem = async (id) => { 
@@ -1252,101 +1248,94 @@
             } 
         };
 
-        window.openEditInventoryModal = (id) => {
-    // Nota: Esta función es básica, si se requiere editar campos específicos (como PIN) habría que expandirla similar a saveInventoryItem
-    const item = window.inventoryCache.find(i => i.id === id);
-    if (!item) return showToast('Item no encontrado', 'error');
+                window.openEditInventoryModal = (id) => {
+            const item = window.inventoryCache.find(i => i.id === id);
+            if (!item) return showToast('Item no encontrado', 'error');
 
-    const durations = ["1 Mes", "3 Meses", "6 Meses", "1 Año", "Permanente"];
-    const durationOptions = durations.map(d => `<option value="${d}" ${d === item.duration ? 'selected' : ''}>${d}</option>`).join('');
-
-    // --- NUEVO BLOQUE: Campos de Perfil y PIN (solo si existen) ---
-    let profileFields = '';
-    if (item.profileName !== undefined || item.pin !== undefined) {
-         // Si alguno existe, lo mostramos (asumimos que es una cuenta tipo perfil)
-         profileFields = `
-             <div class="grid grid-cols-2 gap-2">
-                 <div>
-                     <label class="block text-[10px] font-bold text-gray-400 uppercase">Nombre Perfil</label>
-                     <input type="text" id="e-inv-profile-name" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.profileName || ''}">
-                 </div>
-                 <div>
-                     <label class="block text-[10px] font-bold text-gray-400 uppercase">PIN</label>
-                     <input type="text" id="e-inv-pin" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.pin || ''}">
-                 </div>
-             </div>
-         `;
-    }
-    // -----------------------------------------------------------
-
-    openModal(`
-        <div class="text-left bounce-enter"><h3 class="text-lg font-bold text-gray-800 mb-4">Editar Item</h3>
-        <form onsubmit="updateInventoryItem(event, '${id}', '${item.category}')" class="space-y-3">
-            <div class="neumo-card neumo-inset p-2 rounded-lg"><label class="block text-[10px] font-bold text-gray-400 uppercase">Artículo</label><p class="font-bold text-sm text-gray-700">${item.serviceName}</p></div>
+            const durations = ["1 Mes", "3 Meses", "6 Meses", "1 Año", "Permanente"];
+            const durationOptions = durations.map(d => `<option value="${d}" ${d === item.duration ? 'selected' : ''}>${d}</option>`).join('');
             
-            ${item.category === 'game pass' ? 
-                `<div><label class="block text-[10px] font-bold text-gray-400 uppercase">Descripción</label><textarea id="e-inv-desc" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none">${item.description || ''}</textarea></div>`
-                :
-                `<div class="grid grid-cols-2 gap-2">
-                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Correo / Link</label><input type="text" id="e-inv-email" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.email || item.link || ''}" required></div>
-                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label><input type="text" id="e-inv-pass" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.password || ''}" required></div>
-                </div>
-                ${profileFields}
-                <div class="grid grid-cols-2 gap-2">
-                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="e-inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.expiryDate || ''}"></div>
-                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Duración</label><select id="e-inv-duration" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm">${durationOptions}</select></div>
-                </div>
-                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="e-inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none">${item.terms || ''}</textarea></div>`
+            const cat = (item.category || '').toLowerCase();
+            const sName = (item.serviceName || '').toLowerCase();
+
+            // Detectar si es tipo descripción (Game Pass o Liberación)
+            const isDescType = (cat === 'game pass' || cat.includes('liberacion') || cat.includes('liberación') || sName.includes('liberacion') || sName.includes('liberación'));
+
+            let profileFields = '';
+            if (item.profileName !== undefined || item.pin !== undefined) {
+                profileFields = `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Nombre Perfil</label><input type="text" id="e-inv-profile-name" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.profileName || ''}"></div>
+                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">PIN</label><input type="text" id="e-inv-pin" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.pin || ''}"></div>
+                    </div>`;
             }
+
+            openModal(`
+                <div class="text-left bounce-enter"><h3 class="text-lg font-bold text-gray-800 mb-4">Editar Item</h3>
+                <form onsubmit="updateInventoryItem(event, '${id}', '${item.category}', '${item.serviceName}')" class="space-y-3">
+                    <div class="neumo-card neumo-inset p-2 rounded-lg"><label class="block text-[10px] font-bold text-gray-400 uppercase">Artículo</label><p class="font-bold text-sm text-gray-700">${item.serviceName}</p></div>
+                    
+                    ${isDescType ? 
+                        `<div><label class="block text-[10px] font-bold text-accent uppercase">Descripción / Código</label><textarea id="e-inv-desc" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none">${item.description || ''}</textarea></div>`
+                        :
+                        `<div class="grid grid-cols-2 gap-2">
+                            <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Correo / Link</label><input type="text" id="e-inv-email" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.email || item.link || ''}" required></div>
+                            <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label><input type="text" id="e-inv-pass" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.password || ''}" required></div>
+                        </div>
+                        ${profileFields}
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="e-inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.expiryDate || ''}"></div>
+                            <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Duración</label><select id="e-inv-duration" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm">${durationOptions}</select></div>
+                        </div>
+                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="e-inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none">${item.terms || ''}</textarea></div>`
+                    }
+                    
+                    <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700">Guardar Cambios</button>
+                </form></div>
+            `);
+            lucide.createIcons();
+        };
+
+                window.updateInventoryItem = async (e, id, rawCategory, sName) => {
+            e.preventDefault();
+            const updateData = {};
+            const cat = (rawCategory || '').toLowerCase();
+            const name = (sName || '').toLowerCase(); // Recibimos el nombre también por seguridad
             
-            <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700">Guardar Cambios</button>
-        </form></div>
-    `);
-    lucide.createIcons();
-};
+            // Validamos si es tipo descripción
+            if (cat === 'game pass' || cat.includes('liberacion') || cat.includes('liberación') || name.includes('liberacion') || name.includes('liberación')) {
+                const descElement = document.getElementById('e-inv-desc');
+                if(descElement) {
+                    updateData.description = descElement.value;
+                } else {
+                     return showToast('Error: Campo descripción no encontrado', 'error');
+                }
+            } else {
+                const val = document.getElementById('e-inv-email').value;
+                const isLink = val.includes('http');
+                
+                updateData.email = !isLink ? val : null;
+                updateData.link = isLink ? val : null;
+                updateData.password = document.getElementById('e-inv-pass').value;
+                updateData.expiryDate = document.getElementById('e-inv-expiry').value;
+                updateData.duration = document.getElementById('e-inv-duration').value;
+                updateData.terms = document.getElementById('e-inv-terms').value;
 
-        window.updateInventoryItem = async (e, id, category) => {
-    e.preventDefault();
-    const updateData = {};
-    
-    // Si es Game Pass, solo actualiza la descripción (si el campo existe)
-    if (category === 'game pass') {
-        const descElement = document.getElementById('e-inv-desc');
-        if(descElement) {
-            updateData.description = descElement.value;
-            // No hacemos más validaciones, solo guardamos lo que haya
-        } else {
-             return showToast('Error interno: Campo de descripción no encontrado', 'error');
-        }
-    } else {
-        // Lógica para Cuentas/Links/Otros
-        const val = document.getElementById('e-inv-email').value;
-        const isLink = val.includes('http');
-        
-        updateData.email = !isLink ? val : null;
-        updateData.link = isLink ? val : null;
-        updateData.password = document.getElementById('e-inv-pass').value;
-        updateData.expiryDate = document.getElementById('e-inv-expiry').value;
-        updateData.duration = document.getElementById('e-inv-duration').value;
-        updateData.terms = document.getElementById('e-inv-terms').value;
+                if (document.getElementById('e-inv-profile-name') && document.getElementById('e-inv-pin')) {
+                    updateData.profileName = document.getElementById('e-inv-profile-name').value;
+                    updateData.pin = document.getElementById('e-inv-pin').value;
+                }
+            }
 
-        // --- NUEVO BLOQUE: Capturar Perfil y PIN si los campos existen ---
-        if (document.getElementById('e-inv-profile-name') && document.getElementById('e-inv-pin')) {
-            updateData.profileName = document.getElementById('e-inv-profile-name').value;
-            updateData.pin = document.getElementById('e-inv-pin').value;
-        }
-        // --------------------------------------------------------------
-    }
-
-    try {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', id), updateData);
-        showToast('Item actualizado', 'success');
-        closeModal();
-    } catch(e) {
-        console.error(e);
-        showToast('Error al actualizar item', 'error');
-    }
-};
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', id), updateData);
+                showToast('Item actualizado', 'success');
+                closeModal();
+            } catch(e) {
+                console.error(e);
+                showToast('Error al actualizar item', 'error');
+            }
+        };
 
         // --- FUNCIONES DE RENOVACIÓN DE ADMIN ---
         window.viewRenewalDetail = (id) => {
