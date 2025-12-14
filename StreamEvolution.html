@@ -270,15 +270,14 @@
                 </button>
             </section>
 
-            <section class="relative w-full h-44 rounded-[2rem] overflow-hidden shadow-lg group cursor-pointer neumo-card" style="animation-delay: 0.2s;">
-                <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1593784991095-a205069470b6?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110"></div>
-                <div class="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/60 to-transparent flex items-center px-8">
-                    <div class="z-10 max-w-[70%]">
-                        <span class="bg-accent text-white px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider mb-3 inline-block shadow-sm">Destacado</span>
-                        <h3 class="text-white font-black text-xl leading-tight mb-2">Entretenimiento Premium</h3>
-                        <p class="text-gray-300 text-xs mb-4 font-medium">Las mejores plataformas al mejor precio.</p>
+                        <section id="banner-carousel-container" class="relative w-full h-48 rounded-[2rem] overflow-hidden shadow-lg group cursor-pointer neumo-card transform transition-all hover:scale-[1.01]" style="animation-delay: 0.2s;">
+                <div id="banner-track" class="flex h-full transition-transform duration-500 ease-out will-change-transform">
+                    <div class="min-w-full h-full flex items-center justify-center bg-gray-200">
+                        <span class="animate-pulse text-xs text-gray-400">Cargando destacados...</span>
                     </div>
                 </div>
+                <div id="banner-indicators" class="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-20"></div>
+                <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_20px_rgba(0,0,0,0.1)] rounded-[2rem] z-30"></div>
             </section>
 
             <section class="bounce-enter" style="animation-delay: 0.3s;">
@@ -300,6 +299,18 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
+                                    <div onclick="enterAdminModule('banners')" class="admin-card col-span-2 p-5 rounded-3xl shadow-lg flex items-center justify-between cursor-pointer group neumo-card relative overflow-hidden">
+                         <div class="absolute right-0 top-0 w-24 h-24 bg-blue-500/10 rounded-full blur-xl -mr-4 -mt-4"></div>
+                         <div class="flex items-center gap-4 relative z-10">
+                            <div class="w-12 h-12 bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-md"><i data-lucide="monitor-play" class="w-6 h-6"></i></div>
+                            <div class="text-left">
+                                <span class="font-bold text-gray-700 text-lg block">Publicidad</span>
+                                <span class="text-xs text-gray-500">Gestionar Banners</span>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="text-gray-400 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+
                     <div onclick="enterAdminModule('requests')" class="admin-card p-5 rounded-3xl flex flex-col items-center justify-center cursor-pointer h-40 relative overflow-hidden group neumo-card">
                         <div class="w-12 h-12 bg-accent/10 text-accent rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><i data-lucide="dollar-sign" class="w-6 h-6"></i></div>
                         <span class="font-bold text-gray-700 text-sm">Pagos</span>
@@ -398,9 +409,12 @@
                     <div id="admin-inventory-list" class="space-y-3"></div>
                 </section>
 
-                <section id="admin-support-section" class="hidden bounce-enter">
-                    <h3 class="font-bold text-gray-800 text-xl mb-4">Mesa de Ayuda</h3>
-                    <div id="admin-support-list" class="space-y-3"></div>
+                                <section id="admin-banners-section" class="hidden bounce-enter">
+                    <div class="flex justify-between items-center mb-6">
+                        <div><h3 class="font-bold text-gray-800 text-xl">Publicidad Activa</h3><p class="text-xs text-gray-400">Se desliza automáticamente</p></div>
+                        <button onclick="openAddBannerModal()" class="neumo-button bg-blue-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg"><i data-lucide="plus" class="w-4 h-4"></i> Nuevo Banner</button>
+                    </div>
+                    <div id="admin-banners-list" class="space-y-3 pb-10"></div>
                 </section>
             </div>
         </main>
@@ -517,6 +531,7 @@
 
 
                 await initCategories();
+                initBanners();
 
                 if (isAdmin) {
                     document.getElementById('user-menu-items').classList.add('hidden');
@@ -2399,6 +2414,228 @@
         
         window.handleLogout = async () => { await signOut(auth); document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('login-email').value = ''; document.getElementById('login-password').value = ''; };
         document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); checkReferralParam(); });
+        
+                // --- SISTEMA DE BANNERS ---
+        let bannerInterval;
+        let currentBannerIndex = 0;
+        let bannerData = [];
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function initBanners() {
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'banners'), orderBy('createdAt', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                bannerData = [];
+                snapshot.forEach(doc => bannerData.push({ id: doc.id, ...doc.data() }));
+                renderBannersUser();
+                if(isAdmin) renderBannersAdmin();
+            });
+        }
+        
+                        // --- INICIO DEL BLOQUE DE BANNERS CORREGIDO ---
+
+        function renderBannersUser() {
+            const track = document.getElementById('banner-track');
+            const indicators = document.getElementById('banner-indicators');
+            if(!track) return;
+
+            // 1. Limpiamos los indicadores (bolitas) para que no se vean
+            if(indicators) indicators.innerHTML = '';
+
+            if (bannerData.length === 0) {
+                track.innerHTML = `<div class="min-w-full h-full relative"><div class="absolute inset-0 bg-gray-900 flex items-center justify-center"><p class="text-white text-xs">Sin publicidad</p></div></div>`;
+                return;
+            }
+
+            let html = '';
+            
+            // 2. Renderizamos los banners originales
+            bannerData.forEach((b) => {
+                html += `
+                <div class="min-w-full h-full relative flex-shrink-0">
+                    <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('${b.imageUrl}');"></div>
+                </div>`;
+            });
+
+            // 3. CLONACIÓN: Si hay más de 1 imagen, clonamos la primera y la ponemos al final
+            // Esto permite el efecto "infinito" sin rebobinar
+            if (bannerData.length > 1) {
+                const first = bannerData[0];
+                html += `
+                <div class="min-w-full h-full relative flex-shrink-0">
+                    <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('${first.imageUrl}');"></div>
+                </div>`;
+            }
+
+            track.innerHTML = html;
+            
+            // Reiniciamos al principio
+            currentBannerIndex = 0;
+            track.style.transition = 'none';
+            track.style.transform = 'translateX(0)';
+            
+            startAutoSlide();
+            
+            // Reiniciamos eventos táctiles (Swipe)
+            const container = document.getElementById('banner-carousel-container');
+            const newContainer = container.cloneNode(true);
+            container.parentNode.replaceChild(newContainer, container);
+            
+            newContainer.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; clearInterval(bannerInterval); }, {passive: true});
+            newContainer.addEventListener('touchend', (e) => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); startAutoSlide(); }, {passive: true});
+        }
+
+        function updateSlider() {
+            const track = document.getElementById('banner-track');
+            if(track) {
+                track.style.transition = 'transform 0.5s ease-out';
+                track.style.transform = `translateX(-${currentBannerIndex * 100}%)`;
+            }
+        }
+
+        function nextBanner() {
+            if (bannerData.length < 2) return;
+            
+            const track = document.getElementById('banner-track');
+            
+            // Avanzamos uno
+            currentBannerIndex++;
+            
+            // Animación suave
+            track.style.transition = 'transform 0.5s ease-out';
+            track.style.transform = `translateX(-${currentBannerIndex * 100}%)`;
+
+            // SI LLEGAMOS AL FINAL (EL CLON)
+            if (currentBannerIndex === bannerData.length) {
+                // Esperamos 500ms a que termine la animación
+                setTimeout(() => {
+                    // Quitamos la transición para saltar invisiblemente
+                    track.style.transition = 'none';
+                    // Saltamos al inicio real (índice 0)
+                    currentBannerIndex = 0;
+                    track.style.transform = `translateX(0%)`;
+                }, 500);
+            }
+        }
+
+        function prevBanner() { 
+            if (bannerData.length < 2) return;
+            
+            const track = document.getElementById('banner-track');
+            
+            if (currentBannerIndex === 0) {
+                // Si estamos en el inicio y damos atrás, vamos a la última imagen real
+                currentBannerIndex = bannerData.length - 1;
+            } else {
+                currentBannerIndex--;
+            }
+            
+            track.style.transition = 'transform 0.5s ease-out';
+            track.style.transform = `translateX(-${currentBannerIndex * 100}%)`;
+        }
+
+        function startAutoSlide() { 
+            clearInterval(bannerInterval); 
+            bannerInterval = setInterval(nextBanner, 4000); 
+        }
+
+        function handleSwipe() { 
+            if (touchStartX - touchEndX > 50) nextBanner(); 
+            if (touchEndX - touchStartX > 50) prevBanner(); 
+        }
+
+        // --- FIN DEL BLOQUE DE BANNERS ---
+
+        window.openAddBannerModal = () => {
+            openModal(`<div class="text-left bounce-enter"><h3 class="text-lg font-bold text-gray-800 mb-4">Nuevo Banner</h3><form onsubmit="saveBanner(event)" class="space-y-3"><div><label class="block text-xs font-bold text-gray-500">Título</label><input type="text" id="ban-title" class="neumo-inset w-full rounded-xl p-2 text-sm" required></div><div><label class="block text-xs font-bold text-gray-500">Subtítulo</label><input type="text" id="ban-sub" class="neumo-inset w-full rounded-xl p-2 text-sm" required></div><div><label class="block text-xs font-bold text-gray-500">URL Imagen</label><input type="url" id="ban-img" class="neumo-inset w-full rounded-xl p-2 text-sm" required></div><button type="submit" class="neumo-button w-full bg-blue-600 text-white font-bold py-3 rounded-xl mt-2">Guardar</button></form></div>`);
+        };
+
+        window.saveBanner = async (e) => {
+    e.preventDefault();
+    try { 
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'banners'), { 
+            title: document.getElementById('ban-title').value, 
+            // CAMBIO: Se eliminó subtitle: document.getElementById('ban-sub').value
+            imageUrl: document.getElementById('ban-img').value, 
+            createdAt: serverTimestamp() 
+        }); 
+        showToast('Publicado', 'success'); 
+        closeModal(); 
+    } catch (err) { 
+        showToast('Error', 'error'); 
+    }
+};
+
+        window.deleteBanner = async (id) => { if(confirm("¿Eliminar banner?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'banners', id)); };
+        // --- 👇 PEGA AQUÍ EL BLOQUE DE CÓDIGO DEL ADMINISTRADOR 👇 ---
+
+        function renderBannersAdmin() {
+            const list = document.getElementById('admin-banners-list');
+            if(!list) return;
+            
+            let html = '';
+            bannerData.forEach(b => {
+                html += `
+                <div class="neumo-card p-0 rounded-xl overflow-hidden relative h-20 flex mb-3">
+                    <div class="w-24 h-full bg-gray-200">
+                        <img src="${b.imageUrl}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1 p-3 flex flex-col justify-center">
+                        <h4 class="font-bold text-gray-800 text-xs">${b.title}</h4>
+                        <p class="text-[10px] text-gray-400">Activo</p>
+                    </div>
+                    <button onclick="deleteBanner('${b.id}')" class="absolute top-2 right-2 text-rose-500 bg-white rounded-full p-1 shadow hover:bg-rose-50">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>`;
+            });
+            
+            list.innerHTML = html || '<p class="text-center text-xs text-gray-400 py-4">Sin banners activos</p>';
+            lucide.createIcons();
+        }
+
+        window.openAddBannerModal = () => {
+            openModal(`
+            <div class="text-left bounce-enter">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Nuevo Banner</h3>
+                <form onsubmit="saveBanner(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500">Título (Referencia interna)</label>
+                        <input type="text" id="ban-title" class="neumo-inset w-full rounded-xl p-2 text-sm" placeholder="Ej: Promo Navidad" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500">URL Imagen</label>
+                        <input type="url" id="ban-img" class="neumo-inset w-full rounded-xl p-2 text-sm" required>
+                    </div>
+                    <button type="submit" class="neumo-button w-full bg-blue-600 text-white font-bold py-3 rounded-xl mt-2">Guardar</button>
+                </form>
+            </div>`);
+        };
+
+        window.saveBanner = async (e) => {
+            e.preventDefault();
+            try { 
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'banners'), { 
+                    title: document.getElementById('ban-title').value, 
+                    imageUrl: document.getElementById('ban-img').value, 
+                    createdAt: serverTimestamp() 
+                }); 
+                showToast('Publicado', 'success'); 
+                closeModal(); 
+            } catch (err) { 
+                showToast('Error al guardar', 'error'); 
+            }
+        };
+
+        window.deleteBanner = async (id) => { 
+            if(confirm("¿Eliminar este banner?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'banners', id)); 
+            }
+        };
+
+        if(isAdmin) renderBannersAdmin();
+
+        // --- 👆 FIN DEL BLOQUE PEGADO 👆 ---
     </script>
 </body>
 </html>
