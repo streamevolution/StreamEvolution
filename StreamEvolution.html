@@ -511,6 +511,7 @@
             const authContainer = document.getElementById('auth-container');
             const dashboardContainer = document.getElementById('dashboard-container');
             
+                        /* BLOQUE ELIMINADO PARA PERMITIR REGISTRO
             if (user && !user.emailVerified) {
                 await signOut(auth);
                 currentUser = null;
@@ -519,6 +520,7 @@
                 loader.style.display = 'none';
                 return;
             }
+            */
 
             if (user) {
                 const userStatusRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', user.uid);
