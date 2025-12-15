@@ -756,19 +756,38 @@
         // --- DATOS USUARIO ---
         async function initUserData(user) {
             const walletRef = doc(db, 'artifacts', appId, 'users', user.uid, 'wallet', 'main');
-            onSnapshot(walletRef, (doc) => { 
-                if (doc.exists()) { 
-                    const data = doc.data(); 
-                    document.getElementById('balance-display').textContent = `$${(data.balance || 0).toLocaleString()}`; 
-                    document.getElementById('profit-display').textContent = `$${(data.profit || 0).toLocaleString()}`; 
-                    currentProfit = data.profit || 0; 
+            
+            // Cambiamos el nombre del argumento a 'snapshot' para evitar conflictos
+            onSnapshot(walletRef, (snapshot) => { 
+                if (snapshot.exists()) { 
+                    const data = snapshot.data(); 
+                    
+                    // Aseguramos que el valor sea un número válido
+                    const balance = (data.balance !== undefined && data.balance !== null) ? data.balance : 0;
+                    const profit = (data.profit !== undefined && data.profit !== null) ? data.profit : 0;
+
+                    document.getElementById('balance-display').textContent = `$${balance.toLocaleString()}`; 
+                    document.getElementById('profit-display').textContent = `$${profit.toLocaleString()}`; 
+                    currentProfit = profit; 
                 } else {
+                    // Si no existe la billetera, la creamos Y ACTUALIZAMOS LA PANTALLA
                     setDoc(walletRef, { balance: 0, profit: 0 });
+                    
+                    document.getElementById('balance-display').textContent = "$0"; 
+                    document.getElementById('profit-display').textContent = "$0"; 
                     currentProfit = 0;
                 }
             });
+
+            // Historial de transacciones (se mantiene igual)
             const txRef = collection(db, 'artifacts', appId, 'users', user.uid, 'transactions');
-            onSnapshot(query(txRef, orderBy('timestamp', 'desc'), limit(20)), (snapshot) => { window.userTransactions = []; snapshot.forEach((doc) => { window.userTransactions.push({id: doc.id, ...doc.data()}); }); updateNotificationDot(); });
+            onSnapshot(query(txRef, orderBy('timestamp', 'desc'), limit(20)), (snapshot) => { 
+                window.userTransactions = []; 
+                snapshot.forEach((docSnap) => { // Cambiado a docSnap por seguridad
+                    window.userTransactions.push({id: docSnap.id, ...docSnap.data()}); 
+                }); 
+                updateNotificationDot(); 
+            });
         }
 
         function initGlobalNotifications() {
