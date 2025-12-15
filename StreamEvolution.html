@@ -410,9 +410,24 @@
                     <div id="admin-requests-list" class="space-y-3"></div>
                 </section>
                 
-                <section id="admin-renewal-section" class="hidden bounce-enter">
-                    <h3 class="font-bold text-gray-800 mb-4 text-xl">Solicitudes de Renovación</h3>
-                    <div id="admin-renewal-list" class="space-y-3"></div>
+                                <section id="admin-renewal-section" class="hidden bounce-enter">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-gray-800 text-xl">Renovaciones</h3>
+                        <span id="renewal-count-badge" class="bg-indigo-100 text-indigo-600 text-xs font-bold px-2 py-1 rounded-lg">0 Pendientes</span>
+                    </div>
+                    <div id="admin-renewal-list" class="space-y-3 pb-10">
+                        <div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Cargando...</p></div>
+                    </div>
+                </section>
+
+                <section id="admin-support-section" class="hidden bounce-enter">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-gray-800 text-xl">Soporte Técnico</h3>
+                        <span id="support-count-badge" class="bg-blue-100 text-blue-600 text-xs font-bold px-2 py-1 rounded-lg">0 Tickets</span>
+                    </div>
+                    <div id="admin-support-list" class="space-y-3 pb-10">
+                        <div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Cargando...</p></div>
+                    </div>
                 </section>
 
                 <section id="admin-users-section" class="hidden bounce-enter">
@@ -908,8 +923,8 @@
         };
 
         // --- ADMIN PANEL ---
-        function initAdminPanel() {
-            // Solicitudes de Saldo (ACTUALIZADO)
+                                        function initAdminPanel() {
+            // 1. SOLICITUDES DE SALDO
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
                 window.adminPendingRequests = []; 
                 let html = '';
@@ -928,51 +943,133 @@
                             <div class="flex items-center gap-3">
                                 <span class="font-bold text-lg text-success">$${d.amount.toLocaleString()}</span>
                                 <div class="flex gap-2">
-                                    <button onclick="event.stopPropagation(); window.approveRecharge('${doc.id}', '${d.uid}', ${d.amount}, '${d.userTxId}')" class="neumo-button bg-success text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-emerald-600 flex items-center gap-1 shadow-lg" title="Aprobar"><i data-lucide="check" class="w-4 h-4"></i></button>
-                                    <button onclick="event.stopPropagation(); window.rejectRecharge('${doc.id}', '${d.uid}', '${d.userTxId}')" class="neumo-button bg-danger text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-red-600 flex items-center gap-1 shadow-lg" title="Rechazar"><i data-lucide="x" class="w-4 h-4"></i></button>
+                                    <button onclick="event.stopPropagation(); window.approveRecharge('${doc.id}', '${d.uid}', ${d.amount}, '${d.userTxId}')" class="neumo-button bg-success text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-emerald-600 flex items-center gap-1 shadow-lg"><i data-lucide="check" class="w-4 h-4"></i></button>
+                                    <button onclick="event.stopPropagation(); window.rejectRecharge('${doc.id}', '${d.uid}', '${d.userTxId}')" class="neumo-button bg-danger text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-red-600 flex items-center gap-1 shadow-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
                                 </div>
                             </div>
                         </div>`; 
                     } 
                 });
-                document.getElementById('admin-requests-list').innerHTML = html || '<div class="text-center py-4 text-gray-400">Sin solicitudes</div>';
+                const list = document.getElementById('admin-requests-list');
+                if(list) list.innerHTML = html || '<div class="text-center py-4 text-gray-400">Sin solicitudes</div>';
                 const badge = document.getElementById('badge-requests'); 
-                if(window.adminPendingRequests.length>0){badge.textContent=window.adminPendingRequests.length; badge.classList.remove('hidden');} else badge.classList.add('hidden');
-                lucide.createIcons();
-            });
-            
-            // Solicitudes de Renovación
-            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '==', 'renewal'), where('status', '!=', 'resolved'), orderBy('timestamp', 'desc')), (s) => {
-                window.adminPendingRenewals = []; let html = '';
-                s.forEach(doc => { 
-                    const r = doc.data(); r.id = doc.id; 
-                    if(r.status === 'unread' || r.status === 'processing') {
-                         window.adminPendingRenewals.push(r);
-                         html += `<div class="neumo-card p-4 rounded-xl shadow-sm mb-3"><div class="flex justify-between items-start"><p class="font-bold text-sm text-gray-700">${r.email}</p><span class="text-[10px] uppercase ${r.status==='unread'?'text-danger':'text-accent'} font-bold neumo-flat">${r.status === 'unread' ? 'Nuevo' : 'En Proceso'}</span></div><p class="text-xs text-gray-500 mt-1 whitespace-pre-wrap">${r.description.split('\n')[0]}</p><div class="flex gap-2 mt-3 pt-2 border-t border-gray-200">
-                            <button onclick="approveRenewal('${doc.id}', '${r.uid}')" class="neumo-button flex-1 bg-success text-white px-3 py-2 rounded-lg text-xs font-bold">Aprobar</button>
-                            <button onclick="rejectRenewal('${doc.id}')" class="neumo-button flex-1 bg-danger text-white px-3 py-2 rounded-lg text-xs font-bold">Rechazar</button>
-                            <button onclick="viewRenewalDetail('${doc.id}')" class="neumo-button bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="eye" class="w-4 h-4"></i></button>
-                         </div></div>`;
-                    }
-                });
-                document.getElementById('admin-renewal-list').innerHTML = html || '<div class="text-center py-4 text-gray-400">Sin solicitudes de renovación pendientes</div>';
-                const badge = document.getElementById('badge-renewal'); 
-                if(window.adminPendingRenewals.length>0){badge.textContent=window.adminPendingRenewals.length; badge.classList.remove('hidden');} else badge.classList.add('hidden');
+                if(badge) { if(window.adminPendingRequests.length > 0){badge.textContent=window.adminPendingRequests.length; badge.classList.remove('hidden');} else badge.classList.add('hidden'); }
                 lucide.createIcons();
             });
 
-            // Productos (Vitrina)
+            // 2. RENOVACIONES (Con botón de ELIMINAR)
+            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '==', 'renewal')), (s) => {
+                const list = document.getElementById('admin-renewal-list');
+                const badge = document.getElementById('renewal-count-badge');
+                if(!list) return;
+
+                window.adminPendingRenewals = []; 
+                let html = '';
+                let pendingCount = 0;
+
+                if (s.empty) { html = '<div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Sin renovaciones pendientes.</p></div>'; } 
+                else {
+                    s.forEach(doc => { 
+                        const r = doc.data(); r.id = doc.id; 
+                        if(r.status === 'unread' || r.status === 'processing' || !r.status) {
+                            window.adminPendingRenewals.push(r);
+                            pendingCount++;
+                            html += `
+                            <div onclick="viewRenewalDetail('${doc.id}')" class="neumo-card p-4 rounded-xl shadow-sm mb-3 bg-white relative cursor-pointer hover:bg-gray-50 transition-colors" title="Ver Detalle">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p class="font-bold text-sm text-gray-800">${r.email}</p>
+                                        <p class="text-[10px] text-gray-400">${r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente'}</p>
+                                    </div>
+                                    <span class="text-[9px] uppercase font-bold px-2 py-1 rounded bg-indigo-50 text-indigo-600 border border-indigo-100">${r.status === 'unread' ? 'Nueva' : 'En Proceso'}</span>
+                                </div>
+                                <div class="bg-gray-50 p-2 rounded-lg mb-3">
+                                    <p class="text-xs text-gray-600 whitespace-pre-wrap font-medium line-clamp-2">${r.description}</p>
+                                </div>
+                                <div class="flex gap-2 border-t border-gray-100 pt-3 items-center">
+                                    <button onclick="event.stopPropagation(); deleteReport('${doc.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" title="Eliminar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    
+                                    <button onclick="event.stopPropagation(); approveRenewal('${doc.id}', '${r.uid}')" class="neumo-button flex-1 bg-success text-white py-2 rounded-lg text-xs font-bold shadow-sm">Aprobar</button>
+                                    <button onclick="event.stopPropagation(); rejectRenewal('${doc.id}')" class="neumo-button flex-1 bg-white text-rose-500 border border-rose-100 py-2 rounded-lg text-xs font-bold">Rechazar</button>
+                                </div>
+                            </div>`;
+                        }
+                    });
+                }
+                if (html === '') html = '<div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Sin renovaciones pendientes.</p></div>';
+                
+                list.innerHTML = html;
+                if(badge) badge.textContent = `${pendingCount} Pendientes`;
+                const navBadge = document.getElementById('badge-renewal'); 
+                if(navBadge) { if(pendingCount>0){navBadge.textContent=pendingCount; navBadge.classList.remove('hidden');} else navBadge.classList.add('hidden'); }
+                lucide.createIcons();
+            });
+
+            // 3. SOPORTE TÉCNICO (Con botón de ELIMINAR)
+            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '!=', 'renewal')), (s) => {
+                const list = document.getElementById('admin-support-list');
+                const badge = document.getElementById('support-count-badge');
+                if(!list) return;
+
+                window.adminPendingReports = []; 
+                window.adminReportsCache = []; 
+                let html = '';
+                let pendingCount = 0;
+
+                if (s.empty) { html = '<div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Sin tickets de soporte.</p></div>'; }
+                else {
+                    s.forEach(doc => { 
+                        const r = doc.data(); r.id = doc.id; 
+                        window.adminReportsCache.push(r); 
+                        
+                        if(r.status !== 'replied' && r.status !== 'resolved') {
+                            window.adminPendingReports.push(r);
+                            pendingCount++;
+                        }
+                        let typeIcon = r.type === 'payment' ? 'dollar-sign' : (r.type === 'bug' ? 'bug' : 'message-circle');
+                        let typeColor = r.type === 'payment' ? 'text-green-500' : (r.type === 'bug' ? 'text-rose-500' : 'text-blue-500');
+
+                        html += `
+                        <div onclick="openReportDetails('${doc.id}')" class="neumo-card p-4 mb-3 cursor-pointer hover:bg-gray-50 transition-colors relative bg-white" title="Ver Detalle">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center ${typeColor} neumo-inset flex-shrink-0"><i data-lucide="${typeIcon}" class="w-5 h-5"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start">
+                                        <p class="font-bold text-xs text-gray-700 truncate">${r.email}</p>
+                                        <span class="text-[9px] uppercase font-bold px-2 py-0.5 rounded ${r.status==='replied'?'bg-green-100 text-green-600':'bg-amber-100 text-amber-600'}">${r.status || 'Pendiente'}</span>
+                                    </div>
+                                    <p class="text-[10px] text-gray-400 mb-1">${r.timestamp ? r.timestamp.toDate().toLocaleString() : ''}</p>
+                                    <p class="text-xs text-gray-600 line-clamp-2">${r.description}</p>
+                                </div>
+                            </div>
+                            <div class="mt-3 flex justify-between items-center border-t border-gray-100 pt-2">
+                                <button onclick="event.stopPropagation(); deleteReport('${doc.id}')" class="text-gray-300 hover:text-rose-500 transition-colors p-1" title="Eliminar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                
+                                ${r.status !== 'replied' ? `<button onclick="event.stopPropagation(); openReplyModal('${doc.id}', '${r.uid}')" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"><i data-lucide="corner-down-right" class="w-3 h-3"></i> Responder</button>` : '<span></span>'}
+                            </div>
+                        </div>`;
+                    });
+                }
+                
+                if (html === '') html = '<div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Sin tickets pendientes.</p></div>';
+
+                list.innerHTML = html;
+                if(badge) badge.textContent = `${pendingCount} Activos`;
+                const navBadge = document.getElementById('badge-support'); 
+                if(navBadge) { if(pendingCount>0){navBadge.textContent=pendingCount; navBadge.classList.remove('hidden');} else navBadge.classList.add('hidden'); }
+                lucide.createIcons();
+            });
+
+            // 4. PRODUCTOS
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), (snapshot) => {
                 const products = [];
                 snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
-
                 const groupedProducts = products.reduce((acc, product) => {
                     const category = product.category || 'otros';
                     if (!acc[category]) acc[category] = [];
                     acc[category].push(product);
                     return acc;
                 }, {});
-
                 const customOrder = ['perfiles', 'cuentas', 'música', 'libros', 'licencias', 'game pass', 'otros'];
                 const sortedCategories = Object.keys(groupedProducts).sort((a, b) => {
                     const indexA = customOrder.indexOf(a.toLowerCase());
@@ -982,182 +1079,71 @@
                     if (indexB !== -1) return 1;
                     return a.localeCompare(b);
                 });
-
                 let html = '';
-                if (products.length === 0) {
-                     html = '<p class="text-center text-gray-400">Sin productos visibles.</p>';
-                } else {
+                if (products.length === 0) { html = '<p class="text-center text-gray-400">Sin productos.</p>'; } else {
                     sortedCategories.forEach(category => {
                         const displayName = category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' ');
-                        html += `
-                            <div class="mt-8 mb-4">
-                                <h4 class="font-black text-lg text-gray-800 border-b border-gray-200 pb-1">${displayName}</h4>
-                            </div>
-                            <div class="space-y-3">
-                        `;
+                        html += `<div class="mt-8 mb-4"><h4 class="font-black text-lg text-gray-800 border-b border-gray-200 pb-1">${displayName}</h4></div><div class="space-y-3">`;
                         groupedProducts[category].forEach(d => {
-                            html += `<div class="neumo-card p-3 flex items-center gap-3 slide-up relative overflow-hidden">
-                                <img src="${d.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-gray-100 neumo-inset flex-shrink-0">
-                                
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex justify-between items-start">
-                                        <p class="font-bold text-sm text-gray-800 truncate pr-2">${d.name}</p>
-                                    </div>
-                                    
-                                    <div class="flex flex-wrap gap-1 mt-1 mb-1">
-                                        <span class="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 neumo-flat" title="Cliente">
-                                            Cli: $${d.priceClient || 0}
-                                        </span>
-                                        <span class="text-[9px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 neumo-flat" title="Vip">
-                                            Vip: $${d.priceVip || 0}
-                                        </span>
-                                        <span class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 neumo-flat" title="Revendedor">
-                                            Rev: $${d.priceReseller || 0}
-                                        </span>
-                                        <span class="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 neumo-flat" title="Lider">
-                                            Lid: $${d.priceLeader || 0}
-                                        </span>
-                                    </div>
-
-                                    <div class="flex justify-between items-end">
-                                        <p class="text-[10px] text-gray-400 truncate max-w-[100px]">${d.category}</p>
-                                        <div class="text-[10px]">Stock: <b class="${(d.stock||0) < 1 ? 'text-danger' : 'text-gray-800'}">${d.stock||0}</b></div>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col gap-1 pl-1 border-l border-gray-100">
-                                    <button onclick="openEditProductModal('${d.id}')" class="neumo-button p-2 text-blue-500 hover:text-accent"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                    <button onclick="deleteProfile('${d.id}')" class="neumo-button p-2 text-rose-500 hover:text-danger"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                </div>
-                            </div>`;
+                            html += `<div class="neumo-card p-3 flex items-center gap-3 slide-up relative overflow-hidden"><img src="${d.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-gray-100 flex-shrink-0"><div class="flex-1 min-w-0"><div class="flex justify-between items-start"><p class="font-bold text-sm text-gray-800 truncate pr-2">${d.name}</p></div><div class="flex flex-wrap gap-1 mt-1 mb-1"><span class="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">Cli: $${d.priceClient || 0}</span><span class="text-[9px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">Vip: $${d.priceVip || 0}</span><span class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">Rev: $${d.priceReseller || 0}</span><span class="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">Lid: $${d.priceLeader || 0}</span></div><div class="flex justify-between items-end"><p class="text-[10px] text-gray-400 truncate max-w-[100px]">${d.category}</p><div class="text-[10px]">Stock: <b class="${(d.stock||0) < 1 ? 'text-danger' : 'text-gray-800'}">${d.stock||0}</b></div></div></div><div class="flex flex-col gap-1 pl-1 border-l border-gray-100"><button onclick="openEditProductModal('${d.id}')" class="neumo-button p-2 text-blue-500 hover:text-accent"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteProfile('${d.id}')" class="neumo-button p-2 text-rose-500 hover:text-danger"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
                         });
                         html += `</div>`;
                     });
                 }
-                document.getElementById('admin-stock-list').innerHTML = html; lucide.createIcons();
+                const list = document.getElementById('admin-stock-list');
+                if(list) list.innerHTML = html; 
+                lucide.createIcons();
             });
-            // Usuarios 
+
+            // 5. USUARIOS
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'), (snapshot) => {
                 let html = ''; 
                 snapshot.forEach(doc => { 
-                    const d = doc.data(); 
-                    const susp = d.suspended === true; 
-                    const uRole = d.role || 'client';
+                    const d = doc.data(); const susp = d.suspended === true; const uRole = d.role || 'client';
                     const roleBadgeColor = uRole === 'reseller' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500';
-                    html += `<div onclick="openUserHistory('${d.uid}', '${d.email}')" class="neumo-card p-3 flex flex-col gap-3 relative cursor-pointer hover:scale-105 transition-transform group slide-up">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs neumo-inset">${d.email.substring(0,2).toUpperCase()}</div>
-                            <div class="overflow-hidden flex-1">
-                                <p class="font-bold text-sm text-gray-700 truncate">${d.email}</p>
-                                <div class="flex items-center gap-2">
-                                    <p class="text-[10px] text-gray-400 font-mono">ID: ${d.uid.substring(0,8)}</p>
-                                    <span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded neumo-flat ${roleBadgeColor}">${uRole}</span>
-                                </div>
-                            </div>
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
-                        </div>
-                        <div class="flex gap-2 pt-2 border-t border-gray-200" onclick="event.stopPropagation();">
-                            <button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="neumo-button flex-1 bg-success/10 text-success py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="dollar-sign" class="w-3 h-3"></i> Cargar</button>
-                            <button onclick="event.stopPropagation(); openChangeRoleModal('${doc.id}', '${uRole}', '${d.email}')" class="neumo-button px-3 bg-indigo-50/50 text-indigo-600 rounded-lg text-xs font-bold" title="Cambiar Rol"><i data-lucide="user-cog" class="w-3 h-3"></i></button>
-
-                            <button onclick="toggleSuspend('${doc.id}', ${!susp})" class="neumo-button px-3 bg-gray-100 text-gray-500 rounded-lg text-xs font-bold">${susp?'Activar':'Suspender'}</button>
-                        </div>
-                    </div>`; 
+                    html += `<div onclick="openUserHistory('${d.uid}', '${d.email}')" class="neumo-card p-3 flex flex-col gap-3 relative cursor-pointer hover:scale-105 transition-transform group slide-up"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs neumo-inset">${d.email.substring(0,2).toUpperCase()}</div><div class="overflow-hidden flex-1"><p class="font-bold text-sm text-gray-700 truncate">${d.email}</p><div class="flex items-center gap-2"><p class="text-[10px] text-gray-400 font-mono">ID: ${d.uid.substring(0,8)}</p><span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded neumo-flat ${roleBadgeColor}">${uRole}</span></div></div><i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i></div><div class="flex gap-2 pt-2 border-t border-gray-200" onclick="event.stopPropagation();"><button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="neumo-button flex-1 bg-success/10 text-success py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="dollar-sign" class="w-3 h-3"></i> Cargar</button><button onclick="event.stopPropagation(); openChangeRoleModal('${doc.id}', '${uRole}', '${d.email}')" class="neumo-button px-3 bg-indigo-50/50 text-indigo-600 rounded-lg text-xs font-bold" title="Cambiar Rol"><i data-lucide="user-cog" class="w-3 h-3"></i></button><button onclick="toggleSuspend('${doc.id}', ${!susp})" class="neumo-button px-3 bg-gray-100 text-gray-500 rounded-lg text-xs font-bold">${susp?'Activar':'Suspender'}</button></div></div>`; 
                 });
-                document.getElementById('admin-users-list').innerHTML = html; lucide.createIcons();
+                const list = document.getElementById('admin-users-list');
+                if(list) list.innerHTML = html; 
+                lucide.createIcons();
             });
-            // Inventario
-                        // Inventario (ORGANIZADO POR CATEGORÍAS)
+
+            // 6. INVENTARIO
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('status', '==', 'available')), (snapshot) => {
-                 window.inventoryCache = [];
-                 const items = [];
-                 
-                 // 1. Recolectamos todos los datos primero
-                 snapshot.forEach(doc => { 
-                    const i = doc.data(); 
-                    i.id = doc.id;
-                    items.push(i);
-                    window.inventoryCache.push(i);
-                 });
-
-                 // 2. Agrupamos por categoría
-                 const groupedItems = items.reduce((acc, item) => {
-                     // Si es viejo y no tiene categoría, lo mandamos a 'Varios'
-                     const cat = item.category || 'varios';
-                     if (!acc[cat]) acc[cat] = [];
-                     acc[cat].push(item);
-                     return acc;
-                 }, {});
-
-                 // 3. Generamos el HTML ordenado
-                 let html = '';
-                 
-                 // Obtenemos las categorías y las ordenamos alfabéticamente
-                 const sortedCategories = Object.keys(groupedItems).sort();
-
-                 if (items.length === 0) {
-                     html = '<div class="text-center py-10 opacity-50"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i><p class="text-gray-400 text-sm">El inventario está vacío</p></div>';
-                 } else {
-                     sortedCategories.forEach(cat => {
-                         // Formato bonito para el título (ej: "game-pass" -> "Game Pass")
-                         const displayTitle = cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ');
-
-                         // Separador de categoría
-                         html += `
-                            <div class="mt-6 mb-3 flex items-center gap-3 slide-up">
-                                <div class="h-px bg-gray-300 flex-1"></div>
-                                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-bg-primary px-2">${displayTitle}</span>
-                                <div class="h-px bg-gray-300 flex-1"></div>
-                            </div>
-                            <div class="space-y-3">
-                         `;
-
-                         // Renderizamos los items de esta categoría
-                         groupedItems[cat].forEach(i => {
+                    window.inventoryCache = []; const items = [];
+                    snapshot.forEach(doc => { const i = doc.data(); i.id = doc.id; items.push(i); window.inventoryCache.push(i); });
+                    const groupedItems = items.reduce((acc, item) => { const cat = item.category || 'varios'; if (!acc[cat]) acc[cat] = []; acc[cat].push(item); return acc; }, {});
+                    let html = ''; const sortedCategories = Object.keys(groupedItems).sort();
+                    if (items.length === 0) { html = '<div class="text-center py-10 opacity-50"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i><p class="text-gray-400 text-sm">El inventario está vacío</p></div>'; } 
+                    else {
+                        sortedCategories.forEach(cat => {
+                            const displayTitle = cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ');
+                            html += `<div class="mt-6 mb-3 flex items-center gap-3 slide-up"><div class="h-px bg-gray-300 flex-1"></div><span class="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-bg-primary px-2">${displayTitle}</span><div class="h-px bg-gray-300 flex-1"></div></div><div class="space-y-3">`;
+                            groupedItems[cat].forEach(i => {
                             let detailInfo = '';
-                            if (i.link) {
-                                detailInfo = `<p class="text-[10px] text-indigo-500 mt-1 truncate font-medium bg-indigo-50 inline-block px-2 py-0.5 rounded border border-indigo-100"><i data-lucide="link" class="w-3 h-3 inline align-middle"></i> Digital / Link</p>`;
-                            } else if (i.description && !i.email) {
-                                // Caso Game Pass / Liberaciones (Solo descripción)
-                                detailInfo = `<p class="text-[10px] text-gray-400 mt-1 line-clamp-1 italic">${i.description}</p>`;
-                            } else {
-                                detailInfo = `<p class="text-[10px] text-gray-400 mt-1 font-mono">Expira: <span class="text-gray-600 font-bold">${i.expiryDate || 'N/A'}</span></p>`;
-                            }
-
-                            html += `
-                            <div class="neumo-card p-3 flex flex-col gap-2 slide-up relative group hover:scale-[1.01] transition-transform">
-                                <div class="flex justify-between items-start">
-                                    <div class="overflow-hidden pr-2">
-                                        <p class="font-bold text-gray-800 text-sm truncate">${i.serviceName}</p>
-                                        ${detailInfo}
-                                    </div>
-                                    <div class="flex gap-2 flex-shrink-0">
-                                        <button onclick="openEditInventoryModal('${i.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-blue-500 hover:text-white hover:bg-blue-500 rounded-lg transition-colors shadow-sm"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                        <button onclick="deleteInventoryItem('${i.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-rose-500 hover:text-white hover:bg-rose-500 rounded-lg transition-colors shadow-sm"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-end border-t border-gray-100 pt-2 mt-1">
-                                    <span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Creado: ${i.createdAt ? i.createdAt.toDate().toLocaleDateString() : 'Reciente'}</span>
-                                </div>
-                            </div>`; 
-                         });
-
-                         html += `</div>`; // Cierre del contenedor de la categoría
-                     });
-                 }
-
-                 document.getElementById('admin-inventory-list').innerHTML = html; 
-                 lucide.createIcons();
+                            if (i.link) { detailInfo = `<p class="text-[10px] text-indigo-500 mt-1 truncate font-medium bg-indigo-50 inline-block px-2 py-0.5 rounded border border-indigo-100"><i data-lucide="link" class="w-3 h-3 inline align-middle"></i> Digital / Link</p>`; } else if (i.description && !i.email) { detailInfo = `<p class="text-[10px] text-gray-400 mt-1 line-clamp-1 italic">${i.description}</p>`; } else { detailInfo = `<p class="text-[10px] text-gray-400 mt-1 font-mono">Expira: <span class="text-gray-600 font-bold">${i.expiryDate || 'N/A'}</span></p>`; }
+                            html += `<div class="neumo-card p-3 flex flex-col gap-2 slide-up relative group hover:scale-[1.01] transition-transform"><div class="flex justify-between items-start"><div class="overflow-hidden pr-2"><p class="font-bold text-gray-800 text-sm truncate">${i.serviceName}</p>${detailInfo}</div><div class="flex gap-2 flex-shrink-0"><button onclick="openEditInventoryModal('${i.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-blue-500 hover:text-white hover:bg-blue-500 rounded-lg transition-colors shadow-sm"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteInventoryItem('${i.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-rose-500 hover:text-white hover:bg-rose-500 rounded-lg transition-colors shadow-sm"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div><div class="flex justify-between items-end border-t border-gray-100 pt-2 mt-1"><span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Creado: ${i.createdAt ? i.createdAt.toDate().toLocaleDateString() : 'Reciente'}</span></div></div>`; 
+                            });
+                            html += `</div>`;
+                        });
+                    }
+                    const list = document.getElementById('admin-inventory-list');
+                    if(list) list.innerHTML = html; 
+                    lucide.createIcons();
             });
-            // Soporte
-            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '!=', 'renewal'), orderBy('timestamp', 'desc')), (s) => {
-                 window.adminPendingReports = []; window.adminReportsCache = []; let html = '';
-                 s.forEach(doc => { const r = doc.data(); r.id = doc.id; window.adminReportsCache.push(r); if(r.status!=='replied') window.adminPendingReports.push(r);
-                     html += `<div onclick="openReportDetails('${doc.id}')" class="neumo-card p-4 shadow-sm cursor-pointer mb-2"><div class="flex justify-between"><p class="font-bold text-xs text-gray-700">${r.email}</p><span class="text-[10px] uppercase ${r.status==='replied'?'text-success':'text-accent'} font-bold neumo-flat">${r.status}</span></div><p class="text-xs text-gray-500 mt-1 truncate">${r.description}</p><div class="mt-2 pt-2 border-t border-gray-200 flex justify-end"><button onclick="event.stopPropagation(); openReplyModal('${doc.id}', '${r.uid}')" class="neumo-button text-xs text-blue-500 font-bold hover:text-accent">Responder</button></div></div>`;
-                 });
-                 document.getElementById('admin-support-list').innerHTML = html || '<p class="text-center text-gray-400">Sin reportes</p>';
-                 const b = document.getElementById('badge-support'); if(window.adminPendingReports.length>0){b.textContent=window.adminPendingReports.length; b.classList.remove('hidden');} else b.classList.add('hidden');
-            });
+
+            // 7. BANNERS
+            function renderBannersAdmin() {
+                const list = document.getElementById('admin-banners-list');
+                if(!list) return;
+                let html = '';
+                bannerData.forEach(b => {
+                    html += `<div class="neumo-card p-0 rounded-xl overflow-hidden relative h-20 flex mb-3"><div class="w-24 h-full bg-gray-200"><img src="${b.imageUrl}" class="w-full h-full object-cover"></div><div class="flex-1 p-3 flex flex-col justify-center"><h4 class="font-bold text-gray-800 text-xs">${b.title}</h4><p class="text-[10px] text-gray-400">Activo</p></div><button onclick="deleteBanner('${b.id}')" class="absolute top-2 right-2 text-rose-500 bg-white rounded-full p-1 shadow hover:bg-rose-50"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
+                });
+                list.innerHTML = html || '<p class="text-center text-xs text-gray-400 py-4">Sin banners activos</p>';
+                lucide.createIcons();
+            }
+            if(window.bannerData && window.bannerData.length > 0) renderBannersAdmin();
         }
 
         // --- FUNCIONES DE INVENTARIO MEJORADAS (NUEVA LÓGICA) ---
@@ -1716,7 +1702,7 @@
             document.getElementById('usr-hist-list').innerHTML=h; 
             lucide.createIcons();
         };
-        window.openUserTransactionDetail = async (txId, uid, email) => {
+                window.openUserTransactionDetail = async (txId, uid, email) => {
             // Obtener datos frescos de la transacción
             const txDoc = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'transactions', txId));
             if (!txDoc.exists()) return showToast('Transacción no encontrada', 'error');
@@ -1724,7 +1710,7 @@
             
             let modalContent = '';
 
-            // --- DISEÑO PARA RECARGAS (DEPOSIT) ---
+            // CASO 1: RECARGAS
             if (t.type === 'deposit') {
                 let statusColor = 'text-success'; let statusText = 'Éxito';
                 if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){ statusColor = 'text-accent'; statusText = 'Pendiente'; } 
@@ -1744,14 +1730,21 @@
                     <button onclick="openUserHistory('${uid}', '${email}')" class="neumo-button mt-4 w-full bg-gray-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver al Expediente</button>
                 </div>`;
 
-            // --- DISEÑO PARA COMPRAS (PURCHASE) ---
+            // CASO 2: COMPRAS
             } else if (t.type === 'purchase' && t.details) {
                 const item = t.details;
-                // Generar HTML de credenciales según si es Libro o Cuenta
                 let infoProducto = '';
-                if (item.link) {
+                
+                // Verificar descripción (GamePass/Liberaciones)
+                if (item.description && item.description !== 'null') {
+                     infoProducto = `<div class="neumo-card neumo-inset p-3 mb-2"><p class="text-[10px] font-bold text-accent uppercase mb-1">Detalles/Código</p><p class="text-sm font-bold text-gray-800 whitespace-pre-wrap">${item.description}</p></div>`;
+                }
+                // Verificar si es Link (Libros)
+                else if (item.link) {
                     infoProducto = `<div class="neumo-card neumo-inset p-3 mb-2"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Enlace</p><a href="${item.link}" target="_blank" class="text-sm font-bold text-blue-600 underline truncate block">${item.link}</a></div>`;
-                } else {
+                } 
+                // Cuenta Normal
+                else {
                     infoProducto = `
                     <div class="grid gap-3">
                         <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Correo</p><p class="font-mono text-sm text-gray-800 font-bold select-all break-all">${item.email || 'N/A'}</p></div>
@@ -1781,12 +1774,35 @@
                     </div>
                     <button onclick="openUserHistory('${uid}', '${email}')" class="neumo-button w-full bg-gray-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver al Expediente</button>
                 </div>`;
+
+            // CASO 3: RESPUESTA DE SOPORTE (ESTA ES LA PARTE NUEVA QUE SOLICITASTE)
+            } else if (t.type === 'support_reply') {
+                 modalContent = `
+                <div class="text-left bounce-enter pt-4">
+                    <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center neumo-card neumo-inset flex-shrink-0"><i data-lucide="message-circle" class="w-6 h-6"></i></div>
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-800 leading-tight">Respuesta Soporte</h3>
+                            <p class="text-xs text-gray-400">${t.timestamp ? t.timestamp.toDate().toLocaleString() : 'Reciente'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="neumo-card neumo-inset p-5 rounded-2xl text-sm text-gray-700 whitespace-pre-wrap leading-relaxed font-medium mb-6 min-h-[100px]">
+                        ${t.message || "Sin contenido."}
+                    </div>
+
+                    <button onclick="openUserHistory('${uid}', '${email}')" class="neumo-button w-full bg-gray-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver al Expediente
+                    </button>
+                </div>`;
+
+            // CASO 4: GENÉRICO (Fallback)
             } else {
-                // Generico
                 modalContent = `<div class="p-5 text-center"><p class="text-gray-600 font-bold mb-2">${t.description}</p><p class="text-sm">$${t.amount}</p><button onclick="openUserHistory('${uid}', '${email}')" class="neumo-button mt-4 w-full bg-gray-900 text-white py-3 rounded-xl">Volver</button></div>`;
             }
 
             openModal(modalContent);
+            lucide.createIcons();
         };
         
 
@@ -2130,16 +2146,17 @@
 
                     // Crear detalles incluyendo campos nuevos si existen
                     const purchaseDetails = { 
-                        serviceName: item.serviceName, 
-                        email: item.email || null, // Puede ser null en libros
-                        link: item.link || null,   // Nuevo campo Libros
-                        password: item.password, 
-                        expiryDate: item.expiryDate || null, 
-                        duration: item.duration || null, 
-                        profileName: item.profileName || null, // Nuevo campo Cuentas
-                        pin: item.pin || null, // Nuevo campo Cuentas
-                        terms: item.terms || '' 
-                    };
+    serviceName: item.serviceName, 
+    email: item.email || null,
+    link: item.link || null,
+    password: item.password, 
+    expiryDate: item.expiryDate || null, 
+    duration: item.duration || null, 
+    profileName: item.profileName || null,
+    pin: item.pin || null,
+    description: item.description || null, // <--- AGREGAR ESTA LÍNEA
+    terms: item.terms || '' 
+};
 
                     // Descontar saldo
                     t.update(wRef, { balance: (currentBalance - cost) });
@@ -2179,79 +2196,97 @@
         };
 
         window.showTicketModal = (item) => {
-            const terms = item.terms || "Sin términos adicionales.";
-            const safeTerms = encodeURIComponent(terms); 
+    const terms = item.terms || "Sin términos adicionales.";
+    const safeTerms = encodeURIComponent(terms); 
+    const safeDesc = item.description ? encodeURIComponent(item.description) : '';
+
+    // Lógica para mostrar Contenido según el tipo
+    let mainContent = '';
+    
+    // CASO 1: Es Game Pass o Liberación (Tiene descripción)
+    if (item.description && item.description !== 'null') {
+        mainContent = `
+            <div class="neumo-card neumo-inset p-4 mb-2">
+                <p class="text-[10px] font-bold text-accent uppercase mb-2">Instrucciones / Código / Detalles</p>
+                <p class="font-mono text-sm text-gray-800 font-bold select-all whitespace-pre-wrap leading-relaxed">${item.description}</p>
+            </div>
+        `;
+    } 
+    // CASO 2: Es un Libro o Link
+    else if (item.link) {
+        mainContent = `
+            <div class="neumo-card neumo-inset p-3 mb-2"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Enlace de Descarga</p><a href="${item.link}" target="_blank" class="text-sm font-bold text-blue-600 underline truncate block">${item.link}</a></div>
+            <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-gray-800 font-bold select-all">${item.password}</p></div>
+        `;
+    } 
+    // CASO 3: Es Cuenta/Perfil (Netflix, Disney, etc)
+    else {
+        mainContent = `
+            <div class="grid gap-3">
+                <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Correo</p><p class="font-mono text-sm text-gray-800 font-bold select-all break-all">${item.email}</p></div>
+                <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-gray-800 font-bold select-all">${item.password}</p></div>
+                ${item.profileName ? `<div class="grid grid-cols-2 gap-2"><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Perfil</p><p class="text-sm font-bold text-gray-800">${item.profileName}</p></div><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">PIN</p><p class="text-sm font-bold text-gray-800">${item.pin}</p></div></div>` : ''}
+            </div>
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Expira</p><p class="text-sm font-bold text-gray-700">${item.expiryDate || 'N/A'}</p></div>
+                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Duración</p><p class="text-sm font-bold text-gray-700">${item.duration || 'N/A'}</p></div>
+            </div>
+        `;
+    }
+
+    openModal(`
+        <div class="text-center bounce-enter pt-4">
+            <div class="w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="check" class="w-8 h-8"></i></div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">¡Compra Exitosa!</h3>
+            <p class="text-xs text-gray-400 mb-6">Captura o copia tu ticket</p>
             
-            // Lógica para mostrar Link (Libro) o Credenciales
-            let mainContent = '';
-            
-            if (item.link) {
-                // Es un Libro
-                mainContent = `
-                    <div class="neumo-card neumo-inset p-3 mb-2"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Enlace de Descarga</p><a href="${item.link}" target="_blank" class="text-sm font-bold text-blue-600 underline truncate block">${item.link}</a></div>
-                    <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-gray-800 font-bold select-all">${item.password}</p></div>
-                `;
-            } else {
-                // Es Cuenta/Perfil
-                mainContent = `
-                    <div class="grid gap-3">
-                        <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Correo</p><p class="font-mono text-sm text-gray-800 font-bold select-all break-all">${item.email}</p></div>
-                        <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-gray-800 font-bold select-all">${item.password}</p></div>
-                        ${item.profileName ? `<div class="grid grid-cols-2 gap-2"><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Perfil</p><p class="text-sm font-bold text-gray-800">${item.profileName}</p></div><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">PIN</p><p class="text-sm font-bold text-gray-800">${item.pin}</p></div></div>` : ''}
-                    </div>
-                    <div class="grid grid-cols-2 gap-4 pt-2">
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Expira</p><p class="text-sm font-bold text-gray-700">${item.expiryDate || 'N/A'}</p></div>
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Duración</p><p class="text-sm font-bold text-gray-700">${item.duration || 'N/A'}</p></div>
-                    </div>
-                `;
-            }
+            <div class="neumo-card neumo-inset p-5 text-left space-y-4 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-success"></div>
+                <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Producto</p><p class="text-lg font-black text-gray-800">${item.serviceName}</p></div>
+                
+                ${mainContent}
+                
+                <div class="pt-3 border-t border-dashed border-gray-200"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Términos y Condiciones</p><p class="text-[10px] text-gray-500 leading-relaxed italic">${terms}</p></div>
+            </div>
 
-            openModal(`
-                <div class="text-center bounce-enter pt-4">
-                    <div class="w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="check" class="w-8 h-8"></i></div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">¡Compra Exitosa!</h3>
-                    <p class="text-xs text-gray-400 mb-6">Captura o copia tu ticket</p>
-                    
-                    <div class="neumo-card neumo-inset p-5 text-left space-y-4 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-success"></div>
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Producto</p><p class="text-lg font-black text-gray-800">${item.serviceName}</p></div>
-                        
-                        ${mainContent}
-                        
-                        <div class="pt-3 border-t border-dashed border-gray-200"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Términos y Condiciones</p><p class="text-[10px] text-gray-500 leading-relaxed italic">${terms}</p></div>
-                    </div>
+            <div class="mt-6 space-y-3">
+                <button onclick="copyTicketData('${item.serviceName}', '${item.email||item.link||''}', '${item.password||''}', '${item.expiryDate||''}', '${item.duration || ''}', '${item.profileName || ''}', '${item.pin || ''}', '${safeTerms}', '${safeDesc}')" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar Ticket</button>
+                <button onclick="closeModal()" class="neumo-button w-full text-gray-500 font-bold text-xs py-2 hover:text-gray-800">Cerrar</button>
+            </div>
+        </div>
+    `);
+};
 
-                    <div class="mt-6 space-y-3">
-                        <button onclick="copyTicketData('${item.serviceName}', '${item.email||item.link}', '${item.password}', '${item.expiryDate||''}', '${item.duration || ''}', '${item.profileName || ''}', '${item.pin || ''}', '${safeTerms}')" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar Ticket</button>
-                        <button onclick="closeModal()" class="neumo-button w-full text-gray-500 font-bold text-xs py-2 hover:text-gray-800">Cerrar</button>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.copyTicketData = (srv, mailOrLink, pass, exp, dur, profile, pin, encTerms) => {
+        window.copyTicketData = (srv, mailOrLink, pass, exp, dur, profile, pin, encTerms, encDesc) => {
     const terms = decodeURIComponent(encTerms);
+    // Verificamos si existe la descripción (pasada como argumento opcional)
+    const desc = encDesc ? decodeURIComponent(encDesc) : null;
+
     let text = `📦 *COMPRA EXITOSA - STREAM EVOLUTION*\n\n📌 *Producto:* ${srv}\n`;
     
-    if(mailOrLink.includes('http')) {
-            text += `🔗 *Link:* ${mailOrLink}\n`;
+    // Si hay descripción (Game Pass / Liberación), mostramos solo eso
+    if (desc && desc !== 'null' && desc !== '') {
+        text += `📝 *Detalles/Código:* ${desc}\n`;
     } else {
-            text += `📧 *Correo:* ${mailOrLink}\n`;
-    }
-    
-    text += `🔑 *Contraseña:* ${pass}\n`;
+        // Si no hay descripción, mostramos la lógica habitual (Link o Correo)
+        if(mailOrLink.includes('http')) {
+                text += `🔗 *Link:* ${mailOrLink}\n`;
+        } else {
+                text += `📧 *Correo:* ${mailOrLink}\n`;
+        }
+        
+        text += `🔑 *Contraseña:* ${pass}\n`;
 
-    // --- NUEVO CÓDIGO AGREGADO ---
-    if(profile && profile !== 'null' && profile !== 'undefined' && profile !== '') {
-        text += `👤 *Perfil:* ${profile}\n`;
+        if(profile && profile !== 'null' && profile !== 'undefined' && profile !== '') {
+            text += `👤 *Perfil:* ${profile}\n`;
+        }
+        if(pin && pin !== 'null' && pin !== 'undefined' && pin !== '') {
+            text += `🔒 *PIN:* ${pin}\n`;
+        }
+        
+        if(exp && exp !== 'null') text += `📅 *Expira:* ${exp}\n`;
+        if(dur && dur !== 'null') text += `⏳ *Duración:* ${dur}\n`;
     }
-    if(pin && pin !== 'null' && pin !== 'undefined' && pin !== '') {
-        text += `🔒 *PIN:* ${pin}\n`;
-    }
-    // ----------------------------
-    
-    if(exp) text += `📅 *Expira:* ${exp}\n`;
-    if(dur) text += `⏳ *Duración:* ${dur}\n`;
     
     text += `\n📜 *Términos:* ${terms}\n\n¡Gracias por tu preferencia!`;
     
@@ -2896,6 +2931,19 @@
         }, 900); // Frecuencia de aparición
     })();
     // FIN CÓDIGO NAVIDAD JS
+    
+            // --- FUNCIÓN PARA ELIMINAR REPORTES (SOPORTE Y RENOVACIONES) ---
+        window.deleteReport = async (id) => {
+            if(confirm("¿Estás seguro de ELIMINAR este ticket permanentemente? No se podrá recuperar.")) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', id));
+                    showToast('Ticket eliminado de la lista', 'success');
+                } catch(e) {
+                    console.error(e);
+                    showToast('Error al eliminar', 'error');
+                }
+            }
+        };
     </script>
 </body>
 </html>
