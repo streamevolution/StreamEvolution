@@ -754,46 +754,67 @@
         window.deleteCategory = async (id) => { if(confirm("¿Eliminar categoría?")) try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id)); showToast('Eliminada', 'success'); } catch(err) { showToast('Error', 'error'); } };
 
         // --- DATOS USUARIO ---
-                async function initUserData(user) {
-            // Referencia a la billetera en la base de datos
-            const walletRef = doc(db, 'artifacts', appId, 'users', user.uid, 'wallet', 'main');
+                        // --- FUNCIÓN DE SALDO CORREGIDA Y SEGURA ---
+        async function initUserData(user) {
+            // 1. Obtenemos las referencias a los textos en pantalla
+            const balanceLabel = document.getElementById('balance-display');
+            const profitLabel = document.getElementById('profit-display');
             
-            // IMPORTANTE: Aquí usamos 'snapshot' en vez de 'doc' para evitar el conflicto
-            onSnapshot(walletRef, (snapshot) => { 
-                const balanceLabel = document.getElementById('balance-display');
-                const profitLabel = document.getElementById('profit-display');
+            // 2. Referencia a la base de datos
+            const walletRef = doc(db, 'artifacts', appId, 'users', user.uid, 'wallet', 'main');
 
-                if (snapshot.exists()) { 
-                    const data = snapshot.data(); 
+            // 3. Activamos el escuchador en tiempo real
+            // IMPORTANTE: Usamos 'snapshot' para evitar conflictos de nombres
+            onSnapshot(walletRef, (snapshot) => {
+                
+                // Verificamos si la billetera existe
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
                     
-                    // Convertimos a número para asegurar que no sea texto o undefined
-                    const valBalance = Number(data.balance) || 0;
-                    const valProfit = Number(data.profit) || 0;
+                    // Convertimos el saldo a número asegurándonos de que no sea texto
+                    // Si data.balance es 21, esto mostrará 21.
+                    const safeBalance = Number(data.balance); 
+                    const safeProfit = Number(data.profit);
 
-                    // Actualizamos la pantalla
-                    if(balanceLabel) balanceLabel.textContent = `$${valBalance.toLocaleString()}`; 
-                    if(profitLabel) profitLabel.textContent = `$${valProfit.toLocaleString()}`; 
-                    currentProfit = valProfit; 
+                    // Verificamos si es un número válido, si no, es 0
+                    const finalBalance = isNaN(safeBalance) ? 0 : safeBalance;
+                    const finalProfit = isNaN(safeProfit) ? 0 : safeProfit;
+
+                    // Actualizamos la pantalla SOLO si existen los elementos
+                    if (balanceLabel) balanceLabel.textContent = `$${finalBalance.toLocaleString()}`;
+                    if (profitLabel) profitLabel.textContent = `$${finalProfit.toLocaleString()}`;
+                    
+                    // Actualizamos variable global
+                    currentProfit = finalProfit;
+
                 } else {
-                    // SI LA BILLETERA NO EXISTE: La creamos y forzamos el texto a $0
+                    // Si el usuario es nuevo o no tiene documento de billetera
+                    // 1. Lo creamos en la base de datos para que no falle a futuro
                     setDoc(walletRef, { balance: 0, profit: 0 }, { merge: true });
                     
-                    if(balanceLabel) balanceLabel.textContent = "$0"; 
-                    if(profitLabel) profitLabel.textContent = "$0"; 
+                    // 2. Mostramos $0 en pantalla en lugar de "--"
+                    if (balanceLabel) balanceLabel.textContent = "$0";
+                    if (profitLabel) profitLabel.textContent = "$0";
                     currentProfit = 0;
                 }
+
             }, (error) => {
-                console.error("Error obteniendo saldo:", error);
+                console.error("Error leyendo saldo:", error);
+                // Si hay error de conexión, intentamos mostrar $0 para quitar los guiones
+                if (balanceLabel && balanceLabel.textContent.includes('--')) {
+                    balanceLabel.textContent = "$0";
+                }
             });
 
-            // Parte del historial de transacciones (esto se mantiene igual pero usamos nombres seguros)
+            // 4. Carga del historial (Sin cambios, solo protección)
             const txRef = collection(db, 'artifacts', appId, 'users', user.uid, 'transactions');
-            onSnapshot(query(txRef, orderBy('timestamp', 'desc'), limit(20)), (snapshot) => { 
-                window.userTransactions = []; 
-                snapshot.forEach((docSnap) => { 
-                    window.userTransactions.push({id: docSnap.id, ...docSnap.data()}); 
-                }); 
-                updateNotificationDot(); 
+            onSnapshot(query(txRef, orderBy('timestamp', 'desc'), limit(20)), (snapshot) => {
+                window.userTransactions = [];
+                snapshot.forEach((docSnap) => {
+                    window.userTransactions.push({id: docSnap.id, ...docSnap.data()});
+                });
+                // Actualizamos el punto rojo de notificaciones si existe la función
+                if(typeof updateNotificationDot === 'function') updateNotificationDot();
             });
         }
 
