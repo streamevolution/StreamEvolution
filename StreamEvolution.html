@@ -923,7 +923,7 @@
         };
 
         // --- ADMIN PANEL ---
-                                        function initAdminPanel() {
+                                                function initAdminPanel() {
             // 1. SOLICITUDES DE SALDO
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
                 window.adminPendingRequests = []; 
@@ -957,7 +957,7 @@
                 lucide.createIcons();
             });
 
-            // 2. RENOVACIONES (Con botón de ELIMINAR)
+            // 2. RENOVACIONES
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '==', 'renewal')), (s) => {
                 const list = document.getElementById('admin-renewal-list');
                 const badge = document.getElementById('renewal-count-badge');
@@ -988,7 +988,6 @@
                                 </div>
                                 <div class="flex gap-2 border-t border-gray-100 pt-3 items-center">
                                     <button onclick="event.stopPropagation(); deleteReport('${doc.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" title="Eliminar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                    
                                     <button onclick="event.stopPropagation(); approveRenewal('${doc.id}', '${r.uid}')" class="neumo-button flex-1 bg-success text-white py-2 rounded-lg text-xs font-bold shadow-sm">Aprobar</button>
                                     <button onclick="event.stopPropagation(); rejectRenewal('${doc.id}')" class="neumo-button flex-1 bg-white text-rose-500 border border-rose-100 py-2 rounded-lg text-xs font-bold">Rechazar</button>
                                 </div>
@@ -1005,7 +1004,7 @@
                 lucide.createIcons();
             });
 
-            // 3. SOPORTE TÉCNICO (Con botón de ELIMINAR)
+            // 3. SOPORTE TÉCNICO (MODIFICADO: Badge Clickable)
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '!=', 'renewal')), (s) => {
                 const list = document.getElementById('admin-support-list');
                 const badge = document.getElementById('support-count-badge');
@@ -1029,6 +1028,14 @@
                         let typeIcon = r.type === 'payment' ? 'dollar-sign' : (r.type === 'bug' ? 'bug' : 'message-circle');
                         let typeColor = r.type === 'payment' ? 'text-green-500' : (r.type === 'bug' ? 'text-rose-500' : 'text-blue-500');
 
+                        // LÓGICA DEL BADGE (BOTÓN VERDE)
+                        let statusBadge = '';
+                        if(r.status === 'replied') {
+                             statusBadge = `<span onclick="event.stopPropagation(); viewAdminReply('${doc.id}')" class="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-green-100 text-green-600 border border-green-200 cursor-pointer hover:scale-105 transition-transform shadow-sm" title="Ver mi respuesta">REPLIED</span>`;
+                        } else {
+                             statusBadge = `<span class="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-600 border border-amber-100">${r.status || 'Pendiente'}</span>`;
+                        }
+
                         html += `
                         <div onclick="openReportDetails('${doc.id}')" class="neumo-card p-4 mb-3 cursor-pointer hover:bg-gray-50 transition-colors relative bg-white" title="Ver Detalle">
                             <div class="flex items-start gap-3">
@@ -1036,7 +1043,7 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="flex justify-between items-start">
                                         <p class="font-bold text-xs text-gray-700 truncate">${r.email}</p>
-                                        <span class="text-[9px] uppercase font-bold px-2 py-0.5 rounded ${r.status==='replied'?'bg-green-100 text-green-600':'bg-amber-100 text-amber-600'}">${r.status || 'Pendiente'}</span>
+                                        ${statusBadge}
                                     </div>
                                     <p class="text-[10px] text-gray-400 mb-1">${r.timestamp ? r.timestamp.toDate().toLocaleString() : ''}</p>
                                     <p class="text-xs text-gray-600 line-clamp-2">${r.description}</p>
@@ -1145,6 +1152,7 @@
             }
             if(window.bannerData && window.bannerData.length > 0) renderBannersAdmin();
         }
+
 
         // --- FUNCIONES DE INVENTARIO MEJORADAS (NUEVA LÓGICA) ---
 
@@ -2943,6 +2951,33 @@
                     showToast('Error al eliminar', 'error');
                 }
             }
+        };
+        
+                // --- FUNCIÓN PARA VER LA RESPUESTA ENVIADA ---
+        window.viewAdminReply = (id) => {
+            // Buscamos el reporte en la memoria caché
+            const r = window.adminReportsCache.find(x => x.id === id);
+            
+            if (!r || !r.adminReply) {
+                return showToast('No se encontró el texto de la respuesta.', 'info');
+            }
+            
+            openModal(`
+                <div class="text-center bounce-enter pt-2">
+                    <div class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 border border-green-200">
+                        <i data-lucide="check-circle-2" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">Respuesta Enviada</h3>
+                    <p class="text-xs text-gray-400 mb-4">Lo que le respondiste al usuario:</p>
+                    
+                    <div class="neumo-card neumo-inset p-4 text-left text-sm text-gray-700 rounded-xl mb-4 whitespace-pre-wrap font-medium border border-gray-100 shadow-inner">
+                        ${r.adminReply}
+                    </div>
+                    
+                    <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg">Cerrar</button>
+                </div>
+            `);
+            lucide.createIcons();
         };
     </script>
 </body>
