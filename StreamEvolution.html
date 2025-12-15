@@ -754,36 +754,43 @@
         window.deleteCategory = async (id) => { if(confirm("¿Eliminar categoría?")) try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id)); showToast('Eliminada', 'success'); } catch(err) { showToast('Error', 'error'); } };
 
         // --- DATOS USUARIO ---
-        async function initUserData(user) {
+                async function initUserData(user) {
+            // Referencia a la billetera en la base de datos
             const walletRef = doc(db, 'artifacts', appId, 'users', user.uid, 'wallet', 'main');
             
-            // Cambiamos el nombre del argumento a 'snapshot' para evitar conflictos
+            // IMPORTANTE: Aquí usamos 'snapshot' en vez de 'doc' para evitar el conflicto
             onSnapshot(walletRef, (snapshot) => { 
+                const balanceLabel = document.getElementById('balance-display');
+                const profitLabel = document.getElementById('profit-display');
+
                 if (snapshot.exists()) { 
                     const data = snapshot.data(); 
                     
-                    // Aseguramos que el valor sea un número válido
-                    const balance = (data.balance !== undefined && data.balance !== null) ? data.balance : 0;
-                    const profit = (data.profit !== undefined && data.profit !== null) ? data.profit : 0;
+                    // Convertimos a número para asegurar que no sea texto o undefined
+                    const valBalance = Number(data.balance) || 0;
+                    const valProfit = Number(data.profit) || 0;
 
-                    document.getElementById('balance-display').textContent = `$${balance.toLocaleString()}`; 
-                    document.getElementById('profit-display').textContent = `$${profit.toLocaleString()}`; 
-                    currentProfit = profit; 
+                    // Actualizamos la pantalla
+                    if(balanceLabel) balanceLabel.textContent = `$${valBalance.toLocaleString()}`; 
+                    if(profitLabel) profitLabel.textContent = `$${valProfit.toLocaleString()}`; 
+                    currentProfit = valProfit; 
                 } else {
-                    // Si no existe la billetera, la creamos Y ACTUALIZAMOS LA PANTALLA
-                    setDoc(walletRef, { balance: 0, profit: 0 });
+                    // SI LA BILLETERA NO EXISTE: La creamos y forzamos el texto a $0
+                    setDoc(walletRef, { balance: 0, profit: 0 }, { merge: true });
                     
-                    document.getElementById('balance-display').textContent = "$0"; 
-                    document.getElementById('profit-display').textContent = "$0"; 
+                    if(balanceLabel) balanceLabel.textContent = "$0"; 
+                    if(profitLabel) profitLabel.textContent = "$0"; 
                     currentProfit = 0;
                 }
+            }, (error) => {
+                console.error("Error obteniendo saldo:", error);
             });
 
-            // Historial de transacciones (se mantiene igual)
+            // Parte del historial de transacciones (esto se mantiene igual pero usamos nombres seguros)
             const txRef = collection(db, 'artifacts', appId, 'users', user.uid, 'transactions');
             onSnapshot(query(txRef, orderBy('timestamp', 'desc'), limit(20)), (snapshot) => { 
                 window.userTransactions = []; 
-                snapshot.forEach((docSnap) => { // Cambiado a docSnap por seguridad
+                snapshot.forEach((docSnap) => { 
                     window.userTransactions.push({id: docSnap.id, ...docSnap.data()}); 
                 }); 
                 updateNotificationDot(); 
@@ -1556,7 +1563,46 @@
         
         window.registerUserByAdmin = async (e) => { e.preventDefault(); const email = document.getElementById('new-user-email').value; const password = document.getElementById('new-user-pass').value; try { const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp"); const secondaryAuth = getAuth(secondaryApp); const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password); await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'wallet', 'main'), { balance: 0, profit: 0, createdAt: serverTimestamp() }); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', cred.user.uid), { email: email, uid: cred.user.uid, role: 'client', lastLogin: serverTimestamp(), suspended: false }, { merge: true }); await signOut(secondaryAuth); showToast('Usuario creado (Cliente)', 'success'); closeModal(); } catch (error) { showToast('Error: ' + error.message, 'error'); } };
         window.openManualBalanceModal = (uid, email) => { openModal(`<div class="text-center bounce-enter"><h3 class="text-xl font-bold text-gray-800 mb-1">Cargar Saldo Manual</h3><p class="text-xs text-gray-400 mb-4">${email}</p><input type="number" id="manual-amount" class="neumo-inset w-full bg-transparent border-none rounded-xl px-4 py-3 text-lg font-bold text-center mb-4" placeholder="$0"><button onclick="confirmManualBalance('${uid}')" class="neumo-button w-full bg-success text-white font-bold py-3 rounded-xl shadow-lg">Confirmar Recarga</button></div>`); };
-        window.confirmManualBalance = async (uid) => { const amt = Number(document.getElementById('manual-amount').value); if(!amt) return; const wRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'); await runTransaction(db, async (t) => { const s = await t.get(wRef); t.update(wRef, { balance: (s.data().balance||0) + amt }); const txRef = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions')); t.set(txRef, { type: 'deposit', amount: amt, description: 'Carga Manual Admin', timestamp: serverTimestamp(), prevBalance: s.data().balance, newBalance: (s.data().balance||0) + amt }); }); showToast('Saldo cargado', 'success'); closeModal(); };
+                window.confirmManualBalance = async (uid) => { 
+            const inputVal = document.getElementById('manual-amount').value;
+            const amt = Number(inputVal); 
+            
+            if(!amt) return showToast('Ingresa un monto válido', 'error'); 
+            
+            // Referencia a la billetera
+            const wRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'); 
+            
+            try {
+                await runTransaction(db, async (t) => { 
+                    const s = await t.get(wRef); 
+                    
+                    // Si la billetera NO existe (usuario nuevo), asumimos que tiene $0
+                    const currentBal = s.exists() ? (Number(s.data().balance) || 0) : 0;
+                    const newBal = currentBal + amt;
+
+                    // TRUCO: Usamos 'set' con { merge: true }. 
+                    // Esto CREA la billetera si no existe, o la ACTUALIZA si ya existe.
+                    t.set(wRef, { balance: newBal }, { merge: true }); 
+                    
+                    // Registramos la transacción
+                    const txRef = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions')); 
+                    t.set(txRef, { 
+                        type: 'deposit', 
+                        amount: amt, 
+                        description: 'Carga Manual Admin', 
+                        timestamp: serverTimestamp(), 
+                        prevBalance: currentBal, 
+                        newBalance: newBal 
+                    }); 
+                }); 
+                
+                showToast('Saldo cargado correctamente', 'success'); 
+                closeModal(); 
+            } catch(e) {
+                console.error(e);
+                showToast('Error al cargar: ' + e.message, 'error');
+            }
+        };
                         // --- REEMPLAZA LA FUNCIÓN toggleUserRole POR ESTAS DOS: ---
 
         // 1. Abrir modal con selector
