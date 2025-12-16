@@ -358,6 +358,11 @@
                         <span class="font-bold text-gray-700 text-sm">Soporte</span>
                         <div id="badge-support" class="absolute top-4 right-4 bg-danger text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden shadow-sm">0</div>
                     </div>
+                    
+                    <div onclick="enterAdminModule('expirations'); initAdminExpirations()" class="admin-card p-5 rounded-3xl flex flex-col items-center justify-center cursor-pointer h-40 relative overflow-hidden group neumo-card">
+    <div class="w-12 h-12 bg-orange-50/50 text-orange-500 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><i data-lucide="calendar-clock" class="w-6 h-6"></i></div>
+    <span class="font-bold text-gray-700 text-sm">Vencimientos</span>
+</div>
 
                     <div onclick="enterAdminModule('categories')" class="admin-card col-span-2 p-5 rounded-3xl shadow-lg flex items-center justify-between cursor-pointer group neumo-card">
                          <div class="flex items-center gap-4">
@@ -461,6 +466,22 @@
                     </div>
                     <div id="admin-banners-list" class="space-y-3 pb-10"></div>
                 </section>
+                    <section id="admin-expirations-section" class="hidden bounce-enter">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h3 class="font-bold text-gray-800 text-xl">Membresías Activas</h3>
+                <p class="text-xs text-gray-400">Control de días restantes en tiempo real</p>
+            </div>
+            <button onclick="initAdminExpirations()" class="neumo-button bg-gray-100 text-gray-600 px-3 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-gray-200"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+        </div>
+        
+        <div class="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+            <button onclick="filterExpirations('all')" class="text-xs font-bold bg-gray-800 text-white px-3 py-1 rounded-lg">Todos</button>
+            <button onclick="filterExpirations('soon')" class="text-xs font-bold bg-rose-100 text-rose-600 px-3 py-1 rounded-lg">Por Vencer (5 días)</button>
+        </div>
+
+        <div id="admin-expirations-list" class="space-y-3 pb-10"></div>
+    </section>
             </div>
         </main>
     </div>
@@ -2818,6 +2839,233 @@
 };
 
         window.deleteBanner = async (id) => { if(confirm("¿Eliminar banner?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'banners', id)); };
+        // --- LÓGICA DE VENCIMIENTOS ---
+
+window.initAdminExpirations = async () => {
+    const list = document.getElementById('admin-expirations-list');
+    list.innerHTML = '<div class="text-center py-10 opacity-50"><span class="animate-spin inline-block w-6 h-6 border-2 border-gray-800 border-t-transparent rounded-full"></span><p class="text-xs text-gray-400 mt-2">Calculando fechas...</p></div>';
+
+    try {
+        // 1. Obtener items vendidos
+        const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('status', '==', 'sold'));
+        const snapshot = await getDocs(q);
+        const items = [];
+        const userIds = new Set(); 
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            // Filtramos solo items que tengan fecha de expiración y dueño
+            if (data.expiryDate && data.soldTo) {
+                items.push({ id: doc.id, ...data });
+                userIds.add(data.soldTo);
+            }
+        });
+
+        // 2. Obtener emails de los compradores
+        const userMap = {};
+        const uniqueIds = Array.from(userIds);
+        if(uniqueIds.length > 0) {
+            const userPromises = uniqueIds.map(uid => getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid)));
+            const userSnaps = await Promise.all(userPromises);
+            userSnaps.forEach(snap => {
+                if(snap.exists()) userMap[snap.id] = snap.data().email;
+            });
+        }
+
+        // 3. Calcular días restantes
+        const processedItems = items.map(item => {
+            const now = new Date();
+            const expDate = new Date(item.expiryDate + 'T23:59:59'); 
+            const diffTime = expDate - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return {
+                ...item,
+                buyerEmail: userMap[item.soldTo] || 'Desconocido',
+                daysLeft: diffDays
+            };
+        });
+
+        // 4. Ordenar por urgencia
+        processedItems.sort((a, b) => a.daysLeft - b.daysLeft);
+        window.expirationCache = processedItems; 
+        renderExpirationList(processedItems);
+
+    } catch (e) {
+        console.error(e);
+        list.innerHTML = `<div class="text-center py-10 text-rose-500 text-sm">Error al cargar datos.</div>`;
+    }
+};
+
+window.renderExpirationList = (items) => {
+    const list = document.getElementById('admin-expirations-list');
+    
+    if (items.length === 0) {
+        list.innerHTML = `<div class="text-center py-10 opacity-50"><p class="text-gray-400 text-sm">No hay membresías activas.</p></div>`;
+        return;
+    }
+
+    let html = '';
+    items.forEach(item => {
+        let daysColor = 'text-emerald-600 bg-emerald-50 border-emerald-100';
+        
+        if (item.daysLeft <= 0) daysColor = 'text-gray-400 bg-gray-100 border-gray-200'; 
+        else if (item.daysLeft <= 5) daysColor = 'text-rose-600 bg-rose-50 border-rose-100 animate-pulse'; 
+        else if (item.daysLeft <= 10) daysColor = 'text-amber-600 bg-amber-50 border-amber-100'; 
+
+        const purchaseDate = item.soldAt ? item.soldAt.toDate().toLocaleDateString() : 'N/A';
+
+        html += `
+        <div onclick="openExpirationDetail('${item.id}')" class="neumo-card p-4 rounded-xl relative slide-up hover:bg-gray-50 transition-all mb-3 cursor-pointer group hover:scale-[0.99]">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center font-bold text-gray-500 text-xs neumo-inset">
+                        ${(item.category || 'SR').substring(0,2).toUpperCase()}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm leading-tight">${item.serviceName}</h4>
+                        <p class="text-[10px] text-gray-400 font-mono mt-0.5 uppercase">${item.category}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs font-black px-2 py-1 rounded-lg border ${daysColor} block mb-1">
+                        ${item.daysLeft <= 0 ? 'VENCIDO' : `${item.daysLeft} Días`}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-[10px] border-t border-gray-100 pt-2 mt-2">
+                <div class="col-span-2">
+                    <span class="font-bold text-gray-400 uppercase">Cliente:</span>
+                    <span class="font-bold text-indigo-600 ml-1 select-all">${item.buyerEmail}</span>
+                </div>
+                <div><span class="font-bold text-gray-400 uppercase block">Compra:</span><span class="font-medium text-gray-600">${purchaseDate}</span></div>
+                <div><span class="font-bold text-gray-400 uppercase block">Vence:</span><span class="font-bold text-gray-800">${item.expiryDate}</span></div>
+            </div>
+
+            <div class="mt-3 flex gap-2 items-center">
+                <div class="flex-1 bg-gray-50 p-2 rounded border border-gray-100 flex justify-between items-center group-hover:bg-white transition-colors">
+                    <div class="overflow-hidden">
+                        <p class="text-[9px] text-gray-400 font-bold uppercase">Cuenta:</p>
+                        <p class="text-[10px] font-mono text-gray-600 truncate max-w-[180px]">${item.email || 'Ver Detalles'}</p>
+                    </div>
+                    <button onclick="event.stopPropagation(); navigator.clipboard.writeText('${item.email||''} ${item.password||''}').then(()=>showToast('Copiado'))" class="text-gray-400 hover:text-gray-800 p-1">
+                        <i data-lucide="copy" class="w-3 h-3"></i>
+                    </button>
+                </div>
+                
+                <button onclick="event.stopPropagation(); deleteActiveMembership('${item.id}')" class="neumo-button w-10 h-full flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-gray-100 shadow-sm" title="Eliminar Membresía">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>`;
+    });
+    list.innerHTML = html;
+    lucide.createIcons();
+};
+
+window.openExpirationDetail = (id) => {
+    // 1. Buscamos el item en la memoria caché
+    const item = window.expirationCache.find(x => x.id === id);
+    if (!item) return;
+
+    // 2. Preparamos la información adicional (Pines, perfiles, links, etc)
+    let extraDetails = '';
+
+    // Si tiene link (Libros/Apps)
+    if (item.link) {
+        extraDetails += `
+        <div class="neumo-card neumo-inset p-3 mb-2">
+            <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Enlace / Link</p>
+            <a href="${item.link}" target="_blank" class="text-sm font-bold text-blue-600 underline break-all">${item.link}</a>
+        </div>`;
+    }
+
+    // Si tiene perfil y pin
+    if (item.profileName || item.pin) {
+        extraDetails += `
+        <div class="grid grid-cols-2 gap-3 mt-2">
+            <div class="neumo-card neumo-inset p-3">
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Perfil</p>
+                <p class="text-sm font-bold text-gray-800">${item.profileName || 'N/A'}</p>
+            </div>
+            <div class="neumo-card neumo-inset p-3">
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">PIN</p>
+                <p class="text-sm font-bold text-gray-800">${item.pin || 'N/A'}</p>
+            </div>
+        </div>`;
+    }
+
+    // Si es Game Pass o tiene descripción larga
+    if (item.description) {
+        extraDetails += `
+        <div class="neumo-card neumo-inset p-3 mt-2">
+            <p class="text-[10px] font-bold text-accent uppercase mb-1">Notas / Código</p>
+            <p class="text-xs text-gray-600 whitespace-pre-wrap">${item.description}</p>
+        </div>`;
+    }
+
+    // 3. Abrimos el modal con el diseño completo
+    openModal(`
+        <div class="text-left bounce-enter pt-2">
+            <div class="flex items-center gap-3 mb-4 border-b border-gray-100 pb-3">
+                <div class="w-12 h-12 bg-gray-900 text-white rounded-xl flex items-center justify-center shadow-lg">
+                    <i data-lucide="package-search" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800 leading-tight">${item.serviceName}</h3>
+                    <p class="text-xs text-gray-500">Detalle completo de la venta</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl">
+                    <p class="text-[10px] font-bold text-indigo-400 uppercase mb-1">Cliente Comprador</p>
+                    <p class="font-bold text-indigo-700 text-sm select-all">${item.buyerEmail}</p>
+                </div>
+
+                <div class="neumo-card neumo-inset p-4 rounded-xl">
+                    <div class="mb-3">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Correo de la Cuenta</p>
+                        <div class="flex justify-between items-center">
+                            <p class="font-mono text-sm font-bold text-gray-800 select-all break-all">${item.email || 'N/A'}</p>
+                            <button onclick="navigator.clipboard.writeText('${item.email}').then(()=>showToast('Correo copiado'))" class="text-gray-400 hover:text-gray-600"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-200 pt-3">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p>
+                        <div class="flex justify-between items-center">
+                            <p class="font-mono text-lg font-black text-gray-800 select-all">${item.password || 'N/A'}</p>
+                            <button onclick="navigator.clipboard.writeText('${item.password}').then(()=>showToast('Pass copiada'))" class="text-gray-400 hover:text-gray-600"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                ${extraDetails}
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <div class="text-center bg-gray-50 rounded-lg p-2">
+                        <p class="text-[9px] uppercase font-bold text-gray-400">Comprado</p>
+                        <p class="font-bold text-gray-600 text-xs">${item.soldAt ? item.soldAt.toDate().toLocaleDateString() : '-'}</p>
+                    </div>
+                    <div class="text-center bg-gray-50 rounded-lg p-2">
+                        <p class="text-[9px] uppercase font-bold text-gray-400">Vence</p>
+                        <p class="font-bold text-gray-800 text-xs">${item.expiryDate}</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl mt-6 shadow-lg">Cerrar Detalle</button>
+        </div>
+    `);
+    lucide.createIcons();
+};
+
+window.filterExpirations = (mode) => {
+    if (!window.expirationCache) return;
+    let filtered = (mode === 'soon') ? window.expirationCache.filter(x => x.daysLeft <= 5 && x.daysLeft >= 0) : window.expirationCache;
+    renderExpirationList(filtered);
+};
         // --- 👇 PEGA AQUÍ EL BLOQUE DE CÓDIGO DEL ADMINISTRADOR 👇 ---
 
         function renderBannersAdmin() {
@@ -2979,6 +3227,25 @@
             `);
             lucide.createIcons();
         };
+        window.deleteActiveMembership = async (id) => {
+    // 1. Confirmación de seguridad
+    if(!confirm("⚠️ ¿Eliminar esta membresía del registro?\n\nAl hacerlo, desaparecerá de esta lista y del historial. Esta acción no se puede deshacer.")) return;
+
+    try {
+        // 2. Eliminar documento de Firebase
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', id));
+        
+        // 3. Eliminar visualmente de la lista (sin recargar todo)
+        window.expirationCache = window.expirationCache.filter(item => item.id !== id);
+        renderExpirationList(window.expirationCache);
+        
+        showToast('Membresía eliminada correctamente', 'success');
+    } catch (e) {
+        console.error(e);
+        showToast('Error al eliminar: ' + e.message, 'error');
+    }
+};
     </script>
 </body>
 </html>
+
