@@ -1986,37 +1986,37 @@
         
 
         // --- MODAL INVITAR ---
-                        window.openInviteModal = async () => {
+                                window.openInviteModal = async () => {
             // 1. Verificar estado del interruptor
             const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
             const snap = await getDoc(userRef);
             const isActive = snap.exists() && snap.data().isReferralActive === true;
             
-            // 2. Determinar qué opciones de rol puede ofrecer el usuario actual
-            // Jerarquía: client(1) < vip(2) < reseller(3) < lider(4)
+            // 2. Determinar opciones usando CÓDIGOS SECRETOS (c)
+            // 1=Cliente, 2=Vip, 3=Revendedor
             const myRole = currentUserRole; 
-            let roleOptionsHTML = `<option value="client">Cliente (Básico)</option>`;
+            let roleOptionsHTML = `<option value="1">Cliente (Básico)</option>`;
             
-            // Si soy Revendedor (3), puedo invitar VIP (2)
+            // Si soy Revendedor o Líder, puedo dar VIP (Código 2)
             if(myRole === 'reseller' || myRole === 'lider') {
-                roleOptionsHTML += `<option value="vip">Cliente VIP</option>`;
+                roleOptionsHTML += `<option value="2">Cliente VIP</option>`;
             }
             
-            // Si soy Líder (4), puedo invitar Revendedores (3)
+            // Si soy Líder, puedo dar Revendedor (Código 3)
             if(myRole === 'lider') {
-                roleOptionsHTML += `<option value="reseller">Revendedor</option>`;
+                roleOptionsHTML += `<option value="3">Revendedor</option>`;
             }
 
-            // Estilos del interruptor
+            // Estilos Visuales
             const statusColor = isActive ? 'text-success bg-success/10 border-success/20' : 'text-gray-400 bg-gray-100 border-gray-200';
             const statusText = isActive ? 'ACTIVO (Regala $10)' : 'APAGADO';
             const btnStyle = isActive ? 'bg-rose-50 text-rose-500 hover:bg-rose-100' : 'bg-success text-white hover:bg-emerald-600';
             const btnText = isActive ? 'Desactivar' : 'Activar Enlace';
             const linkOpacity = isActive ? '' : 'opacity-50 pointer-events-none filter blur-[1px]';
 
-            // Base del link
+            // Base del link usando 'c' (código) para máxima discreción
             const baseUrl = `${window.location.origin}${window.location.pathname}`;
-            const defaultLink = `${baseUrl}?ref=${currentUser.uid}&role=client`;
+            const defaultLink = `${baseUrl}?ref=${currentUser.uid}&c=1`;
             
             openModal(`
                 <div class="text-center bounce-enter">
@@ -2035,7 +2035,7 @@
                     <div class="${linkOpacity} transition-all">
                         ${ (myRole === 'reseller' || myRole === 'lider') ? `
                         <div class="mb-3 text-left">
-                            <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">¿Qué membresía quieres dar?</label>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Membresía a otorgar</label>
                             <select id="invite-role-select" onchange="updateInviteLinkDisplay('${baseUrl}', '${currentUser.uid}')" class="neumo-inset w-full bg-transparent border-none rounded-xl p-2 text-sm font-bold text-gray-700 mt-1">
                                 ${roleOptionsHTML}
                             </select>
@@ -2043,7 +2043,7 @@
                         ` : '' }
 
                         <p class="text-xs text-gray-500 mb-4 px-4">
-                            Comparte este enlace. Tu referido recibe <strong>$10</strong> y tú ganas comisión.
+                            Comparte este enlace seguro. El sistema asignará el rol automáticamente.
                         </p>
 
                         <div class="neumo-card neumo-inset p-4 mb-4 flex items-center justify-between gap-3">
@@ -2056,10 +2056,10 @@
                 </div>
             `);
             
-            // Función auxiliar interna para actualizar el texto del link al cambiar el select
+            // Actualiza el link usando &c=
             window.updateInviteLinkDisplay = (base, uid) => {
-                const role = document.getElementById('invite-role-select').value;
-                document.getElementById('invite-link-text').innerText = `${base}?ref=${uid}&role=${role}`;
+                const code = document.getElementById('invite-role-select').value;
+                document.getElementById('invite-link-text').innerText = `${base}?ref=${uid}&c=${code}`;
             };
             
             window.copyCurrentInviteLink = () => {
@@ -2067,6 +2067,7 @@
                 navigator.clipboard.writeText(txt).then(()=>showToast('Enlace copiado','success'));
             };
         }
+
 
         // --- MODALES DE PRODUCTO CON DOBLE PRECIO ---
                         // ======================================================
@@ -2913,9 +2914,9 @@
                 await sendEmailVerification(c.user);
 
                 if(referrerId) {
-                                                    try {
+                                                                    try {
                     await runTransaction(db, async (t) => {
-                        // 1. Obtener datos del Líder/Referrer
+                        // 1. Obtener datos del Líder (Quien invitó)
                         const referrerRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', referrerId);
                         const referrerSnap = await t.get(referrerRef);
                         
@@ -2924,28 +2925,29 @@
                             throw new Error("ENLACE_APAGADO"); 
                         }
 
-                        // 2. VALIDACIÓN DE JERARQUÍAS (SEGURIDAD)
-                        // Leemos qué rol intentan reclamar desde la URL
+                        // 2. SEGURIDAD: LEER CÓDIGO 'c' (No 'role', ni 'lvl')
                         const urlParams = new URLSearchParams(window.location.search);
-                        let requestedRole = urlParams.get('role') || 'client'; // Por defecto cliente
+                        const code = urlParams.get('c'); 
                         
+                        // Traducción de Código -> Rol Real
+                        let requestedRole = 'client'; // Por defecto es Cliente (c=1)
+                        if (code === '2') requestedRole = 'vip';
+                        if (code === '3') requestedRole = 'reseller';
+                        
+                        // Verificación de Permisos (Anti-Trampa)
                         const referrerRole = referrerSnap.data().role || 'client';
-                        let finalRole = 'client'; // Rol final seguro
+                        let finalRole = 'client'; 
 
-                        // Reglas de negocio:
-                        // - Lider (4) puede crear: client, vip, reseller
-                        // - Reseller (3) puede crear: client, vip
-                        // - Client/Vip (1,2) solo pueden crear: client
-
+                        // Reglas: Solo Líder puede crear Revendedores, etc.
                         if (referrerRole === 'lider') {
                             if(['client', 'vip', 'reseller'].includes(requestedRole)) finalRole = requestedRole;
                         } else if (referrerRole === 'reseller') {
                             if(['client', 'vip'].includes(requestedRole)) finalRole = requestedRole;
                         } else {
-                            finalRole = 'client'; // Si un cliente intenta dar otro rol, se fuerza a cliente
+                            finalRole = 'client'; // Clientes normales solo pueden invitar Clientes
                         }
 
-                        // 3. Verificar saldo del Líder ($10)
+                        // 3. Verificar saldo del que invita ($10)
                         const resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
                         const resellerSnap = await t.get(resellerWalletRef);
                         
@@ -2954,7 +2956,7 @@
                         
                         if (resellerBalance < 10) throw new Error("SIN_SALDO");
 
-                        // 4. Ejecutar Transacción (Dinero y Creación de Usuario con ROL FINAL)
+                        // 4. Ejecutar Transacción (Descuento y Creación)
                         t.update(resellerWalletRef, { balance: resellerBalance - 10 });
                         
                         const newWalletRef = doc(db,'artifacts',appId,'users',uid,'wallet','main');
@@ -2962,11 +2964,11 @@
                         
                         const newUserProfileRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
                         
-                        // AQUÍ GUARDAMOS EL ROL CORRECTO
+                        // Guardar usuario con rol verificado
                         t.set(newUserProfileRef, { 
                             email: email, 
                             uid: uid, 
-                            role: finalRole, // <--- ROL DINÁMICO
+                            role: finalRole, // Aquí se guarda el rol final seguro
                             referredBy: referrerId, 
                             suspended: false, 
                             lastLogin: serverTimestamp() 
@@ -2979,10 +2981,9 @@
                         t.set(newUserTx, { type: 'deposit', amount: 10, description: 'Bono de Bienvenida', timestamp: serverTimestamp(), status: 'approved' });
                     });
                 } catch (txError) {
-                    // SI FALLA (Enlace apagado o sin saldo), creamos cuenta CLIENTE en $0
+                    // Fallback: Si falla algo (sin saldo, apagado, etc), crea cuenta básica en $0
                     console.log("Registro sin bono:", txError.message);
                     await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
-                    // Si falla el bono, siempre se crea como CLIENTE por seguridad
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { email: email, uid: uid, role: 'client', suspended: false, lastLogin: serverTimestamp() }, {merge: true});
                 }
 
