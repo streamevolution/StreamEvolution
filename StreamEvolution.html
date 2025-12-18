@@ -930,9 +930,10 @@
         }
         
         // --- MODAL Y FUNCIÓN DE TRANSFERENCIA DE GANANCIAS ---
-        window.openProfitTransferModal = () => {
-            if (currentUserRole !== 'reseller') {
-                return showToast('Esta función es solo para Revendedores.', 'info');
+                window.openProfitTransferModal = () => {
+            // Permitir acceso a: VIP, Revendedor y Líder. (Bloqueamos solo a 'client')
+            if (currentUserRole === 'client') {
+                return showToast('Función exclusiva para VIP, Revendedores y Líderes.', 'info');
             }
 
             let modalContent;
@@ -1197,18 +1198,63 @@
                 lucide.createIcons();
             });
 
-            // 5. USUARIOS
+                        // 5. USUARIOS (MEJORADO CON EDICIÓN Y BORRADO)
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'), (snapshot) => {
                 let html = ''; 
                 snapshot.forEach(doc => { 
-                    const d = doc.data(); const susp = d.suspended === true; const uRole = d.role || 'client';
-                    const roleBadgeColor = uRole === 'reseller' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500';
-                    html += `<div onclick="openUserHistory('${d.uid}', '${d.email}')" class="neumo-card p-3 flex flex-col gap-3 relative cursor-pointer hover:scale-105 transition-transform group slide-up"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs neumo-inset">${d.email.substring(0,2).toUpperCase()}</div><div class="overflow-hidden flex-1"><p class="font-bold text-sm text-gray-700 truncate">${d.email}</p><div class="flex items-center gap-2"><p class="text-[10px] text-gray-400 font-mono">ID: ${d.uid.substring(0,8)}</p><span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded neumo-flat ${roleBadgeColor}">${uRole}</span></div></div><i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i></div><div class="flex gap-2 pt-2 border-t border-gray-200" onclick="event.stopPropagation();"><button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="neumo-button flex-1 bg-success/10 text-success py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="dollar-sign" class="w-3 h-3"></i> Cargar</button><button onclick="event.stopPropagation(); openChangeRoleModal('${doc.id}', '${uRole}', '${d.email}')" class="neumo-button px-3 bg-indigo-50/50 text-indigo-600 rounded-lg text-xs font-bold" title="Cambiar Rol"><i data-lucide="user-cog" class="w-3 h-3"></i></button><button onclick="toggleSuspend('${doc.id}', ${!susp})" class="neumo-button px-3 bg-gray-100 text-gray-500 rounded-lg text-xs font-bold">${susp?'Activar':'Suspender'}</button></div></div>`; 
+                    const d = doc.data(); 
+                    const susp = d.suspended === true; 
+                    const uRole = d.role || 'client';
+                    // Colores según rol
+                    let roleBadgeColor = 'bg-gray-100 text-gray-500';
+                    if(uRole === 'reseller') roleBadgeColor = 'bg-indigo-100 text-indigo-600';
+                    if(uRole === 'lider') roleBadgeColor = 'bg-amber-100 text-amber-600';
+                    if(uRole === 'vip') roleBadgeColor = 'bg-purple-100 text-purple-600';
+
+                    html += `
+                    <div onclick="openUserHistory('${d.uid}', '${d.email}')" class="neumo-card p-3 flex flex-col gap-3 relative cursor-pointer hover:bg-gray-50 transition-colors group slide-up mb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs neumo-inset border border-white">
+                                ${d.email.substring(0,2).toUpperCase()}
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <p class="font-bold text-sm text-gray-800 truncate">${d.email}</p>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border border-gray-200 ${roleBadgeColor}">${uRole}</span>
+                                    <p class="text-[9px] text-gray-400 font-mono">ID: ${d.uid.substring(0,6)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-100" onclick="event.stopPropagation();">
+                            
+                            <button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="neumo-button flex-1 bg-emerald-50 text-emerald-600 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 hover:bg-emerald-100 transition-colors" title="Sumar Saldo">
+                                <i data-lucide="plus" class="w-3 h-3"></i> Sumar
+                            </button>
+
+                            <button onclick="openEditBalanceExact('${d.uid}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-white text-blue-500 border border-blue-100 rounded-lg hover:bg-blue-50 transition-colors" title="Editar Saldo Exacto">
+                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                            </button>
+
+                            <button onclick="openChangeRoleModal('${doc.id}', '${uRole}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-white text-indigo-500 border border-indigo-100 rounded-lg hover:bg-indigo-50 transition-colors" title="Cambiar Rol">
+                                <i data-lucide="user-cog" class="w-3.5 h-3.5"></i>
+                            </button>
+
+                            <button onclick="toggleSuspend('${doc.id}', ${!susp})" class="neumo-button w-8 h-8 flex items-center justify-center bg-white ${susp ? 'text-emerald-500 border-emerald-100' : 'text-amber-500 border-amber-100'} rounded-lg hover:bg-gray-50 transition-colors" title="${susp?'Activar':'Suspender'}">
+                                <i data-lucide="${susp?'play':'pause'}" class="w-3.5 h-3.5"></i>
+                            </button>
+
+                            <button onclick="deleteUserSystem('${doc.id}', '${d.uid}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-rose-50 text-rose-500 border border-rose-100 rounded-lg hover:bg-rose-500 hover:text-white transition-colors" title="Eliminar Usuario">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>`; 
                 });
                 const list = document.getElementById('admin-users-list');
-                if(list) list.innerHTML = html; 
+                if(list) list.innerHTML = html || '<div class="text-center py-10 text-gray-400 text-xs">No hay usuarios registrados</div>'; 
                 lucide.createIcons();
             });
+
 
             // 6. INVENTARIO
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('status', '==', 'available')), (snapshot) => {
@@ -1934,21 +1980,37 @@
         
 
         // --- MODAL INVITAR ---
-                window.openInviteModal = async () => {
-            // 1. Revisamos en la base de datos si está activo
+                        window.openInviteModal = async () => {
+            // 1. Verificar estado del interruptor
             const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
             const snap = await getDoc(userRef);
-            // Si no existe el campo, asumimos que está apagado o prendido según prefieras (aquí true = activo)
             const isActive = snap.exists() && snap.data().isReferralActive === true;
+            
+            // 2. Determinar qué opciones de rol puede ofrecer el usuario actual
+            // Jerarquía: client(1) < vip(2) < reseller(3) < lider(4)
+            const myRole = currentUserRole; 
+            let roleOptionsHTML = `<option value="client">Cliente (Básico)</option>`;
+            
+            // Si soy Revendedor (3), puedo invitar VIP (2)
+            if(myRole === 'reseller' || myRole === 'lider') {
+                roleOptionsHTML += `<option value="vip">Cliente VIP</option>`;
+            }
+            
+            // Si soy Líder (4), puedo invitar Revendedores (3)
+            if(myRole === 'lider') {
+                roleOptionsHTML += `<option value="reseller">Revendedor</option>`;
+            }
 
-            // 2. Definimos los colores y textos según el estado
+            // Estilos del interruptor
             const statusColor = isActive ? 'text-success bg-success/10 border-success/20' : 'text-gray-400 bg-gray-100 border-gray-200';
             const statusText = isActive ? 'ACTIVO (Regala $10)' : 'APAGADO';
             const btnStyle = isActive ? 'bg-rose-50 text-rose-500 hover:bg-rose-100' : 'bg-success text-white hover:bg-emerald-600';
             const btnText = isActive ? 'Desactivar' : 'Activar Enlace';
-            const linkOpacity = isActive ? '' : 'opacity-50 pointer-events-none filter blur-[1px]'; // Efecto borroso si está apagado
+            const linkOpacity = isActive ? '' : 'opacity-50 pointer-events-none filter blur-[1px]';
 
-            const link = `${window.location.origin}${window.location.pathname}?ref=${currentUser.uid}`;
+            // Base del link
+            const baseUrl = `${window.location.origin}${window.location.pathname}`;
+            const defaultLink = `${baseUrl}?ref=${currentUser.uid}&role=client`;
             
             openModal(`
                 <div class="text-center bounce-enter">
@@ -1964,20 +2026,40 @@
                         </button>
                     </div>
 
-                    <p class="text-xs text-gray-500 mb-6 px-4">
-                        ${isActive 
-                            ? `Tu enlace está <strong>funcionando</strong>. Tu referido recibe <strong>$10</strong> y tú el 10%.` 
-                            : `Tu enlace está <strong>desactivado</strong>. Nadie recibirá bonos si se registra ahora.`}
-                    </p>
+                    <div class="${linkOpacity} transition-all">
+                        ${ (myRole === 'reseller' || myRole === 'lider') ? `
+                        <div class="mb-3 text-left">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">¿Qué membresía quieres dar?</label>
+                            <select id="invite-role-select" onchange="updateInviteLinkDisplay('${baseUrl}', '${currentUser.uid}')" class="neumo-inset w-full bg-transparent border-none rounded-xl p-2 text-sm font-bold text-gray-700 mt-1">
+                                ${roleOptionsHTML}
+                            </select>
+                        </div>
+                        ` : '' }
 
-                    <div class="neumo-card neumo-inset p-4 mb-4 flex items-center justify-between gap-3 transition-all ${linkOpacity}">
-                        <span class="text-xs font-mono text-gray-600 truncate select-all">${link}</span>
-                        <button onclick="navigator.clipboard.writeText('${link}').then(()=>showToast('Enlace copiado','success'))" class="neumo-button text-indigo-600 hover:bg-indigo-50/50 p-2 rounded-lg"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                        <p class="text-xs text-gray-500 mb-4 px-4">
+                            Comparte este enlace. Tu referido recibe <strong>$10</strong> y tú ganas comisión.
+                        </p>
+
+                        <div class="neumo-card neumo-inset p-4 mb-4 flex items-center justify-between gap-3">
+                            <span id="invite-link-text" class="text-xs font-mono text-gray-600 truncate select-all">${defaultLink}</span>
+                            <button onclick="copyCurrentInviteLink()" class="neumo-button text-indigo-600 hover:bg-indigo-50/50 p-2 rounded-lg"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                        </div>
                     </div>
                     
                     <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl">Cerrar</button>
                 </div>
             `);
+            
+            // Función auxiliar interna para actualizar el texto del link al cambiar el select
+            window.updateInviteLinkDisplay = (base, uid) => {
+                const role = document.getElementById('invite-role-select').value;
+                document.getElementById('invite-link-text').innerText = `${base}?ref=${uid}&role=${role}`;
+            };
+            
+            window.copyCurrentInviteLink = () => {
+                const txt = document.getElementById('invite-link-text').innerText;
+                navigator.clipboard.writeText(txt).then(()=>showToast('Enlace copiado','success'));
+            };
         }
 
         // --- MODALES DE PRODUCTO CON DOBLE PRECIO ---
@@ -2825,18 +2907,39 @@
                 await sendEmailVerification(c.user);
 
                 if(referrerId) {
-                                    try {
+                                                    try {
                     await runTransaction(db, async (t) => {
-                        // 1. NUEVO: Verificar si el dueño del link tiene el interruptor PRENDIDO
+                        // 1. Obtener datos del Líder/Referrer
                         const referrerRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', referrerId);
                         const referrerSnap = await t.get(referrerRef);
                         
-                        // Si no existe o 'isReferralActive' no es true, lanzamos error para NO dar bono
+                        // Validar si el enlace está PRENDIDO
                         if (!referrerSnap.exists() || referrerSnap.data().isReferralActive !== true) {
                             throw new Error("ENLACE_APAGADO"); 
                         }
 
-                        // 2. Verificar saldo del revendedor (Tus $10)
+                        // 2. VALIDACIÓN DE JERARQUÍAS (SEGURIDAD)
+                        // Leemos qué rol intentan reclamar desde la URL
+                        const urlParams = new URLSearchParams(window.location.search);
+                        let requestedRole = urlParams.get('role') || 'client'; // Por defecto cliente
+                        
+                        const referrerRole = referrerSnap.data().role || 'client';
+                        let finalRole = 'client'; // Rol final seguro
+
+                        // Reglas de negocio:
+                        // - Lider (4) puede crear: client, vip, reseller
+                        // - Reseller (3) puede crear: client, vip
+                        // - Client/Vip (1,2) solo pueden crear: client
+
+                        if (referrerRole === 'lider') {
+                            if(['client', 'vip', 'reseller'].includes(requestedRole)) finalRole = requestedRole;
+                        } else if (referrerRole === 'reseller') {
+                            if(['client', 'vip'].includes(requestedRole)) finalRole = requestedRole;
+                        } else {
+                            finalRole = 'client'; // Si un cliente intenta dar otro rol, se fuerza a cliente
+                        }
+
+                        // 3. Verificar saldo del Líder ($10)
                         const resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
                         const resellerSnap = await t.get(resellerWalletRef);
                         
@@ -2845,27 +2948,38 @@
                         
                         if (resellerBalance < 10) throw new Error("SIN_SALDO");
 
-                        // 3. Si todo está bien y prendido, hacemos el movimiento de los $10
+                        // 4. Ejecutar Transacción (Dinero y Creación de Usuario con ROL FINAL)
                         t.update(resellerWalletRef, { balance: resellerBalance - 10 });
                         
                         const newWalletRef = doc(db,'artifacts',appId,'users',uid,'wallet','main');
-                        t.set(newWalletRef, { balance: 10, profit: 0, createdAt: serverTimestamp() }); // Aquí da los $10
+                        t.set(newWalletRef, { balance: 10, profit: 0, createdAt: serverTimestamp() });
                         
                         const newUserProfileRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
-                        t.set(newUserProfileRef, { email: email, uid: uid, role: 'client', referredBy: referrerId, suspended: false, lastLogin: serverTimestamp() }, {merge: true});
+                        
+                        // AQUÍ GUARDAMOS EL ROL CORRECTO
+                        t.set(newUserProfileRef, { 
+                            email: email, 
+                            uid: uid, 
+                            role: finalRole, // <--- ROL DINÁMICO
+                            referredBy: referrerId, 
+                            suspended: false, 
+                            lastLogin: serverTimestamp() 
+                        }, {merge: true});
                         
                         const resellerTx = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
-                        t.set(resellerTx, { type: 'charge', amount: -10, description: `Bono bienvenida referido: ${email}`, timestamp: serverTimestamp() });
+                        t.set(resellerTx, { type: 'charge', amount: -10, description: `Bono bienvenida (${finalRole}): ${email}`, timestamp: serverTimestamp() });
                         
                         const newUserTx = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'));
                         t.set(newUserTx, { type: 'deposit', amount: 10, description: 'Bono de Bienvenida', timestamp: serverTimestamp(), status: 'approved' });
                     });
                 } catch (txError) {
-                    // SI EL INTERRUPTOR ESTABA APAGADO (o sin saldo), cae aquí y crea la cuenta en $0
-                    console.log("Registro sin bono (Switch apagado o sin saldo):", txError.message);
+                    // SI FALLA (Enlace apagado o sin saldo), creamos cuenta CLIENTE en $0
+                    console.log("Registro sin bono:", txError.message);
                     await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
+                    // Si falla el bono, siempre se crea como CLIENTE por seguridad
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { email: email, uid: uid, role: 'client', suspended: false, lastLogin: serverTimestamp() }, {merge: true});
                 }
+
 
                 } else {
                     await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
@@ -3552,6 +3666,85 @@ window.filterExpirations = (mode) => {
                 console.error(error);
                 showToast("Error al cargar referidos", "error");
                 closeModal();
+            }
+        };
+        
+                // --- FUNCIONES ADMIN: ELIMINAR Y EDITAR SALDO EXACTO ---
+
+        // 1. Eliminar Usuario
+        window.deleteUserSystem = async (docId, uid, email) => {
+            if(!confirm(`⚠️ ¿Estás seguro de ELIMINAR a ${email}?\n\nSe borrará su billetera y acceso. Esta acción no se puede deshacer.`)) return;
+
+            try {
+                // Borrar documento de usuario
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', docId));
+                // Borrar billetera
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'));
+                
+                showToast('Usuario eliminado correctamente', 'success');
+            } catch (e) {
+                console.error(e);
+                showToast('Error al eliminar: ' + e.message, 'error');
+            }
+        };
+
+        // 2. Abrir Modal Editar Saldo
+        window.openEditBalanceExact = async (uid, email) => {
+            const wRef = doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main');
+            const snap = await getDoc(wRef);
+            const currentBal = snap.exists() ? (snap.data().balance || 0) : 0;
+
+            openModal(`
+                <div class="text-center bounce-enter">
+                    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 neumo-card neumo-inset">
+                        <i data-lucide="pencil" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">Editar Saldo Exacto</h3>
+                    <p class="text-xs text-gray-400 mb-4">${email}</p>
+                    
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 mb-4 text-sm">
+                        <span class="text-gray-500">Saldo Actual:</span>
+                        <strong class="text-gray-800 text-lg ml-2">$${currentBal}</strong>
+                    </div>
+
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase text-left ml-1 mb-1">Nuevo Saldo Final</label>
+                    <input type="number" id="exact-balance-input" value="${currentBal}" class="neumo-inset w-full bg-transparent border-none rounded-xl px-4 py-3 text-lg font-bold text-center text-blue-600 mb-6">
+                    
+                    <button onclick="confirmEditBalance('${uid}', ${currentBal})" class="neumo-button w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700">
+                        Guardar Nuevo Saldo
+                    </button>
+                </div>
+            `);
+            lucide.createIcons();
+        };
+
+        // 3. Confirmar Edición
+        window.confirmEditBalance = async (uid, oldBalance) => {
+            const val = document.getElementById('exact-balance-input').value;
+            const newBalance = Number(val);
+
+            if (val === '' || isNaN(newBalance)) return showToast('Número inválido', 'error');
+
+            try {
+                // Sobrescribir saldo
+                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'), { 
+                    balance: newBalance 
+                }, { merge: true });
+
+                // Registrar en historial
+                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'), {
+                    type: 'charge', 
+                    amount: Math.abs(newBalance - oldBalance), 
+                    description: `Ajuste Manual Admin (Edición)`,
+                    details: { old: oldBalance, new: newBalance },
+                    timestamp: serverTimestamp(),
+                    status: 'approved'
+                });
+
+                showToast('Saldo actualizado', 'success');
+                closeModal();
+            } catch (e) {
+                showToast('Error', 'error');
             }
         };
     </script>
