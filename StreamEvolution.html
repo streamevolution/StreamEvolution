@@ -191,7 +191,7 @@
             <form id="register-form" class="space-y-4 hidden auth-view">
                 <h2 class="text-xl font-bold text-gray-800 mb-2">Registro</h2>
                 <div id="referral-badge" class="hidden bg-indigo-50 text-indigo-600 p-3 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 neumo-card neumo-flat">
-                    <i data-lucide="gift" class="w-4 h-4"></i> <span>¡Te han invitado! Recibe $40 de regalo.</span>
+                    <i data-lucide="gift" class="w-4 h-4"></i> <span>¡Te han invitado! Recibe $10 de regalo.</span>
                 </div>
                 <input type="email" id="reg-email" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="Correo electrónico" required>
                 <input type="password" id="reg-password" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="Contraseña" required>
@@ -1842,7 +1842,7 @@
                 <div class="text-center bounce-enter">
                     <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="users" class="w-8 h-8"></i></div>
                     <h3 class="text-xl font-bold text-gray-800 mb-1">Invita y Gana</h3>
-                    <p class="text-xs text-gray-500 mb-6 px-4">Comparte este enlace. Tu referido recibe <strong>$40</strong> de bienvenida <strong>de tu saldo</strong> y tú ganas el <strong>10%</strong> de sus compras.</p>
+                    <p class="text-xs text-gray-500 mb-6 px-4">Comparte este enlace. Tu referido recibe <strong>$10</strong> de bienvenida <strong>de tu saldo</strong> y tú ganas el <strong>10%</strong> de sus compras.</p>
                     <div class="neumo-card neumo-inset p-4 mb-4 flex items-center justify-between gap-3">
                         <span class="text-xs font-mono text-gray-600 truncate select-all">${link}</span>
                         <button onclick="navigator.clipboard.writeText('${link}').then(()=>showToast('Enlace copiado','success'))" class="neumo-button text-indigo-600 hover:bg-indigo-50/50 p-2 rounded-lg"><i data-lucide="copy" class="w-4 h-4"></i></button>
@@ -2655,17 +2655,26 @@
                             const resellerSnap = await t.get(resellerWalletRef);
                             if (!resellerSnap.exists()) throw new Error("Revendedor inválido");
                             const resellerBalance = resellerSnap.data().balance || 0;
-                            if (resellerBalance < 40) throw new Error("Revendedor sin saldo");
+                            // Verifica si el revendedor tiene al menos 10 pesos
+if (resellerBalance < 10) throw new Error("Revendedor sin saldo");
 
-                            t.update(resellerWalletRef, { balance: resellerBalance - 40 });
-                            const newWalletRef = doc(db,'artifacts',appId,'users',uid,'wallet','main');
-                            t.set(newWalletRef, { balance: 40, profit: 0, createdAt: serverTimestamp() });
-                            const newUserProfileRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
-                            t.set(newUserProfileRef, { email: email, uid: uid, role: 'client', referredBy: referrerId, suspended: false, lastLogin: serverTimestamp() }, {merge: true});
-                            const resellerTx = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
-                            t.set(resellerTx, { type: 'charge', amount: -40, description: `Bono bienvenida referido: ${email}`, timestamp: serverTimestamp() });
-                            const newUserTx = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'));
-                            t.set(newUserTx, { type: 'deposit', amount: 40, description: 'Bono de Bienvenida', timestamp: serverTimestamp(), status: 'approved' });
+// Descuenta 10 al que invitó
+t.update(resellerWalletRef, { balance: resellerBalance - 10 });
+const newWalletRef = doc(db,'artifacts',appId,'users',uid,'wallet','main');
+
+// Le da 10 al nuevo usuario
+t.set(newWalletRef, { balance: 10, profit: 0, createdAt: serverTimestamp() });
+const newUserProfileRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
+t.set(newUserProfileRef, { email: email, uid: uid, role: 'client', referredBy: referrerId, suspended: false, lastLogin: serverTimestamp() }, {merge: true});
+
+// Registra la resta de -10 en el historial del revendedor
+const resellerTx = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
+t.set(resellerTx, { type: 'charge', amount: -10, description: `Bono bienvenida referido: ${email}`, timestamp: serverTimestamp() });
+
+// Registra el depósito de +10 en el historial del nuevo
+const newUserTx = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'));
+t.set(newUserTx, { type: 'deposit', amount: 10, description: 'Bono de Bienvenida', timestamp: serverTimestamp(), status: 'approved' });
+
                         });
                     } catch (txError) {
                         await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
@@ -3248,4 +3257,3 @@ window.filterExpirations = (mode) => {
     </script>
 </body>
 </html>
-
