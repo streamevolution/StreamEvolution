@@ -182,10 +182,7 @@
                 <a href="https://www.mediafire.com/file/tweka8kkm1jg5sx/StreamEvolution.apk/file" target="_blank" class="neumo-button w-full bg-emerald-600 text-white font-bold py-3 rounded-2xl shadow-lg hover:bg-emerald-700 flex justify-center items-center gap-2 mt-3 no-underline transition-all active:scale-95">
                     <i data-lucide="smartphone" class="w-5 h-5"></i>
                     <span>Descargar Aplicación Android</span>
-                </a>
-                <div class="text-center text-sm text-gray-500 mt-6">
-                    ¿Nuevo aquí? <button type="button" onclick="switchAuthView('register')" class="text-accent font-bold hover:underline ml-1">Crear Cuenta</button>
-                </div>
+                </a>                
             </form>
 
             <form id="register-form" class="space-y-4 hidden auth-view">
@@ -639,45 +636,76 @@
             const refId = urlParams.get('ref');
             
             if(refId) {
-                // 1. Llevamos al usuario al registro
-                switchAuthView('register');
+                // A. Bloqueamos visualmente el botón de Login mientras verificamos
+                const loginBtn = document.querySelector('#login-form button[type="submit"]');
+                // Guardamos el texto original (si existe el botón)
+                const originalBtnText = loginBtn ? loginBtn.innerHTML : '';
                 
-                const badge = document.getElementById('referral-badge');
-                const badgeText = badge.querySelector('span');
-                const badgeIcon = badge.querySelector('i');
-                
-                // 2. Mostramos estado de carga
-                badge.classList.remove('hidden');
-                badgeText.innerText = "Verificando invitación...";
-                
+                if(loginBtn) {
+                    loginBtn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando...';
+                    loginBtn.disabled = true;
+                }
+
                 try {
-                    // 3. Consultamos el estado del líder en Firebase
+                    // B. Consultamos el permiso en la Base de Datos
                     const refDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', refId));
                     
+                    // Restauramos el botón del login
+                    if(loginBtn) {
+                        loginBtn.innerHTML = originalBtnText;
+                        loginBtn.disabled = false;
+                    }
+
+                    // C. DECISIÓN DE SEGURIDAD
                     if (refDoc.exists() && refDoc.data().isReferralActive === true) {
-                        // --- CASO: ENLACE PRENDIDO ---
-                        badgeText.innerText = "¡Te han invitado! Recibe $10 de regalo.";
+                        // === ACCESO PERMITIDO (INTERRUPTOR PRENDIDO) ===
+                        // 1. Abrimos la puerta al Registro
+                        switchAuthView('register');
                         
-                        // Estilo: Azul/Indigo (Activo)
-                        badge.className = "bg-indigo-50 text-indigo-600 p-3 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 neumo-card neumo-flat mb-4";
-                        if(badgeIcon) badgeIcon.setAttribute('data-lucide', 'gift'); // Icono regalo
+                        // 2. Configuramos el aviso de regalo ($10)
+                        const badge = document.getElementById('referral-badge');
+                        if(badge) {
+                            badge.classList.remove('hidden');
+                            badge.querySelector('span').innerText = "¡Te han invitado! Recibe $10 de regalo.";
+                            // Estilo azul/regalo
+                            badge.className = "bg-indigo-50 text-indigo-600 p-3 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 neumo-card neumo-flat mb-4";
+                            const icon = badge.querySelector('i');
+                            if(icon) icon.setAttribute('data-lucide', 'gift');
+                        }
+                        lucide.createIcons();
 
                     } else {
-                        // --- CASO: ENLACE APAGADO ---
-                        badgeText.innerText = "El enlace está desactivado por el líder que te invitó.";
+                        // === ACCESO DENEGADO (INTERRUPTOR APAGADO) ===
+                        // 1. Nos aseguramos de quedarnos en el Login
+                        switchAuthView('login');
+
+                        // 2. Mostramos el aviso de bloqueo en el Login
+                        const loginForm = document.getElementById('login-form');
                         
-                        // Estilo: Gris (Inactivo)
-                        badge.className = "bg-gray-100 text-gray-500 p-3 rounded-xl text-xs font-bold border border-gray-200 flex items-center gap-2 neumo-card neumo-flat mb-4";
-                        if(badgeIcon) badgeIcon.setAttribute('data-lucide', 'lock'); // Icono candado
+                        // Borramos alerta previa si existe
+                        const oldAlert = document.getElementById('access-denied-alert');
+                        if(oldAlert) oldAlert.remove();
+
+                        const alertDiv = document.createElement('div');
+                        alertDiv.id = 'access-denied-alert';
+                        alertDiv.className = "bg-gray-100 text-gray-500 p-4 rounded-xl text-xs font-bold border border-gray-200 flex items-center gap-3 neumo-card neumo-flat mb-6 bounce-enter";
+                        alertDiv.innerHTML = `
+                            <i data-lucide="lock" class="w-5 h-5 flex-shrink-0"></i>
+                            <span>El enlace de invitación ha sido desactivado por el líder. No es posible crear nuevas cuentas.</span>
+                        `;
+                        
+                        // Insertamos la alerta arriba del todo
+                        if(loginForm) loginForm.insertBefore(alertDiv, loginForm.firstChild);
+                        lucide.createIcons();
                     }
                     
-                    // Actualizamos los íconos visualmente
-                    lucide.createIcons();
-                    
                 } catch (e) {
-                    console.error("Error verificando:", e);
-                    // Si falla la red, lo ocultamos para no confundir
-                    badge.classList.add('hidden');
+                    console.error("Error de seguridad:", e);
+                    // Si falla algo, restauramos el botón por si acaso
+                    if(loginBtn) {
+                        loginBtn.innerHTML = originalBtnText;
+                        loginBtn.disabled = false;
+                    }
                 }
             }
         }
