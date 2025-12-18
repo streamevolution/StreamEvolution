@@ -2625,13 +2625,61 @@
 
         window.deleteProfile = async (id) => { if(confirm("¿Borrar producto?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', id)); };
 
-        document.getElementById('login-form').addEventListener('submit', async(e)=>{
+                document.getElementById('login-form').addEventListener('submit', async(e)=>{
             e.preventDefault(); 
+            
+            // 1. Efecto visual de carga en el botón
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Ingresando...';
+
             try {
-                const credential = await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); 
-                if (!credential.user.emailVerified) { await signOut(auth); showToast('📧 Por favor verifica tu correo electrónico.', 'error'); return; }
-                showToast('Bienvenido', 'success');
-            } catch(e) { showToast('Error al iniciar sesión', 'error'); }
+                const email = document.getElementById('login-email').value;
+                const pass = document.getElementById('login-password').value;
+
+                // 2. Intentar Login
+                const credential = await signInWithEmailAndPassword(auth, email, pass); 
+                
+                // 3. Verificar si confirmó el correo
+                if (!credential.user.emailVerified) { 
+                    await signOut(auth); 
+                    showToast('📧 Tu correo no está verificado. Revisa tu bandeja de entrada o Spam.', 'error'); 
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    return; 
+                }
+                
+                showToast('¡Bienvenido de nuevo!', 'success');
+                // El onAuthStateChanged se encargará de cambiar la pantalla
+            } catch(error) { 
+                console.error("Error Login:", error); // Esto imprime el error técnico en la consola
+                
+                // 4. Traducir el error de Firebase a Español para el usuario
+                let msg = 'Ocurrió un error inesperado.';
+                
+                if(error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+                    msg = 'Contraseña incorrecta o correo no registrado.';
+                } else if(error.code === 'auth/user-not-found') {
+                    msg = 'No existe una cuenta con este correo.';
+                } else if(error.code === 'auth/too-many-requests') {
+                    msg = 'Demasiados intentos fallidos. Tu cuenta se bloqueó temporalmente por seguridad. Espera unos minutos.';
+                } else if(error.code === 'auth/user-disabled') {
+                    msg = 'Esta cuenta ha sido inhabilitada por administración.';
+                } else if(error.code === 'auth/invalid-email') {
+                    msg = 'El formato del correo electrónico no es válido.';
+                } else if(error.code === 'auth/network-request-failed') {
+                    msg = 'Error de conexión. Revisa tu internet.';
+                } else {
+                    msg = error.code || error.message; // Si es otro error, muestra el código
+                }
+
+                showToast(msg, 'error'); 
+                
+                // 5. Restaurar el botón
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         });
         
         document.getElementById('register-form').addEventListener('submit', async(e)=>{
