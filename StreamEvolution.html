@@ -272,16 +272,22 @@
 </button>
                 </div>
                 
-                <div id="admin-menu-items" class="hidden">
+                                <div id="admin-menu-items" class="hidden">
                     <div onclick="switchView('admin'); returnToAdminDashboard(); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl bg-gray-800 text-white font-semibold cursor-pointer mb-4 shadow-lg">
                         <i data-lucide="layout-grid" class="w-5 h-5 text-accent"></i>
                         <span class="text-sm">Panel Admin</span>
                     </div>
-                    <div onclick="switchView('user'); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl text-gray-600 font-medium cursor-pointer hover:bg-gray-100">
+                    
+                    <div onclick="switchView('user'); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl text-gray-600 font-medium cursor-pointer hover:bg-gray-100 mb-2">
                         <i data-lucide="shopping-bag" class="w-5 h-5"></i>
                         <span class="text-sm">Vista Tienda</span>
                     </div>
+
+                    <button onclick="openInviteModal(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 transition-all">
+                        <i data-lucide="users" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
+                    </button>
                 </div>
+
             </div>
             <div class="p-4 border-t border-gray-100">
                 <button onclick="handleLogout()" class="neumo-button w-full flex items-center justify-center gap-2 p-3 rounded-xl text-rose-500 hover:bg-rose-50/10 font-bold transition-colors text-sm"><i data-lucide="log-out" class="w-4 h-4"></i> Cerrar Sesión</button>
