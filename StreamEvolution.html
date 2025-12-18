@@ -287,6 +287,9 @@
                         <i data-lucide="users" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
                     </button>
                 </div>
+                                    <button onclick="renderMembershipsView(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 transition-all mt-2">
+                        <i data-lucide="crown" class="w-5 h-5"></i><span class="text-sm font-bold">Membresías</span>
+                    </button>
 
             </div>
             <div class="p-4 border-t border-gray-100">
@@ -3927,6 +3930,204 @@ window.filterExpirations = (mode) => {
             } catch (e) {
                 showToast('Error', 'error');
             }
+        };
+        
+                                        // --- VISTA DE MEMBRESÍAS (V3.1 - LIMPIEZA AUTOMÁTICA) ---
+        window.renderMembershipsView = async () => {
+            // 1. Crear Overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'memberships-view-overlay';
+            overlay.className = "fixed inset-0 bg-gray-100 z-50 overflow-y-auto bounce-enter"; 
+            
+            // Carga inicial
+            overlay.innerHTML = `
+                <div class="h-screen flex flex-col items-center justify-center text-center">
+                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4 animate-pulse"><i data-lucide="cloud-download" class="w-8 h-8"></i></div>
+                    <h2 class="text-xl font-bold text-gray-400">Preparando catálogo...</h2>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            lucide.createIcons();
+
+            try {
+                // 2. Obtener productos de Firebase
+                const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'));
+                
+                if (snapshot.empty) {
+                    overlay.innerHTML = `<div class="p-10 text-center"><p class="text-gray-400">No hay productos disponibles.</p><button onclick="document.getElementById('memberships-view-overlay').remove()" class="mt-4 neumo-button px-4 py-2 rounded-xl text-sm">Cerrar</button></div>`;
+                    return;
+                }
+
+                // 3. Procesar categorías
+                window.cachedMembershipProducts = []; 
+                const categoriesSet = new Set();
+
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    const cat = d.category || 'Otros';
+                    categoriesSet.add(cat); 
+                    window.cachedMembershipProducts.push({ id: doc.id, ...d, categoryRaw: cat });
+                });
+
+                // Generar opciones
+                let categoryOptions = `<option value="all">👇 Selecciona una Categoría...</option>`;
+                Array.from(categoriesSet).sort().forEach(cat => {
+                    const displayCat = cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ');
+                    categoryOptions += `<option value="${cat}">${displayCat}</option>`;
+                });
+
+                // 4. Renderizar Estructura
+                overlay.innerHTML = `
+                    <div class="min-h-screen pb-20 bg-gray-100">
+                        <div class="sticky top-0 bg-gray-100/95 backdrop-blur-md z-30 px-4 py-4 shadow-sm border-b border-gray-200">
+                            <div class="flex items-center gap-4 mb-4">
+                                <button onclick="document.getElementById('memberships-view-overlay').remove()" class="neumo-button w-10 h-10 rounded-xl flex items-center justify-center text-gray-600 hover:text-indigo-600 transition-colors flex-shrink-0">
+                                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                                </button>
+                                <h1 class="text-lg font-bold text-gray-800">Lista de Precios</h1>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <div class="relative flex-1">
+                                    <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+                                    <input type="text" id="mem-search" oninput="filterMembershipList()" class="neumo-inset w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-gray-50 border-none focus:ring-0 placeholder:text-gray-400" placeholder="Buscar en la categoría...">
+                                </div>
+                                <select id="mem-filter" onchange="document.getElementById('mem-search').value=''; filterMembershipList()" class="neumo-inset px-2 py-2.5 rounded-xl text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 w-1/3 truncate focus:ring-0">
+                                    ${categoryOptions}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="max-w-5xl mx-auto p-4 md:p-8">
+                            <div class="neumo-card p-3 mb-6 flex flex-wrap justify-center md:justify-start items-center gap-4">
+                                <span class="text-[10px] font-black uppercase text-gray-400 tracking-widest">Niveles:</span>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-gray-500"></div><span class="text-[10px] font-bold text-gray-600">Cliente</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-indigo-500"></div><span class="text-[10px] font-bold text-indigo-600">VIP</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div><span class="text-[10px] font-bold text-amber-600">Revendedor</span></div>
+                            </div>
+
+                            <div id="memberships-results-container" class="space-y-8 min-h-[50vh]">
+                                <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center select-none">
+                                    <div class="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-6 neumo-inset">
+                                        <i data-lucide="mouse-pointer-click" class="w-10 h-10 text-gray-400"></i>
+                                    </div>
+                                    <h3 class="text-xl font-bold text-gray-600">Selecciona una Categoría</h3>
+                                    <p class="text-sm text-gray-400 max-w-[250px] mx-auto mt-2">Utiliza el menú desplegable de arriba para ver los productos.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+
+            } catch (error) {
+                console.error(error);
+                overlay.innerHTML = `<div class="h-screen flex flex-col items-center justify-center"><p class="text-gray-500">Error.</p><button onclick="document.getElementById('memberships-view-overlay').remove()" class="mt-4 neumo-button px-6 py-2 rounded-xl">Cerrar</button></div>`;
+            }
+        };
+
+        
+                // --- FUNCIÓN DE FILTRADO ESTRICTO ---
+        window.filterMembershipList = () => {
+            const searchVal = document.getElementById('mem-search').value.toLowerCase().trim();
+            const catFilter = document.getElementById('mem-filter').value;
+            const container = document.getElementById('memberships-results-container');
+            
+            if (!window.cachedMembershipProducts) return;
+
+            // 1. SI NO HA SELECCIONADO CATEGORÍA (Valor 'all'), MOSTRAR LEYENDA Y SALIR
+            if (catFilter === 'all') {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center select-none bounce-enter">
+                        <div class="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-6 neumo-inset">
+                            <i data-lucide="mouse-pointer-click" class="w-10 h-10 text-gray-400"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-600">Selecciona una Categoría</h3>
+                        <p class="text-sm text-gray-400 max-w-[250px] mx-auto mt-2">Elige una opción del menú para filtrar los precios.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            // 2. Filtrar SOLO por la categoría seleccionada + Búsqueda
+            const filtered = window.cachedMembershipProducts.filter(p => {
+                const matchesCat = p.categoryRaw === catFilter; // Debe coincidir exacto
+                const matchesSearch = p.name.toLowerCase().includes(searchVal);
+                return matchesCat && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 opacity-60">
+                        <i data-lucide="search-x" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                        <p class="text-sm text-gray-500">No se encontraron resultados en esta categoría.</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            // 3. Renderizar (Ya no agrupamos, porque solo mostramos 1 categoría)
+            let catIcon = 'package';
+            const lowerCat = catFilter.toLowerCase();
+            if(lowerCat.includes('streaming') || lowerCat.includes('video') || lowerCat.includes('perfiles')) catIcon = 'tv';
+            else if(lowerCat.includes('música') || lowerCat.includes('music')) catIcon = 'music';
+            else if(lowerCat.includes('game') || lowerCat.includes('juegos')) catIcon = 'gamepad-2';
+            else if(lowerCat.includes('libro') || lowerCat.includes('ebook')) catIcon = 'book-open';
+            else if(lowerCat.includes('celular') || lowerCat.includes('movil') || lowerCat.includes('imei')) catIcon = 'smartphone';
+
+            const displayCatName = catFilter.charAt(0).toUpperCase() + catFilter.slice(1).replace(/-/g, ' ');
+
+            let html = `
+                <div class="slide-up">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 capitalize border-b border-gray-200 pb-2">
+                        <i data-lucide="${catIcon}" class="text-indigo-500 w-5 h-5"></i> ${displayCatName}
+                    </h3>
+                    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            `;
+
+            filtered.forEach(p => {
+                const priceClient = p.priceClient || p.price || 0;
+                const priceReseller = p.priceReseller || (priceClient * 0.8);
+                const priceVip = p.priceVip || Math.round((priceClient + priceReseller) / 2);
+                const fmt = (v) => v === 0 ? 'GRATIS' : `$${v}`;
+
+                let iconHtml = p.imageUrl 
+                    ? `<img src="${p.imageUrl}" class="w-full h-full object-cover" alt="${p.name}">` 
+                    : `<span class="text-lg font-black text-gray-400">${p.name.charAt(0)}</span>`;
+
+                html += `
+                    <div class="neumo-card p-4 flex flex-col justify-between h-full bg-white relative overflow-hidden group hover:scale-[1.01] transition-transform">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden neumo-inset border border-white flex-shrink-0">
+                                ${iconHtml}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-sm leading-tight line-clamp-2">${p.name}</h4>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">${p.description ? 'Digital' : 'Servicio'}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex divide-x divide-gray-100 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden mt-auto">
+                            <div class="flex-1 py-2 text-center">
+                                <p class="text-[8px] text-gray-400 font-black uppercase mb-0.5">Cliente</p>
+                                <p class="text-sm font-black text-gray-600">${fmt(priceClient)}</p>
+                            </div>
+                            <div class="flex-1 py-2 text-center bg-indigo-50/50">
+                                <p class="text-[8px] text-indigo-500 font-black uppercase mb-0.5">VIP</p>
+                                <p class="text-sm font-black text-indigo-700">${fmt(priceVip)}</p>
+                            </div>
+                            <div class="flex-1 py-2 text-center bg-amber-50/50">
+                                <p class="text-[8px] text-amber-600 font-black uppercase mb-0.5">Revendedor</p>
+                                <p class="text-sm font-black text-amber-600">${fmt(priceReseller)}</p>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += `</div></div>`;
+
+            container.innerHTML = html;
+            lucide.createIcons();
         };
     </script>
 </body>
