@@ -633,15 +633,55 @@
             }, 1500);
         });
 
-        // --- SISTEMA DE REFERIDOS ---
-        function checkReferralParam() {
+                // --- SISTEMA DE REFERIDOS INTELIGENTE ---
+        async function checkReferralParam() {
             const urlParams = new URLSearchParams(window.location.search);
             const refId = urlParams.get('ref');
+            
             if(refId) {
-                document.getElementById('referral-badge').classList.remove('hidden');
+                // 1. Llevamos al usuario al registro
                 switchAuthView('register');
+                
+                const badge = document.getElementById('referral-badge');
+                const badgeText = badge.querySelector('span');
+                const badgeIcon = badge.querySelector('i');
+                
+                // 2. Mostramos estado de carga
+                badge.classList.remove('hidden');
+                badgeText.innerText = "Verificando invitación...";
+                
+                try {
+                    // 3. Consultamos el estado del líder en Firebase
+                    const refDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', refId));
+                    
+                    if (refDoc.exists() && refDoc.data().isReferralActive === true) {
+                        // --- CASO: ENLACE PRENDIDO ---
+                        badgeText.innerText = "¡Te han invitado! Recibe $10 de regalo.";
+                        
+                        // Estilo: Azul/Indigo (Activo)
+                        badge.className = "bg-indigo-50 text-indigo-600 p-3 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 neumo-card neumo-flat mb-4";
+                        if(badgeIcon) badgeIcon.setAttribute('data-lucide', 'gift'); // Icono regalo
+
+                    } else {
+                        // --- CASO: ENLACE APAGADO ---
+                        badgeText.innerText = "El enlace está desactivado por el líder que te invitó.";
+                        
+                        // Estilo: Gris (Inactivo)
+                        badge.className = "bg-gray-100 text-gray-500 p-3 rounded-xl text-xs font-bold border border-gray-200 flex items-center gap-2 neumo-card neumo-flat mb-4";
+                        if(badgeIcon) badgeIcon.setAttribute('data-lucide', 'lock'); // Icono candado
+                    }
+                    
+                    // Actualizamos los íconos visualmente
+                    lucide.createIcons();
+                    
+                } catch (e) {
+                    console.error("Error verificando:", e);
+                    // Si falla la red, lo ocultamos para no confundir
+                    badge.classList.add('hidden');
+                }
             }
         }
+
 
         // --- CATEGORÍAS DINÁMICAS ---
                 async function initCategories() {
