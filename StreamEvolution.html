@@ -642,85 +642,109 @@
             }, 1500);
         });
 
-                // --- SISTEMA DE REFERIDOS INTELIGENTE ---
+                        // --- GATEKEEPER INTELIGENTE (CALCULA EL BONO REAL) ---
         async function checkReferralParam() {
             const urlParams = new URLSearchParams(window.location.search);
             const refId = urlParams.get('ref');
+            const code = urlParams.get('c') || '1'; // Si no hay código, asumimos 1 (Cliente)
             
             if(refId) {
-                // A. Bloqueamos visualmente el botón de Login mientras verificamos
+                // Bloqueo visual del botón mientras verificamos
                 const loginBtn = document.querySelector('#login-form button[type="submit"]');
-                // Guardamos el texto original (si existe el botón)
                 const originalBtnText = loginBtn ? loginBtn.innerHTML : '';
                 
                 if(loginBtn) {
-                    loginBtn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando...';
+                    loginBtn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando invitación...';
                     loginBtn.disabled = true;
                 }
 
                 try {
-                    // B. Consultamos el permiso en la Base de Datos
+                    // Consultamos datos del Padrino/Líder
                     const refDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', refId));
                     
-                    // Restauramos el botón del login
                     if(loginBtn) {
                         loginBtn.innerHTML = originalBtnText;
                         loginBtn.disabled = false;
                     }
 
-                    // C. DECISIÓN DE SEGURIDAD
-                    if (refDoc.exists() && refDoc.data().isReferralActive === true) {
-                        // === ACCESO PERMITIDO (INTERRUPTOR PRENDIDO) ===
-                        // 1. Abrimos la puerta al Registro
-                        switchAuthView('register');
+                    // --- VALIDACIÓN DE SEGURIDAD ---
+                    if (refDoc.exists()) {
+                        const rData = refDoc.data();
+                        const config = rData.referralConfig || {};
                         
-                        // 2. Configuramos el aviso de regalo ($10)
-                        const badge = document.getElementById('referral-badge');
-                        if(badge) {
-                            badge.classList.remove('hidden');
-                            badge.querySelector('span').innerText = "¡Te han invitado! Recibe $10 de regalo.";
-                            // Estilo azul/regalo
-                            badge.className = "bg-indigo-50 text-indigo-600 p-3 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 neumo-card neumo-flat mb-4";
-                            const icon = badge.querySelector('i');
-                            if(icon) icon.setAttribute('data-lucide', 'gift');
+                        // 1. Verificamos si el enlace específico está PRENDIDO
+                        // (Si config[code] no es true, entonces está apagado)
+                        if (config[code] === true) {
+                            
+                            // --- CÁLCULO DEL MONTO A MOSTRAR ---
+                            let displayAmount = 10; // Base
+                            
+                            // Costos Estándar
+                            if(code === '2') displayAmount = 50;  // VIP
+                            if(code === '3') displayAmount = 100; // Revendedor
+
+                            // Lógica Admin: Si tiene monto personalizado, lo usamos
+                            if (rData.email === 'mrandroidtutorialeshd@gmail.com') {
+                                const customAmount = config[`amount_${code}`];
+                                if (customAmount !== undefined && customAmount !== null) {
+                                    displayAmount = customAmount;
+                                }
+                            }
+                            // -----------------------------------
+
+                            // === ACCESO CONCEDIDO ===
+                            switchAuthView('register');
+                            
+                            // Mostrar el Badge con el MONTO CORRECTO
+                            const badge = document.getElementById('referral-badge');
+                            if(badge) {
+                                badge.classList.remove('hidden');
+                                // AQUÍ USAMOS EL MONTO CALCULADO
+                                badge.querySelector('span').innerText = `¡Te han invitado! Recibe $${displayAmount} de regalo.`;
+                                
+                                badge.className = "bg-indigo-50 text-indigo-600 p-3 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 neumo-card neumo-flat mb-4";
+                                const icon = badge.querySelector('i');
+                                if(icon) icon.setAttribute('data-lucide', 'gift');
+                            }
+                            lucide.createIcons();
+
+                        } else {
+                            // === ACCESO DENEGADO (Interruptor Apagado) ===
+                            handleAccessDenied();
                         }
-                        lucide.createIcons();
-
                     } else {
-                        // === ACCESO DENEGADO (INTERRUPTOR APAGADO) ===
-                        // 1. Nos aseguramos de quedarnos en el Login
-                        switchAuthView('login');
-
-                        // 2. Mostramos el aviso de bloqueo en el Login
-                        const loginForm = document.getElementById('login-form');
-                        
-                        // Borramos alerta previa si existe
-                        const oldAlert = document.getElementById('access-denied-alert');
-                        if(oldAlert) oldAlert.remove();
-
-                        const alertDiv = document.createElement('div');
-                        alertDiv.id = 'access-denied-alert';
-                        alertDiv.className = "bg-gray-100 text-gray-500 p-4 rounded-xl text-xs font-bold border border-gray-200 flex items-center gap-3 neumo-card neumo-flat mb-6 bounce-enter";
-                        alertDiv.innerHTML = `
-                            <i data-lucide="lock" class="w-5 h-5 flex-shrink-0"></i>
-                            <span>El enlace de invitación ha sido desactivado por el líder. No es posible crear nuevas cuentas.</span>
-                        `;
-                        
-                        // Insertamos la alerta arriba del todo
-                        if(loginForm) loginForm.insertBefore(alertDiv, loginForm.firstChild);
-                        lucide.createIcons();
+                        // Usuario no existe
+                        handleAccessDenied();
                     }
                     
                 } catch (e) {
-                    console.error("Error de seguridad:", e);
-                    // Si falla algo, restauramos el botón por si acaso
+                    console.error("Error checking referral:", e);
                     if(loginBtn) {
                         loginBtn.innerHTML = originalBtnText;
                         loginBtn.disabled = false;
                     }
                 }
             }
+
+            // Función auxiliar para mostrar el bloqueo
+            function handleAccessDenied() {
+                switchAuthView('login');
+                const loginForm = document.getElementById('login-form');
+                const oldAlert = document.getElementById('access-denied-alert');
+                if(oldAlert) oldAlert.remove();
+
+                const alertDiv = document.createElement('div');
+                alertDiv.id = 'access-denied-alert';
+                alertDiv.className = "bg-gray-100 text-gray-500 p-4 rounded-xl text-xs font-bold border border-gray-200 flex items-center gap-3 neumo-card neumo-flat mb-6 bounce-enter";
+                alertDiv.innerHTML = `
+                    <i data-lucide="lock" class="w-5 h-5 flex-shrink-0"></i>
+                    <span>Este enlace de invitación no está disponible o ha sido desactivado.</span>
+                `;
+                if(loginForm) loginForm.insertBefore(alertDiv, loginForm.firstChild);
+                lucide.createIcons();
+            }
         }
+
 
 
         // --- CATEGORÍAS DINÁMICAS ---
@@ -1984,70 +2008,113 @@
             }
         };
         
+                        // --- CONTROL DE INTERRUPTOR Y MONTOS PERSONALIZADOS ---
+        window.toggleCurrentRoleStatus = async () => {
+            const btn = document.getElementById('ref-toggle-btn');
+            const select = document.getElementById('invite-role-select');
+            
+            // Si no hay selector (cliente básico), es código '1'
+            const currentCode = select ? select.value : '1'; 
+
+            // Loader
+            btn.innerHTML = '<span class="animate-spin inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full"></span>';
+            btn.disabled = true;
+
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+
+            try {
+                const snap = await getDoc(userRef);
+                const currentConfig = snap.data().referralConfig || {}; 
+                
+                // 1. Alternar Estado (Prendido/Apagado)
+                const currentState = currentConfig[currentCode] === true; 
+                const newState = !currentState;
+
+                const updateMap = {};
+                updateMap[`referralConfig.${currentCode}`] = newState;
+
+                // 2. LÓGICA ADMIN: Guardar monto personalizado si existe el input
+                const adminInput = document.getElementById('admin-custom-amount');
+                if (adminInput && currentUser.email === 'mrandroidtutorialeshd@gmail.com') {
+                    const customValue = Number(adminInput.value);
+                    if (customValue >= 0) {
+                        updateMap[`referralConfig.amount_${currentCode}`] = customValue;
+                    }
+                }
+
+                await updateDoc(userRef, updateMap);
+                
+                // Recargar visuales
+                await updateInviteModalVisuals(currentCode);
+                
+            } catch (e) {
+                console.error(e);
+                showToast('Error al actualizar', 'error');
+                btn.disabled = false;
+                btn.innerText = "Error";
+            }
+        };
+        
 
         // --- MODAL INVITAR ---
-                                window.openInviteModal = async () => {
-            // 1. Verificar estado del interruptor
-            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
-            const snap = await getDoc(userRef);
-            const isActive = snap.exists() && snap.data().isReferralActive === true;
-            
-            // 2. Determinar opciones usando CÓDIGOS SECRETOS (c)
-            // 1=Cliente, 2=Vip, 3=Revendedor
+                                                                window.openInviteModal = async () => {
             const myRole = currentUserRole; 
+            const isAdmin = currentUser.email === 'mrandroidtutorialeshd@gmail.com'; // Detectar Admin
+
+            // Construir opciones del selector
             let roleOptionsHTML = `<option value="1">Cliente (Básico)</option>`;
-            
-            // Si soy Revendedor o Líder, puedo dar VIP (Código 2)
-            if(myRole === 'reseller' || myRole === 'lider') {
-                roleOptionsHTML += `<option value="2">Cliente VIP</option>`;
-            }
-            
-            // Si soy Líder, puedo dar Revendedor (Código 3)
-            if(myRole === 'lider') {
-                roleOptionsHTML += `<option value="3">Revendedor</option>`;
-            }
+            if(myRole === 'reseller' || myRole === 'lider' || isAdmin) roleOptionsHTML += `<option value="2">Cliente VIP</option>`;
+            if(myRole === 'lider' || isAdmin) roleOptionsHTML += `<option value="3">Revendedor</option>`;
 
-            // Estilos Visuales
-            const statusColor = isActive ? 'text-success bg-success/10 border-success/20' : 'text-gray-400 bg-gray-100 border-gray-200';
-            const statusText = isActive ? 'ACTIVO (Regala $10)' : 'APAGADO';
-            const btnStyle = isActive ? 'bg-rose-50 text-rose-500 hover:bg-rose-100' : 'bg-success text-white hover:bg-emerald-600';
-            const btnText = isActive ? 'Desactivar' : 'Activar Enlace';
-            const linkOpacity = isActive ? '' : 'opacity-50 pointer-events-none filter blur-[1px]';
-
-            // Base del link usando 'c' (código) para máxima discreción
-            const baseUrl = `${window.location.origin}${window.location.pathname}`;
-            const defaultLink = `${baseUrl}?ref=${currentUser.uid}&c=1`;
-            
             openModal(`
                 <div class="text-center bounce-enter">
-                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="users" class="w-8 h-8"></i></div>
+                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-2 neumo-card neumo-inset"><i data-lucide="users" class="w-8 h-8"></i></div>
                     <h3 class="text-xl font-bold text-gray-800 mb-1">Invita y Gana</h3>
                     
-                    <div class="flex items-center justify-between p-3 rounded-xl border mb-4 mt-2 ${statusColor} transition-colors">
-                        <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                            <i data-lucide="${isActive ? 'wifi' : 'wifi-off'}" class="w-4 h-4"></i> ${statusText}
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2">Estados Actuales</p>
+                    <div id="active-roles-summary" class="flex flex-wrap justify-center gap-2 mb-4 min-h-[24px]">
+                        <span class="animate-pulse text-[10px] text-gray-400">Cargando...</span>
+                    </div>
+
+                    <div id="role-status-container" class="flex items-center justify-between p-3 rounded-xl border mb-4 mt-2 transition-colors bg-gray-50 border-gray-200">
+                        <span id="role-status-text" class="text-xs font-bold uppercase tracking-wider flex items-center gap-2 text-gray-400">
+                            <i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Selecciona...
                         </span>
-                        <button id="ref-toggle-btn" onclick="toggleReferralLink(${isActive})" class="neumo-button px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-colors ${btnStyle}">
-                            ${btnText}
+                        <button id="ref-toggle-btn" onclick="toggleCurrentRoleStatus()" class="neumo-button px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-colors bg-gray-200 text-gray-500">
+                            ...
                         </button>
                     </div>
 
-                    <div class="${linkOpacity} transition-all">
-                        ${ (myRole === 'reseller' || myRole === 'lider') ? `
+                    <div id="invite-content-area" class="transition-all">
+                        ${ (myRole !== 'client' || isAdmin) ? `
                         <div class="mb-3 text-left">
                             <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Membresía a otorgar</label>
-                            <select id="invite-role-select" onchange="updateInviteLinkDisplay('${baseUrl}', '${currentUser.uid}')" class="neumo-inset w-full bg-transparent border-none rounded-xl p-2 text-sm font-bold text-gray-700 mt-1">
+                            <select id="invite-role-select" onchange="handleRoleChange()" class="neumo-inset w-full bg-transparent border-none rounded-xl p-2 text-sm font-bold text-gray-700 mt-1">
                                 ${roleOptionsHTML}
                             </select>
                         </div>
                         ` : '' }
 
-                        <p class="text-xs text-gray-500 mb-4 px-4">
-                            Comparte este enlace seguro. El sistema asignará el rol automáticamente.
-                        </p>
+                        <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl mb-4 text-left">
+                            <p class="text-[10px] font-black text-indigo-500 uppercase flex items-center gap-1 mb-1">
+                                <i data-lucide="info" class="w-3 h-3"></i> Configuración del Bono
+                            </p>
+                            
+                            ${ isAdmin ? `
+                                <p class="text-xs text-gray-600 mb-2">Define cuánto quieres regalar (y descontar) para esta membresía:</p>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-gray-500">$</span>
+                                    <input type="number" id="admin-custom-amount" class="neumo-inset flex-1 bg-white rounded-lg px-3 py-1 font-bold text-indigo-700" placeholder="0">
+                                </div>
+                            ` : `
+                                <p class="text-xs text-gray-600 leading-relaxed">
+                                    Se descontarán <strong id="dynamic-bonus-amount" class="text-indigo-700">$10</strong> de tu saldo y se sumarán al referido.
+                                </p>
+                            `}
+                        </div>
 
-                        <div class="neumo-card neumo-inset p-4 mb-4 flex items-center justify-between gap-3">
-                            <span id="invite-link-text" class="text-xs font-mono text-gray-600 truncate select-all">${defaultLink}</span>
+                        <div id="link-container" class="neumo-card neumo-inset p-4 mb-4 flex items-center justify-between gap-3 transition-opacity duration-300">
+                            <span id="invite-link-text" class="text-xs font-mono text-gray-600 truncate select-all">Generando...</span>
                             <button onclick="copyCurrentInviteLink()" class="neumo-button text-indigo-600 hover:bg-indigo-50/50 p-2 rounded-lg"><i data-lucide="copy" class="w-4 h-4"></i></button>
                         </div>
                     </div>
@@ -2055,17 +2122,96 @@
                     <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl">Cerrar</button>
                 </div>
             `);
-            
-            // Actualiza el link usando &c=
-            window.updateInviteLinkDisplay = (base, uid) => {
+
+            // Funciones Auxiliares
+            window.handleRoleChange = () => {
                 const code = document.getElementById('invite-role-select').value;
-                document.getElementById('invite-link-text').innerText = `${base}?ref=${uid}&c=${code}`;
+                updateInviteModalVisuals(code);
             };
-            
+
+            window.updateInviteModalVisuals = async (code) => {
+                const container = document.getElementById('role-status-container');
+                const textLabel = document.getElementById('role-status-text');
+                const btn = document.getElementById('ref-toggle-btn');
+                const linkArea = document.getElementById('link-container');
+                const summaryContainer = document.getElementById('active-roles-summary');
+                const baseUrl = `${window.location.origin}${window.location.pathname}`;
+                
+                document.getElementById('invite-link-text').innerText = `${baseUrl}?ref=${currentUser.uid}&c=${code}`;
+
+                // --- CÁLCULO DE COSTOS VISUAL ---
+                let bonusAmount = 10;
+                if(code === '2') bonusAmount = 50;
+                if(code === '3') bonusAmount = 100;
+                
+                // Si NO es admin, actualizamos el texto fijo
+                if (!isAdmin) {
+                    const amountLabel = document.getElementById('dynamic-bonus-amount');
+                    if(amountLabel) amountLabel.innerText = `$${bonusAmount}`;
+                }
+
+                // Obtener configuración de BD
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+                const snap = await getDoc(userRef);
+                const config = snap.data().referralConfig || {};
+                
+                // Si ES ADMIN, llenamos el input con el valor guardado
+                if (isAdmin) {
+                    const savedAmount = config[`amount_${code}`];
+                    const inputAdmin = document.getElementById('admin-custom-amount');
+                    if(inputAdmin) {
+                        // Si existe guardado usa ese, si no, usa el default standard
+                        inputAdmin.value = (savedAmount !== undefined) ? savedAmount : bonusAmount;
+                    }
+                    // Para el admin, el valor a mostrar en el botón es el del input o guardado
+                    bonusAmount = (savedAmount !== undefined) ? savedAmount : bonusAmount;
+                }
+
+                // 1. BARRA DE RESUMEN
+                let summaryHTML = '';
+                const labels = { '1': 'Cliente', '2': 'VIP', '3': 'Revendedor' };
+                const availableCodes = ['1'];
+                if(myRole === 'reseller' || myRole === 'lider' || isAdmin) availableCodes.push('2');
+                if(myRole === 'lider' || isAdmin) availableCodes.push('3');
+
+                availableCodes.forEach(c => {
+                    const isItemActive = config[c] === true;
+                    const badgeClass = isItemActive ? 'bg-emerald-100 text-emerald-600 border-emerald-200' : 'bg-gray-100 text-gray-400 border-gray-200 opacity-60 grayscale';
+                    const icon = isItemActive ? 'check-circle-2' : 'circle-off';
+                    summaryHTML += `<span class="text-[9px] font-bold px-2 py-1 rounded-lg border flex items-center gap-1 transition-all ${badgeClass}"><i data-lucide="${icon}" class="w-3 h-3"></i> ${labels[c]}</span>`;
+                });
+                if(summaryContainer) summaryContainer.innerHTML = summaryHTML;
+
+                // 2. INTERRUPTOR PRINCIPAL
+                const isActive = config[code] === true; 
+
+                if(isActive) {
+                    container.className = "flex items-center justify-between p-3 rounded-xl border mb-4 mt-2 transition-colors text-success bg-success/10 border-success/20";
+                    textLabel.className = "text-xs font-bold uppercase tracking-wider flex items-center gap-2";
+                    textLabel.innerHTML = `<i data-lucide="wifi" class="w-4 h-4"></i> ACTIVO (Regala $${bonusAmount})`;
+                    btn.className = "neumo-button px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-colors bg-rose-50 text-rose-500 hover:bg-rose-100";
+                    btn.innerText = "Desactivar";
+                    btn.disabled = false;
+                    linkArea.classList.remove('opacity-50', 'pointer-events-none', 'blur-[1px]');
+                } else {
+                    container.className = "flex items-center justify-between p-3 rounded-xl border mb-4 mt-2 transition-colors text-gray-400 bg-gray-100 border-gray-200";
+                    textLabel.className = "text-xs font-bold uppercase tracking-wider flex items-center gap-2";
+                    textLabel.innerHTML = `<i data-lucide="wifi-off" class="w-4 h-4"></i> APAGADO`;
+                    btn.className = "neumo-button px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-colors bg-success text-white hover:bg-emerald-600";
+                    btn.innerText = "Activar";
+                    btn.disabled = false;
+                    linkArea.classList.add('opacity-50', 'pointer-events-none', 'blur-[1px]');
+                }
+                lucide.createIcons();
+            };
+
             window.copyCurrentInviteLink = () => {
                 const txt = document.getElementById('invite-link-text').innerText;
                 navigator.clipboard.writeText(txt).then(()=>showToast('Enlace copiado','success'));
             };
+
+            const initialCode = document.getElementById('invite-role-select') ? document.getElementById('invite-role-select').value : '1';
+            updateInviteModalVisuals(initialCode);
         }
 
 
@@ -2914,74 +3060,102 @@
                 await sendEmailVerification(c.user);
 
                 if(referrerId) {
-                                                                    try {
+                                                                                                    try {
                     await runTransaction(db, async (t) => {
-                        // 1. Obtener datos del Líder (Quien invitó)
+                        // 1. Obtener datos del Líder/Referrer
                         const referrerRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', referrerId);
                         const referrerSnap = await t.get(referrerRef);
                         
-                        // Validar si el enlace está PRENDIDO
-                        if (!referrerSnap.exists() || referrerSnap.data().isReferralActive !== true) {
+                        if (!referrerSnap.exists()) throw new Error("Referido inválido");
+                        
+                        const rData = referrerSnap.data();
+                        const config = rData.referralConfig || {};
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const code = urlParams.get('c') || '1'; 
+                        
+                        // Validar si está activo
+                        if (config[code] !== true) {
                             throw new Error("ENLACE_APAGADO"); 
                         }
 
-                        // 2. SEGURIDAD: LEER CÓDIGO 'c' (No 'role', ni 'lvl')
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const code = urlParams.get('c'); 
-                        
-                        // Traducción de Código -> Rol Real
-                        let requestedRole = 'client'; // Por defecto es Cliente (c=1)
-                        if (code === '2') requestedRole = 'vip';
-                        if (code === '3') requestedRole = 'reseller';
-                        
-                        // Verificación de Permisos (Anti-Trampa)
-                        const referrerRole = referrerSnap.data().role || 'client';
-                        let finalRole = 'client'; 
+                        // --- CÁLCULO DE COSTO Y ROL ---
+                        let requestedRole = 'client';
+                        let bonusAmount = 10; // Default Standard
 
-                        // Reglas: Solo Líder puede crear Revendedores, etc.
-                        if (referrerRole === 'lider') {
-                            if(['client', 'vip', 'reseller'].includes(requestedRole)) finalRole = requestedRole;
+                        // Costos ESTÁNDAR
+                        if (code === '2') { requestedRole = 'vip'; bonusAmount = 50; }
+                        if (code === '3') { requestedRole = 'reseller'; bonusAmount = 100; }
+
+                        // *** OVERRIDE DE ADMINISTRADOR ***
+                        // Si el que invita es el Admin, buscamos si tiene un monto personalizado
+                        if (rData.email === 'mrandroidtutorialeshd@gmail.com') {
+                            const customAdminAmount = config[`amount_${code}`];
+                            if (customAdminAmount !== undefined && customAdminAmount !== null) {
+                                bonusAmount = Number(customAdminAmount);
+                            }
+                        }
+                        // *********************************
+
+                        // Verificación de Jerarquía (Seguridad)
+                        const referrerRole = rData.role || 'client';
+                        let finalRole = 'client'; 
+                        let finalBonus = 10; // Fallback seguro
+
+                        // Reglas de Jerarquía
+                        if (referrerRole === 'lider' || rData.email === 'mrandroidtutorialeshd@gmail.com') {
+                            // Líder y Admin pueden invitar a todos
+                            if(['client', 'vip', 'reseller'].includes(requestedRole)) {
+                                finalRole = requestedRole;
+                                finalBonus = bonusAmount;
+                            }
                         } else if (referrerRole === 'reseller') {
-                            if(['client', 'vip'].includes(requestedRole)) finalRole = requestedRole;
+                            // Revendedor: Client y Vip
+                            if(['client', 'vip'].includes(requestedRole)) {
+                                finalRole = requestedRole;
+                                finalBonus = bonusAmount;
+                            }
                         } else {
-                            finalRole = 'client'; // Clientes normales solo pueden invitar Clientes
+                            // Cliente: Solo cliente
+                            finalRole = 'client';
+                            finalBonus = 10;
                         }
 
-                        // 3. Verificar saldo del que invita ($10)
+                        // Verificar saldo
                         const resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
                         const resellerSnap = await t.get(resellerWalletRef);
                         
                         if (!resellerSnap.exists()) throw new Error("Revendedor inválido");
                         const resellerBalance = resellerSnap.data().balance || 0;
                         
-                        if (resellerBalance < 10) throw new Error("SIN_SALDO");
+                        if (resellerBalance < finalBonus) throw new Error("SIN_SALDO");
 
-                        // 4. Ejecutar Transacción (Descuento y Creación)
-                        t.update(resellerWalletRef, { balance: resellerBalance - 10 });
+                        // EJECUTAR TRANSACCIÓN
+                        // 1. Cobrar al Líder
+                        t.update(resellerWalletRef, { balance: resellerBalance - finalBonus });
                         
+                        // 2. Abonar al Referido
                         const newWalletRef = doc(db,'artifacts',appId,'users',uid,'wallet','main');
-                        t.set(newWalletRef, { balance: 10, profit: 0, createdAt: serverTimestamp() });
+                        t.set(newWalletRef, { balance: finalBonus, profit: 0, createdAt: serverTimestamp() });
                         
+                        // 3. Crear Perfil con Jerarquía
                         const newUserProfileRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
-                        
-                        // Guardar usuario con rol verificado
                         t.set(newUserProfileRef, { 
                             email: email, 
                             uid: uid, 
-                            role: finalRole, // Aquí se guarda el rol final seguro
-                            referredBy: referrerId, 
+                            role: finalRole, 
+                            referredBy: referrerId, // IMPORTANTE: Esto habilita la futura comisión del 10%
                             suspended: false, 
                             lastLogin: serverTimestamp() 
                         }, {merge: true});
                         
+                        // 4. Historial
                         const resellerTx = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
-                        t.set(resellerTx, { type: 'charge', amount: -10, description: `Bono bienvenida (${finalRole}): ${email}`, timestamp: serverTimestamp() });
+                        t.set(resellerTx, { type: 'charge', amount: -finalBonus, description: `Bono regalo (${finalRole}): ${email}`, timestamp: serverTimestamp() });
                         
                         const newUserTx = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'));
-                        t.set(newUserTx, { type: 'deposit', amount: 10, description: 'Bono de Bienvenida', timestamp: serverTimestamp(), status: 'approved' });
+                        t.set(newUserTx, { type: 'deposit', amount: finalBonus, description: 'Bono de Bienvenida', timestamp: serverTimestamp(), status: 'approved' });
                     });
                 } catch (txError) {
-                    // Fallback: Si falla algo (sin saldo, apagado, etc), crea cuenta básica en $0
                     console.log("Registro sin bono:", txError.message);
                     await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { email: email, uid: uid, role: 'client', suspended: false, lastLogin: serverTimestamp() }, {merge: true});
