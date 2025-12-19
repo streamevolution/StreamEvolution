@@ -258,18 +258,18 @@
                     <button onclick="openNotifications(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-500 hover:text-gray-800">
                         <i data-lucide="clock" class="w-5 h-5"></i><span class="text-sm font-medium">Movimientos</span>
                     </button>
-                    <button id="btn-invite-reseller" onclick="openInviteModal(); toggleSidebar();" class="neumo-button hidden w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 transition-all">
-                        <i data-lucide="users" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
-                    </button>
                     <button onclick="openRenewalModal(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-500 hover:text-gray-800">
                         <i data-lucide="refresh-cw" class="w-5 h-5"></i><span class="text-sm font-medium">Renovar</span>
                     </button>
-                                    <button onclick="renderReferralsView(); toggleSidebar();" class="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all duration-300 group mb-2">
+                    <button onclick="renderReferralsView(); toggleSidebar();" class="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all duration-300 group mb-2">
     <div class="p-2 bg-white rounded-lg shadow-sm group-hover:shadow-md text-gray-400 group-hover:text-indigo-500 transition-all">
         <i data-lucide="users" class="w-5 h-5"></i>
     </div>
     <span class="font-medium group-hover:translate-x-1 transition-transform">Referidos</span>
 </button>
+                    <button id="btn-invite-reseller" onclick="openInviteModal(); toggleSidebar();" class="neumo-button hidden w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 transition-all">
+                        <i data-lucide="users" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
+                    </button>                         
                 </div>
                 
                                 <div id="admin-menu-items" class="hidden">
@@ -2111,7 +2111,7 @@
                                 </div>
                             ` : `
                                 <p class="text-xs text-gray-600 leading-relaxed">
-                                    Se descontarán <strong id="dynamic-bonus-amount" class="text-indigo-700">$10</strong> de tu saldo y se sumarán al referido.
+                                    Se descontarán <strong id="dynamic-bonus-amount" class="text-indigo-700">$10</strong> de tu saldo y se sumarán al referido. Tu ganarás el <strong>10%</strong> de todas las compras que realice tu referido.
                                 </p>
                             `}
                         </div>
@@ -3932,14 +3932,12 @@ window.filterExpirations = (mode) => {
             }
         };
         
-                                        // --- VISTA DE MEMBRESÍAS (V3.1 - LIMPIEZA AUTOMÁTICA) ---
+                                                // --- VISTA DE MEMBRESÍAS (V4 - CON LÍDER) ---
         window.renderMembershipsView = async () => {
-            // 1. Crear Overlay
             const overlay = document.createElement('div');
             overlay.id = 'memberships-view-overlay';
             overlay.className = "fixed inset-0 bg-gray-100 z-50 overflow-y-auto bounce-enter"; 
             
-            // Carga inicial
             overlay.innerHTML = `
                 <div class="h-screen flex flex-col items-center justify-center text-center">
                     <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4 animate-pulse"><i data-lucide="cloud-download" class="w-8 h-8"></i></div>
@@ -3950,7 +3948,6 @@ window.filterExpirations = (mode) => {
             lucide.createIcons();
 
             try {
-                // 2. Obtener productos de Firebase
                 const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'));
                 
                 if (snapshot.empty) {
@@ -3958,7 +3955,6 @@ window.filterExpirations = (mode) => {
                     return;
                 }
 
-                // 3. Procesar categorías
                 window.cachedMembershipProducts = []; 
                 const categoriesSet = new Set();
 
@@ -3969,14 +3965,12 @@ window.filterExpirations = (mode) => {
                     window.cachedMembershipProducts.push({ id: doc.id, ...d, categoryRaw: cat });
                 });
 
-                // Generar opciones
                 let categoryOptions = `<option value="all">👇 Selecciona una Categoría...</option>`;
                 Array.from(categoriesSet).sort().forEach(cat => {
                     const displayCat = cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ');
                     categoryOptions += `<option value="${cat}">${displayCat}</option>`;
                 });
 
-                // 4. Renderizar Estructura
                 overlay.innerHTML = `
                     <div class="min-h-screen pb-20 bg-gray-100">
                         <div class="sticky top-0 bg-gray-100/95 backdrop-blur-md z-30 px-4 py-4 shadow-sm border-b border-gray-200">
@@ -4004,6 +3998,7 @@ window.filterExpirations = (mode) => {
                                 <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-gray-500"></div><span class="text-[10px] font-bold text-gray-600">Cliente</span></div>
                                 <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-indigo-500"></div><span class="text-[10px] font-bold text-indigo-600">VIP</span></div>
                                 <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div><span class="text-[10px] font-bold text-amber-600">Revendedor</span></div>
+                                <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-rose-500"></div><span class="text-[10px] font-bold text-rose-600">Líder</span></div>
                             </div>
 
                             <div id="memberships-results-container" class="space-y-8 min-h-[50vh]">
@@ -4027,7 +4022,7 @@ window.filterExpirations = (mode) => {
         };
 
         
-                // --- FUNCIÓN DE FILTRADO ESTRICTO ---
+                        // --- FUNCIÓN DE FILTRADO CON LÍDER ---
         window.filterMembershipList = () => {
             const searchVal = document.getElementById('mem-search').value.toLowerCase().trim();
             const catFilter = document.getElementById('mem-filter').value;
@@ -4035,7 +4030,6 @@ window.filterExpirations = (mode) => {
             
             if (!window.cachedMembershipProducts) return;
 
-            // 1. SI NO HA SELECCIONADO CATEGORÍA (Valor 'all'), MOSTRAR LEYENDA Y SALIR
             if (catFilter === 'all') {
                 container.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center select-none bounce-enter">
@@ -4050,9 +4044,8 @@ window.filterExpirations = (mode) => {
                 return;
             }
 
-            // 2. Filtrar SOLO por la categoría seleccionada + Búsqueda
             const filtered = window.cachedMembershipProducts.filter(p => {
-                const matchesCat = p.categoryRaw === catFilter; // Debe coincidir exacto
+                const matchesCat = p.categoryRaw === catFilter;
                 const matchesSearch = p.name.toLowerCase().includes(searchVal);
                 return matchesCat && matchesSearch;
             });
@@ -4061,13 +4054,12 @@ window.filterExpirations = (mode) => {
                 container.innerHTML = `
                     <div class="text-center py-10 opacity-60">
                         <i data-lucide="search-x" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
-                        <p class="text-sm text-gray-500">No se encontraron resultados en esta categoría.</p>
+                        <p class="text-sm text-gray-500">No se encontraron resultados.</p>
                     </div>`;
                 lucide.createIcons();
                 return;
             }
 
-            // 3. Renderizar (Ya no agrupamos, porque solo mostramos 1 categoría)
             let catIcon = 'package';
             const lowerCat = catFilter.toLowerCase();
             if(lowerCat.includes('streaming') || lowerCat.includes('video') || lowerCat.includes('perfiles')) catIcon = 'tv';
@@ -4087,10 +4079,14 @@ window.filterExpirations = (mode) => {
             `;
 
             filtered.forEach(p => {
+                // Precios
                 const priceClient = p.priceClient || p.price || 0;
                 const priceReseller = p.priceReseller || (priceClient * 0.8);
                 const priceVip = p.priceVip || Math.round((priceClient + priceReseller) / 2);
-                const fmt = (v) => v === 0 ? 'GRATIS' : `$${v}`;
+                // Si no hay precio Líder definido, calculamos un pequeño descuento extra sobre Revendedor
+                const priceLeader = p.priceLeader || (priceReseller * 0.9); 
+                
+                const fmt = (v) => v === 0 ? 'GRATIS' : `$${Math.round(v)}`; // Redondeamos para que se vea limpio
 
                 let iconHtml = p.imageUrl 
                     ? `<img src="${p.imageUrl}" class="w-full h-full object-cover" alt="${p.name}">` 
@@ -4110,16 +4106,20 @@ window.filterExpirations = (mode) => {
                         
                         <div class="flex divide-x divide-gray-100 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden mt-auto">
                             <div class="flex-1 py-2 text-center">
-                                <p class="text-[8px] text-gray-400 font-black uppercase mb-0.5">Cliente</p>
-                                <p class="text-sm font-black text-gray-600">${fmt(priceClient)}</p>
+                                <p class="text-[7px] text-gray-400 font-black uppercase mb-0.5">Cliente</p>
+                                <p class="text-xs font-black text-gray-600">${fmt(priceClient)}</p>
                             </div>
                             <div class="flex-1 py-2 text-center bg-indigo-50/50">
-                                <p class="text-[8px] text-indigo-500 font-black uppercase mb-0.5">VIP</p>
-                                <p class="text-sm font-black text-indigo-700">${fmt(priceVip)}</p>
+                                <p class="text-[7px] text-indigo-500 font-black uppercase mb-0.5">VIP</p>
+                                <p class="text-xs font-black text-indigo-700">${fmt(priceVip)}</p>
                             </div>
                             <div class="flex-1 py-2 text-center bg-amber-50/50">
-                                <p class="text-[8px] text-amber-600 font-black uppercase mb-0.5">Revendedor</p>
-                                <p class="text-sm font-black text-amber-600">${fmt(priceReseller)}</p>
+                                <p class="text-[7px] text-amber-600 font-black uppercase mb-0.5">Revendedor</p>
+                                <p class="text-xs font-black text-amber-600">${fmt(priceReseller)}</p>
+                            </div>
+                            <div class="flex-1 py-2 text-center bg-rose-50/50">
+                                <p class="text-[7px] text-rose-600 font-black uppercase mb-0.5">Líder</p>
+                                <p class="text-xs font-black text-rose-600">${fmt(priceLeader)}</p>
                             </div>
                         </div>
                     </div>`;
