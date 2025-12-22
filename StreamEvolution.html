@@ -2495,11 +2495,12 @@
             `);
         };
 
-        window.processPurchase = async (pid, name, visualPrice) => {
+                window.processPurchase = async (pid, name, visualPrice) => {
             if(!currentUser) return showToast('Inicia sesión', 'error');
             const btn = document.querySelector('button[onclick^="processPurchase"]'); btn.disabled = true; btn.innerHTML = `<span class="animate-spin">⌛</span>`;
+            
             try {
-                // Buscamos un item disponible
+                // Buscamos un item disponible (Consulta normal fuera de transacción)
                 const qInv = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('productId', '==', pid), where('status', '==', 'available'), limit(1));
                 const invSnap = await getDocs(qInv); 
                 
@@ -2510,19 +2511,36 @@
                 const itemId = invSnap.docs[0].id;
 
                 await runTransaction(db, async (t) => {
+                    // --- FASE 1: LECTURAS (TODO t.get VA AQUÍ) ---
+                    
+                    // 1. Leer billetera del usuario comprador
                     const wRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main'); 
                     const wSnap = await t.get(wRef);
                     const currentBalance = Number(wSnap.data().balance) || 0;
                     
-                                        // Obtener datos del producto
+                    // 2. Leer datos del producto (precio actualizado)
                     const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', pid); 
                     const pSnap = await t.get(pRef);
                     const productData = pSnap.data();
                     
-                    // Determinar precio base
-                    let finalPrice = productData.priceClient || productData.price;
+                    // 3. Leer datos del usuario para ver si tiene referido
+                    const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+                    const userDocSnap = await t.get(userDocRef);
+                    const referrerId = userDocSnap.exists() ? userDocSnap.data().referredBy : null;
+
+                    // 4. Leer billetera del revendedor (SI EXISTE REFERIDO)
+                    // ESTO ESTABA PROVOCANDO EL ERROR AL HACERSE DESPUÉS DE UN UPDATE
+                    let resellerWalletRef = null;
+                    let resellerSnap = null;
+                    if (referrerId) {
+                        resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
+                        resellerSnap = await t.get(resellerWalletRef);
+                    }
+
+                    // --- CÁLCULOS ---
                     
-                    // Aplicar descuento según jerarquía
+                    // Determinar precio base y descuentos
+                    let finalPrice = productData.priceClient || productData.price;
                     if (currentUserRole === 'lider' && productData.priceLeader) {
                         finalPrice = productData.priceLeader;
                     } else if (currentUserRole === 'reseller' && productData.priceReseller) {
@@ -2534,60 +2552,56 @@
                     const cost = Number(finalPrice);
                     
                     if(currentBalance < cost) throw new Error("Saldo insuficiente");
-                    
-                    const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
-                    const userDocSnap = await t.get(userDocRef);
-                    const referrerId = userDocSnap.exists() ? userDocSnap.data().referredBy : null;
 
-                    // Crear detalles incluyendo campos nuevos si existen
+                    // Crear detalles del item
                     const purchaseDetails = { 
-    serviceName: item.serviceName, 
-    email: item.email || null,
-    link: item.link || null,
-    password: item.password, 
-    expiryDate: item.expiryDate || null, 
-    duration: item.duration || null, 
-    profileName: item.profileName || null,
-    pin: item.pin || null,
-    description: item.description || null, // <--- AGREGAR ESTA LÍNEA
-    terms: item.terms || '' 
-};
+                        serviceName: item.serviceName, 
+                        email: item.email || null,
+                        link: item.link || null,
+                        password: item.password, 
+                        expiryDate: item.expiryDate || null, 
+                        duration: item.duration || null, 
+                        profileName: item.profileName || null,
+                        pin: item.pin || null,
+                        description: item.description || null,
+                        terms: item.terms || '' 
+                    };
 
-                    // Descontar saldo
+                    // --- FASE 2: ESCRITURAS (t.update / t.set) ---
+                    
+                    // 1. Descontar saldo al usuario
                     t.update(wRef, { balance: (currentBalance - cost) });
                     
-                    // --- MODIFICACION: SOLO DESCONTAR STOCK SI NO ES LIBRO ---
-                                        // --- MODIFICACION: SOLO DESCONTAR STOCK SI NO ES LIBRO NI DOCUMENTO ---
-                                        // --- LÓGICA DE STOCK INFINITO ---
-                    // Lista de categorías que NUNCA se agotan ni se marcan como vendidas
+                    // 2. Actualizar inventario y stock (si aplica)
                     const infiniteCategories = ['libros', 'documentos', 'herramientas', 'cursos', 'liberación móvil', 'liberacion-movil', 'liberacion movil'];
 
                     if (!infiniteCategories.includes(productData.category)) {
-                        // SI NO ES INFINITO (Ej: Netflix):
-                        // 1. Marcar el item específico como "Vendido" para que nadie más lo tome
+                        // Marcar el item específico como "Vendido"
                         t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { status: 'sold', soldTo: currentUser.uid, soldAt: serverTimestamp() });
                         
-                        // 2. Restar 1 al stock visible del producto
+                        // Restar 1 al stock visible del producto
                         t.update(pRef, { stock: (productData.stock || 0) - 1 });
                     }
-                    // Si ES infinito (Herramientas), no hacemos nada aquí, el item sigue "available"
 
-
-                    // ---------------------------------------------------------
-
+                    // 3. Registrar transacción del usuario
                     t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), { type: 'purchase', amount: cost, description: `Compra: ${name}`, details: purchaseDetails, itemId: itemId, timestamp: serverTimestamp() });
 
-                    if (referrerId) {
+                    // 4. Pagar comisión al revendedor (Usando la lectura hecha al principio)
+                    if (referrerId && resellerSnap && resellerSnap.exists()) {
                         const commission = cost * REFERRAL_COMMISSION_RATE; 
-                        const resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
-                        const resellerSnap = await t.get(resellerWalletRef);
-                        if(resellerSnap.exists()) {
-                            t.update(resellerWalletRef, { profit: (resellerSnap.data().profit || 0) + commission });
-                        }
+                        t.update(resellerWalletRef, { profit: (resellerSnap.data().profit || 0) + commission });
                     }
                 });
-                showToast('¡Compra exitosa!', 'success'); showTicketModal({...item, serviceName: name});
-            } catch (e) { let m = e.message || "Error"; if(m.includes("Saldo")) openChargeModal(); showToast(m, 'error'); closeModal(); }
+                
+                showToast('¡Compra exitosa!', 'success'); 
+                showTicketModal({...item, serviceName: name});
+                
+            } catch (e) { 
+                let m = e.message || "Error"; 
+                if(m.includes("Saldo")) openChargeModal(); 
+                showToast(m, 'error'); 
+                closeModal(); 
+            }
         };
 
         window.showTicketModal = (item) => {
