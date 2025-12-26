@@ -272,11 +272,16 @@
                     </button>                         
                 </div>
                 
-                                <div id="admin-menu-items" class="hidden">
-                    <div onclick="switchView('admin'); returnToAdminDashboard(); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl bg-gray-800 text-white font-semibold cursor-pointer mb-4 shadow-lg">
+                                                                <div id="admin-menu-items" class="hidden">
+                    <div onclick="switchView('admin'); returnToAdminDashboard(); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl bg-gray-800 text-white font-semibold cursor-pointer mb-2 shadow-lg">
                         <i data-lucide="layout-grid" class="w-5 h-5 text-accent"></i>
                         <span class="text-sm">Panel Admin</span>
                     </div>
+
+                    <button onclick="openCocinaExpress(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-orange-600 bg-orange-50/50 hover:bg-orange-100 transition-all mb-4 border border-orange-100">
+                        <i data-lucide="chef-hat" class="w-5 h-5"></i>
+                        <span class="text-sm font-bold">Cocina Express</span>
+                    </button>
                     
                     <div onclick="switchView('user'); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl text-gray-600 font-medium cursor-pointer hover:bg-gray-100 mb-2">
                         <i data-lucide="shopping-bag" class="w-5 h-5"></i>
@@ -287,6 +292,7 @@
                         <i data-lucide="users" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
                     </button>
                 </div>
+
                                     <button onclick="renderMembershipsView(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 transition-all mt-2">
                         <i data-lucide="crown" class="w-5 h-5"></i><span class="text-sm font-bold">Membresías</span>
                     </button>
@@ -3659,8 +3665,40 @@ window.filterExpirations = (mode) => {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'banners', id)); 
             }
         };
+        
+                       // ======================================================
+        // FUNCIÓN: COCINA EXPRESS (PANTALLA COMPLETA REAL)
+        // ======================================================
+        window.openCocinaExpress = () => {
+            // Eliminamos si ya existe para evitar duplicados
+            const old = document.getElementById('cocina-full-screen');
+            if(old) old.remove();
 
-        if(isAdmin) renderBannersAdmin();
+            // Creamos un contenedor que cubra TODA la pantalla (encima del sidebar y header)
+            const overlay = document.createElement('div');
+            overlay.id = 'cocina-full-screen';
+            // z-[99999] asegura que esté hasta el frente tapando todo.
+            overlay.className = "fixed inset-0 z-[99999] bg-white flex flex-col animate-in fade-in duration-300";
+            
+            overlay.innerHTML = `
+                <div class="flex items-center gap-4 px-4 py-3 border-b border-gray-200 bg-white shadow-sm flex-shrink-0">
+                    <button onclick="document.getElementById('cocina-full-screen').remove()" class="neumo-button px-4 py-2 rounded-xl text-gray-700 font-bold flex items-center gap-2 hover:bg-gray-100 transition-colors border border-gray-100">
+                        <i data-lucide="arrow-left" class="w-6 h-6"></i> 
+                        <span>Regresar</span>
+                    </button>
+                    
+                    <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                        <i data-lucide="chef-hat" class="w-5 h-5 text-orange-500"></i> Cocina Express
+                    </h3>
+                </div>
+                
+                <iframe src="https://cocina-express.pages.dev/Inicio" class="w-full flex-1 border-none bg-gray-50" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+            `;
+            
+            document.body.appendChild(overlay);
+            lucide.createIcons();
+        };
+
 
         // --- 👆 FIN DEL BLOQUE PEGADO 👆 ---
                 // INICIO CÓDIGO NAVIDAD JS (VERSIÓN CORREGIDA - SVG DIRECTO)
