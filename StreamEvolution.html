@@ -810,96 +810,133 @@
             list.innerHTML = html; lucide.createIcons();
         }
 
+        // ======================================================
+        // BLOQUE NUEVO: GESTIÓN DE CATEGORÍAS (CON CHECKBOXES)
+        // ======================================================
+        
+        // 1. Helper para dibujar los checkboxes de configuración
+        function getFieldsConfigHTML(selected = []) {
+            const fields = [
+                { id: 'email', label: 'Correo' },
+                { id: 'password', label: 'Contraseña' },
+                { id: 'profileName', label: 'Nombre Perfil' },
+                { id: 'pin', label: 'PIN' },
+                { id: 'link', label: 'Enlace / Link' },
+                { id: 'expiryDate', label: 'Fecha Expiración' },
+                { id: 'duration', label: 'Duración' },
+                { id: 'description', label: 'Descripción / Código' },
+                { id: 'terms', label: 'Términos' }
+            ];
+            
+            let html = '<div class="col-span-2 mt-4 bg-gray-50 p-3 rounded-xl border border-gray-100"><p class="text-xs font-black text-gray-500 uppercase mb-3 flex items-center gap-2"><i data-lucide="settings-2" class="w-3 h-3"></i> Datos a solicitar en Inventario:</p><div class="grid grid-cols-2 gap-2">';
+            
+            fields.forEach(f => {
+                const isChecked = selected.includes(f.id) ? 'checked' : '';
+                html += `
+                    <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-white cursor-pointer hover:border-indigo-300 transition-colors">
+                        <input type="checkbox" value="${f.id}" class="field-checkbox accent-indigo-600 w-4 h-4" ${isChecked}>
+                        <span class="text-xs font-bold text-gray-600">${f.label}</span>
+                    </label>`;
+            });
+            
+            html += '</div></div>';
+            return html;
+        }
+
+        // 2. Modal para Agregar Categoría
         window.openAddCategoryModal = () => {
+            // Por defecto marcamos email y pass como sugerencia
             openModal(`
             <div class="text-left bounce-enter">
                 <h3 class="text-xl font-bold text-gray-800 mb-4">Nuevo Servicio</h3>
                 <form onsubmit="saveCategory(event)" class="space-y-4">
                     <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre</label>
-                            <input type="text" id="cat-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-accent uppercase mb-1">Orden (1, 2, 3...)</label>
-                            <input type="number" id="cat-order" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold" placeholder="Ej: 1" required>
-                        </div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre</label><input type="text" id="cat-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
+                        <div><label class="block text-xs font-bold text-accent uppercase mb-1">Orden</label><input type="number" id="cat-order" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold" placeholder="Ej: 1" required></div>
+                    </div>
+                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Slug (ID único)</label><input type="text" id="cat-slug" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: streaming"></div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: tv"></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm"><option value="amber">Ámbar</option><option value="blue">Azul</option><option value="emerald">Esmeralda</option><option value="rose">Rosa</option><option value="purple">Púrpura</option><option value="indigo">Índigo</option><option value="slate">Gris</option></select></div>
                     </div>
                     
-                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Identificador (Slug)</label><input type="text" id="cat-slug" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: streaming"></div>
-                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: tv"></div>
-                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm"><option value="amber">Ámbar</option><option value="blue">Azul</option><option value="emerald">Esmeralda</option><option value="rose">Rosa</option><option value="purple">Púrpura</option><option value="indigo">Índigo</option><option value="slate">Gris</option></select></div>
-                    
+                    ${getFieldsConfigHTML(['email', 'password'])} 
+
                     <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Crear Categoría</button>
                 </form>
             </div>`);
         };
-        
+
+        // 3. Modal para Editar Categoría
         window.openEditCategoryModal = (id) => {
             const cat = window.categoriesCache.find(c => c.id === id);
             if (!cat) return showToast('Categoría no encontrada', 'error');
             const colors = ['amber', 'blue', 'emerald', 'rose', 'purple', 'indigo', 'slate'];
             const colorOptions = colors.map(c => `<option value="${c}" ${c === cat.color ? 'selected' : ''}>${c.charAt(0).toUpperCase() + c.slice(1)}</option>`).join('');
-
-            // Si la categoría es vieja y no tiene orden, mostramos el campo vacío
-            const currentOrder = (cat.order !== undefined) ? cat.order : '';
+            
+            // Recuperamos la configuración guardada o array vacío
+            const savedFields = cat.fields || [];
 
             openModal(`
             <div class="text-left bounce-enter">
                 <h3 class="text-xl font-bold text-gray-800 mb-4">Editar Servicio</h3>
                 <form onsubmit="updateCategory(event, '${id}')" class="space-y-4">
                     <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre</label>
-                            <input type="text" id="edit-cat-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.name}" required>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-accent uppercase mb-1">Orden</label>
-                            <input type="number" id="edit-cat-order" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold" value="${currentOrder}" placeholder="Ej: 1" required>
-                        </div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre</label><input type="text" id="edit-cat-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.name}" required></div>
+                        <div><label class="block text-xs font-bold text-accent uppercase mb-1">Orden</label><input type="number" id="edit-cat-order" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold" value="${cat.order!==undefined?cat.order:''}" placeholder="Ej: 1" required></div>
+                    </div>
+                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Slug</label><input type="text" id="edit-cat-slug" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.slug}" required></div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono</label><input type="text" id="edit-cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.icon}" required></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="edit-cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">${colorOptions}</select></div>
                     </div>
                     
-                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Identificador (Slug)</label><input type="text" id="edit-cat-slug" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.slug}" required></div>
-                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="edit-cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.icon}" required></div>
-                    <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="edit-cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">${colorOptions}</select></div>
-                    
+                    ${getFieldsConfigHTML(savedFields)}
+
                     <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-2">Guardar Cambios</button>
                 </form>
             </div>`);
         };
 
-        window.updateCategory = async (e, id) => {
-            e.preventDefault();
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id), {
-                    name: document.getElementById('edit-cat-name').value,
-                    slug: document.getElementById('edit-cat-slug').value.toLowerCase().trim(),
-                    icon: document.getElementById('edit-cat-icon').value,
-                    color: document.getElementById('edit-cat-color').value,
-                    // ACTUALIZAMOS EL NÚMERO EN LA BASE DE DATOS
-                    order: Number(document.getElementById('edit-cat-order').value), 
-                });
-                showToast('Categoría actualizada', 'success');
-                closeModal();
-            } catch(err) { showToast('Error al actualizar', 'error'); }
-        };
-
+        // 4. Guardar Nueva Categoría
         window.saveCategory = async (e) => { 
             e.preventDefault(); 
+            const selectedFields = Array.from(document.querySelectorAll('.field-checkbox:checked')).map(cb => cb.value);
+
             try { 
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'categories'), { 
                     name: document.getElementById('cat-name').value, 
                     slug: document.getElementById('cat-slug').value.toLowerCase().trim(), 
                     icon: document.getElementById('cat-icon').value, 
                     color: document.getElementById('cat-color').value,
-                    // AQUÍ GUARDAMOS EL NÚMERO EN LA BASE DE DATOS
-                    order: Number(document.getElementById('cat-order').value), 
+                    order: Number(document.getElementById('cat-order').value),
+                    fields: selectedFields, // Guardamos configuración
                     createdAt: serverTimestamp() 
                 }); 
                 showToast('Categoría creada', 'success'); 
                 closeModal(); 
             } catch(err) { showToast('Error', 'error'); } 
         };
+
+        // 5. Actualizar Categoría Existente
+        window.updateCategory = async (e, id) => {
+            e.preventDefault();
+            const selectedFields = Array.from(document.querySelectorAll('.field-checkbox:checked')).map(cb => cb.value);
+
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id), {
+                    name: document.getElementById('edit-cat-name').value,
+                    slug: document.getElementById('edit-cat-slug').value.toLowerCase().trim(),
+                    icon: document.getElementById('edit-cat-icon').value,
+                    color: document.getElementById('edit-cat-color').value,
+                    order: Number(document.getElementById('edit-cat-order').value),
+                    fields: selectedFields // Guardamos configuración
+                });
+                showToast('Categoría actualizada', 'success');
+                closeModal();
+            } catch(err) { showToast('Error al actualizar', 'error'); }
+        };
+        
         window.deleteCategory = async (id) => { if(confirm("¿Eliminar categoría?")) try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id)); showToast('Eliminada', 'success'); } catch(err) { showToast('Error', 'error'); } };
 
         // --- DATOS USUARIO ---
@@ -1334,59 +1371,38 @@
         }
 
 
-        // --- FUNCIONES DE INVENTARIO MEJORADAS (NUEVA LÓGICA) ---
+                // ======================================================
+        // BLOQUE NUEVO: INVENTARIO DINÁMICO
+        // ======================================================
 
-        // Función para abrir el modal de Agregar Inventario (Modificada)
-                window.openAddInventoryModal = async () => {
-            // 1. Obtenemos los productos
+        // 1. Abrir Modal de Inventario
+        window.openAddInventoryModal = async () => {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles')); 
             const querySnapshot = await getDocs(q);
             
-            // 2. Agrupamos los productos por categoría en un objeto
             const groupedProducts = {};
-            
             querySnapshot.forEach((doc) => { 
                 const data = doc.data(); 
-                // Usamos la categoría del producto o 'Otros' si no tiene
                 const cat = data.category || 'otros';
-                
-                if (!groupedProducts[cat]) {
-                    groupedProducts[cat] = [];
-                }
-                
-                // Guardamos el producto en su categoría correspondiente
-                groupedProducts[cat].push({
-                    id: doc.id,
-                    name: data.name,
-                    category: cat // Guardamos la categoría raw para el data-attribute
-                });
+                if (!groupedProducts[cat]) groupedProducts[cat] = [];
+                // Guardamos category para leerla luego
+                groupedProducts[cat].push({ id: doc.id, name: data.name, category: cat });
             });
 
-            // 3. Generamos el HTML del Select con <optgroup>
             let options = '<option value="" data-category="">Selecciona un Artículo...</option>';
-            
-            // Ordenamos las categorías alfabéticamente para que se vea ordenado
             const sortedCategories = Object.keys(groupedProducts).sort();
 
             sortedCategories.forEach(categoryName => {
-                // Formateamos el nombre de la categoría (Primera mayúscula, guiones por espacios)
                 const displayTitle = categoryName.charAt(0).toUpperCase() + categoryName.slice(1).replace(/-/g, ' ');
-                
-                // Abrimos el grupo
                 options += `<optgroup label="${displayTitle}">`;
-                
-                // Ordenamos los productos dentro de la categoría alfabéticamente
                 const productsInCat = groupedProducts[categoryName].sort((a, b) => a.name.localeCompare(b.name));
-                
                 productsInCat.forEach(prod => {
                     options += `<option value="${prod.id}" data-category="${prod.category}" data-name="${prod.name}">${prod.name}</option>`;
                 });
-                
-                // Cerramos el grupo
                 options += `</optgroup>`;
             });
 
-            // 4. Abrimos el modal con el HTML generado
+            // HTML con TODOS los campos ocultos (hidden)
             openModal(`
                 <div class="text-left bounce-enter">
                     <h3 class="text-lg font-bold text-gray-800 mb-4">Agregar al Inventario</h3>
@@ -1398,161 +1414,137 @@
                             </select>
                         </div>
 
-                        <div id="flexible-fields-container" class="space-y-3">
-                            <div id="fields-credentials">
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Correo</label><input type="email" id="inv-email" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
-                                    <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label><input type="text" id="inv-pass" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
-                                </div>
+                        <div id="dynamic-fields-container" class="space-y-3 pt-2">
+                            
+                            <div id="group-email-pass" class="grid grid-cols-2 gap-2 hidden">
+                                <div id="field-email" class="hidden"><label class="block text-[10px] font-bold text-gray-400 uppercase">Correo</label><input type="email" id="inv-email" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                                <div id="field-password" class="hidden"><label class="block text-[10px] font-bold text-gray-400 uppercase">Contraseña</label><input type="text" id="inv-pass" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
                             </div>
 
-                            <div id="fields-profile-extra" class="hidden grid-cols-2 gap-2">
-                                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Nombre Perfil</label><input type="text" id="inv-profile-name" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
-                                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">PIN</label><input type="text" id="inv-pin" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                            <div id="group-profile-pin" class="grid grid-cols-2 gap-2 hidden">
+                                <div id="field-profileName" class="hidden"><label class="block text-[10px] font-bold text-gray-400 uppercase">Nombre Perfil</label><input type="text" id="inv-profile-name" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                                <div id="field-pin" class="hidden"><label class="block text-[10px] font-bold text-gray-400 uppercase">PIN</label><input type="text" id="inv-pin" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
                             </div>
 
-                            <div id="fields-book" class="hidden">
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase">Link Libro/Documento</label>
+                            <div id="field-link" class="hidden">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase">Link / Enlace</label>
                                 <input type="url" id="inv-link" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" placeholder="https://...">
                             </div>
 
-                            <div id="fields-dates" class="grid grid-cols-2 gap-2">
-                                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
-                                <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Duración</label><select id="inv-duration" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"><option>1 Mes</option><option>3 Meses</option><option>6 Meses</option><option>1 Año</option><option>Permanente</option></select></div>
+                            <div id="group-dates" class="grid grid-cols-2 gap-2 hidden">
+                                <div id="field-expiryDate" class="hidden"><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
+                                <div id="field-duration" class="hidden"><label class="block text-[10px] font-bold text-gray-400 uppercase">Duración</label><select id="inv-duration" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"><option>1 Mes</option><option>3 Meses</option><option>6 Meses</option><option>1 Año</option><option>Permanente</option></select></div>
+                            </div>
+
+                            <div id="field-description" class="hidden">
+                                <label class="block text-[10px] font-bold text-accent uppercase">Descripción / Código</label>
+                                <textarea id="inv-description" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-20 resize-none" placeholder="Ingresa detalles, código o instrucciones"></textarea>
                             </div>
                             
-                            <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none"></textarea></div>
-                            
-                            <div id="fields-gamepass-desc" class="hidden">
-                                <label class="block text-[10px] font-bold text-accent uppercase">Descripción</label>
-                                <textarea id="inv-gamepass-desc" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none" placeholder="Ingresa una descripción del plan"></textarea>
+                            <div id="field-terms" class="hidden">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase">Términos y Condiciones</label>
+                                <textarea id="inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none"></textarea>
                             </div>
                         </div>
 
-                        <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700">Guardar</button>
+                        <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700">Guardar Item</button>
                     </form>
                 </div>
             `);
         };
 
-        // Función para mostrar/ocultar campos según categoría
-                // Función para mostrar/ocultar campos según categoría
-                // --- CÓDIGO NUEVO PARA VISUALIZACIÓN DE CAMPOS ---
-                window.toggleInventoryFields = () => {
+        // 2. Función lógica que muestra/oculta campos según la categoría
+        window.toggleInventoryFields = () => {
             const select = document.getElementById('inv-product-select');
             const selectedOption = select.options[select.selectedIndex];
-            
             if (!selectedOption) return;
 
-            // Convertimos a minúsculas para comparar
-            const category = (selectedOption.getAttribute('data-category') || '').toLowerCase();
-            const productName = (selectedOption.getAttribute('data-name') || '').toLowerCase();
-
-            const fieldsCreds = document.getElementById('fields-credentials');
-            const fieldsProfile = document.getElementById('fields-profile-extra');
-            const fieldsBook = document.getElementById('fields-book');
-            const fieldsDates = document.getElementById('fields-dates');
-            const fieldsTerms = document.getElementById('inv-terms').parentNode; 
-            const fieldsGamePassDesc = document.getElementById('fields-gamepass-desc');
-
-            // 1. Resetear todo a visible/oculto por defecto (Estilo Streaming)
-            fieldsCreds.classList.remove('hidden');
-            fieldsProfile.classList.add('hidden');
-            fieldsProfile.classList.remove('grid'); 
-            fieldsBook.classList.add('hidden');     
-            fieldsDates.classList.remove('hidden'); 
-            fieldsTerms.classList.remove('hidden');
-            fieldsGamePassDesc.classList.add('hidden');
+            const categorySlug = selectedOption.getAttribute('data-category');
             
-            document.getElementById('inv-email').parentNode.classList.remove('hidden');
-            document.getElementById('inv-pass').parentNode.classList.remove('hidden');
+            // Buscamos configuración en memoria
+            const categoryConfig = window.categoriesCache.find(c => c.slug === categorySlug);
+            const fieldsToShow = (categoryConfig && categoryConfig.fields) ? categoryConfig.fields : ['email', 'password'];
 
-            // 2. Aplicar lógica: Si es Game Pass O contiene la palabra 'liberación'
-            if (category === 'game pass' || category.includes('liberacion') || category.includes('liberación') || productName.includes('liberacion') || productName.includes('liberación')) {
-                // MODO SOLO DESCRIPCIÓN
-                fieldsCreds.classList.add('hidden');
-                fieldsProfile.classList.add('hidden');
-                fieldsBook.classList.add('hidden');
-                fieldsDates.classList.add('hidden');
-                fieldsTerms.classList.add('hidden'); 
-                fieldsGamePassDesc.classList.remove('hidden'); 
+            // Ocultar TODO primero
+            const allFieldIds = ['email', 'password', 'profileName', 'pin', 'link', 'expiryDate', 'duration', 'description', 'terms'];
+            allFieldIds.forEach(fid => {
+                const el = document.getElementById(`field-${fid}`);
+                if(el) el.classList.add('hidden');
+            });
+            
+            document.getElementById('group-email-pass').classList.add('hidden');
+            document.getElementById('group-profile-pin').classList.add('hidden');
+            document.getElementById('group-dates').classList.add('hidden');
 
-            } else if (category === 'libros' || category === 'documentos' || category === 'herramientas') {
-                // MODO LINK
-                document.getElementById('inv-email').parentNode.classList.add('hidden'); 
-                fieldsBook.classList.remove('hidden');       
-                fieldsDates.classList.add('hidden');         
+            // Mostrar SOLO lo configurado
+            fieldsToShow.forEach(fid => {
+                const el = document.getElementById(`field-${fid}`);
+                if(el) el.classList.remove('hidden');
+            });
 
-            } else if (category === 'perfiles' || category === 'cuentas') {
-                // MODO CUENTAS CON PERFIL
-                fieldsProfile.classList.remove('hidden');
-                fieldsProfile.classList.add('grid');
+            // Lógica visual de grupos
+            const showEmail = fieldsToShow.includes('email');
+            const showPass = fieldsToShow.includes('password');
+            if(showEmail || showPass) {
+                const grp = document.getElementById('group-email-pass');
+                grp.classList.remove('hidden');
+                grp.className = (showEmail && showPass) ? "grid grid-cols-2 gap-2" : "flex flex-col gap-2";
+            }
+
+            const showProf = fieldsToShow.includes('profileName');
+            const showPin = fieldsToShow.includes('pin');
+            if(showProf || showPin) {
+                const grp = document.getElementById('group-profile-pin');
+                grp.classList.remove('hidden');
+                grp.className = (showProf && showPin) ? "grid grid-cols-2 gap-2" : "flex flex-col gap-2";
+            }
+
+            const showExp = fieldsToShow.includes('expiryDate');
+            const showDur = fieldsToShow.includes('duration');
+            if(showExp || showDur) {
+                const grp = document.getElementById('group-dates');
+                grp.classList.remove('hidden');
+                grp.className = (showExp && showDur) ? "grid grid-cols-2 gap-2" : "flex flex-col gap-2";
             }
             
             lucide.createIcons();
         };
 
-
-        // Función Guardar Item Modificada
-                // Función Guardar Item Modificada
-                // --- CÓDIGO NUEVO PARA GUARDAR ITEM ---
-                window.saveInventoryItem = async (e) => { 
+        // 3. Guardar Inventario
+        window.saveInventoryItem = async (e) => { 
             e.preventDefault(); 
             try { 
                 const select = document.getElementById('inv-product-select'); 
                 const productId = select.value; 
                 const productName = select.options[select.selectedIndex].text; 
                 const rawCategory = select.options[select.selectedIndex].getAttribute('data-category');
-                
-                // Usamos minúsculas para validar
-                const category = (rawCategory || '').toLowerCase();
-                const pNameLower = productName.toLowerCase();
 
                 let itemData = {
                     productId, 
                     serviceName: productName,
                     category: rawCategory, 
                     createdAt: serverTimestamp(), 
-                    status: 'available',
-                    email: null,
-                    password: null,
-                    link: null,
-                    expiryDate: null,
-                    duration: null,
-                    profileName: null,
-                    pin: null,
-                    terms: null,
-                    description: null 
+                    status: 'available'
                 };
 
-                // Lógica de guardado
-                if (category === 'game pass' || category.includes('liberacion') || category.includes('liberación') || pNameLower.includes('liberacion') || pNameLower.includes('liberación')) {
-                    // TIPO SOLO DESCRIPCIÓN
-                    itemData.description = document.getElementById('inv-gamepass-desc').value;
-                    if(!itemData.description) return showToast('La descripción es obligatoria', 'error');
-
-                } else if (category === 'libros' || category === 'documentos' || category === 'herramientas') {
-                    // TIPO LINK
-                    itemData.link = document.getElementById('inv-link').value;
-                    itemData.password = document.getElementById('inv-pass').value; 
-                    itemData.terms = document.getElementById('inv-terms').value;
-                    if(!itemData.link) return showToast('El Link es obligatorio', 'error');
-
-                } else {
-                    // TIPO CUENTA NORMAL
-                    itemData.email = document.getElementById('inv-email').value;
-                    itemData.password = document.getElementById('inv-pass').value;
-                    itemData.expiryDate = document.getElementById('inv-expiry').value;
-                    itemData.duration = document.getElementById('inv-duration').value;
-                    itemData.terms = document.getElementById('inv-terms').value;
-                    
-                    if (category === 'perfiles' || category === 'cuentas') {
-                        itemData.profileName = document.getElementById('inv-profile-name').value;
-                        itemData.pin = document.getElementById('inv-pin').value;
+                // Helper para leer valor solo si está visible
+                const val = (id) => {
+                    const el = document.getElementById(id);
+                    if(el && !el.closest('div[id^="field-"]').classList.contains('hidden')) {
+                        return el.value;
                     }
-                    
-                    if(!itemData.email || !itemData.password) return showToast('Correo y contraseña requeridos', 'error');
-                }
+                    return null;
+                };
+
+                itemData.email = val('inv-email');
+                itemData.password = val('inv-pass');
+                itemData.profileName = val('inv-profile-name');
+                itemData.pin = val('inv-pin');
+                itemData.link = val('inv-link');
+                itemData.expiryDate = val('inv-expiry');
+                itemData.duration = val('inv-duration');
+                itemData.description = val('inv-description');
+                itemData.terms = val('inv-terms');
 
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), itemData); 
                 
