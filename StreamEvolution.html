@@ -651,24 +651,25 @@
             }, 1500);
         });
 
-                        // --- GATEKEEPER INTELIGENTE (CALCULA EL BONO REAL) ---
+                                // --- GATEKEEPER INTELIGENTE CON SEGURIDAD DE TOKEN ---
         async function checkReferralParam() {
             const urlParams = new URLSearchParams(window.location.search);
             const refId = urlParams.get('ref');
-            const code = urlParams.get('c') || '1'; // Si no hay código, asumimos 1 (Cliente)
-            
+            const code = urlParams.get('c') || '1'; 
+            const incomingToken = urlParams.get('t'); // El token que trae el enlace
+
             if(refId) {
                 // Bloqueo visual del botón mientras verificamos
                 const loginBtn = document.querySelector('#login-form button[type="submit"]');
                 const originalBtnText = loginBtn ? loginBtn.innerHTML : '';
                 
                 if(loginBtn) {
-                    loginBtn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando invitación...';
+                    loginBtn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando seguridad...';
                     loginBtn.disabled = true;
                 }
 
                 try {
-                    // Consultamos datos del Padrino/Líder
+                    // Consultamos datos del Padrino/Líder en tiempo real
                     const refDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', refId));
                     
                     if(loginBtn) {
@@ -676,41 +677,40 @@
                         loginBtn.disabled = false;
                     }
 
-                    // --- VALIDACIÓN DE SEGURIDAD ---
                     if (refDoc.exists()) {
                         const rData = refDoc.data();
                         const config = rData.referralConfig || {};
-                        
-                        // 1. Verificamos si el enlace específico está PRENDIDO
-                        // (Si config[code] no es true, entonces está apagado)
-                        if (config[code] === true) {
-                            
-                            // --- CÁLCULO DEL MONTO A MOSTRAR ---
-                            let displayAmount = 10; // Base
-                            
-                            // Costos Estándar
-                            if(code === '2') displayAmount = 50;  // VIP
-                            if(code === '3') displayAmount = 100; // Revendedor
+                        const realToken = rData.referralToken; // El token válido actualmente en la nube
 
-                            // Lógica Admin: Si tiene monto personalizado, lo usamos
+                        // 1. VALIDACIÓN DE ESTADO: ¿Está encendido el interruptor?
+                        const isActive = config[code] === true;
+
+                        // 2. VALIDACIÓN DE SEGURIDAD: ¿Coincide el token del enlace con el de la BD?
+                        // Si generaste un nuevo enlace, 'realToken' cambió, por lo que el enlace viejo fallará aquí.
+                        // (Si no tienes token en BD aún, asumimos válido por compatibilidad hasta que generes uno)
+                        const isValidToken = realToken ? (incomingToken === realToken) : true; 
+
+                        if (isActive && isValidToken) {
+                            
+                            // --- CÁLCULO DEL MONTO ---
+                            let displayAmount = 10; // Base
+                            if(code === '2') displayAmount = 50;  
+                            if(code === '3') displayAmount = 100; 
+
                             if (rData.email === 'mrandroidtutorialeshd@gmail.com') {
                                 const customAmount = config[`amount_${code}`];
                                 if (customAmount !== undefined && customAmount !== null) {
                                     displayAmount = customAmount;
                                 }
                             }
-                            // -----------------------------------
 
                             // === ACCESO CONCEDIDO ===
                             switchAuthView('register');
                             
-                            // Mostrar el Badge con el MONTO CORRECTO
                             const badge = document.getElementById('referral-badge');
                             if(badge) {
                                 badge.classList.remove('hidden');
-                                // AQUÍ USAMOS EL MONTO CALCULADO
                                 badge.querySelector('span').innerText = `¡Te han invitado! Recibe $${displayAmount} de regalo.`;
-                                
                                 badge.className = "bg-indigo-50 text-indigo-600 p-3 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 neumo-card neumo-flat mb-4";
                                 const icon = badge.querySelector('i');
                                 if(icon) icon.setAttribute('data-lucide', 'gift');
@@ -718,11 +718,10 @@
                             lucide.createIcons();
 
                         } else {
-                            // === ACCESO DENEGADO (Interruptor Apagado) ===
+                            // === ACCESO DENEGADO (Token incorrecto o Interruptor apagado) ===
                             handleAccessDenied();
                         }
                     } else {
-                        // Usuario no existe
                         handleAccessDenied();
                     }
                     
@@ -735,7 +734,6 @@
                 }
             }
 
-            // Función auxiliar para mostrar el bloqueo
             function handleAccessDenied() {
                 switchAuthView('login');
                 const loginForm = document.getElementById('login-form');
@@ -744,10 +742,10 @@
 
                 const alertDiv = document.createElement('div');
                 alertDiv.id = 'access-denied-alert';
-                alertDiv.className = "bg-gray-100 text-gray-500 p-4 rounded-xl text-xs font-bold border border-gray-200 flex items-center gap-3 neumo-card neumo-flat mb-6 bounce-enter";
+                alertDiv.className = "bg-rose-50 text-rose-500 p-4 rounded-xl text-xs font-bold border border-rose-100 flex items-center gap-3 neumo-card neumo-flat mb-6 bounce-enter";
                 alertDiv.innerHTML = `
-                    <i data-lucide="lock" class="w-5 h-5 flex-shrink-0"></i>
-                    <span>Este enlace de invitación no está disponible o ha sido desactivado.</span>
+                    <i data-lucide="shield-alert" class="w-5 h-5 flex-shrink-0"></i>
+                    <span>Este enlace ha caducado por seguridad o no es válido. Pide uno nuevo.</span>
                 `;
                 if(loginForm) loginForm.insertBefore(alertDiv, loginForm.firstChild);
                 lucide.createIcons();
@@ -1728,13 +1726,313 @@
             }
         };
 
-        // Soporte
-        window.openReportModal = () => { localStorage.removeItem('report_evidence'); openModal(`<div class="text-left bounce-enter"><div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="alert-triangle" class="w-7 h-7"></i></div><h3 class="text-xl font-bold text-gray-800 mb-2 text-center">Reportar Problema</h3><form onsubmit="submitReport(event)" class="space-y-4"><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Tipo</label><select id="report-type" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm"><option value="account">Fallo de Cuenta</option><option value="payment">Pago no reflejado</option><option value="bug">Error de Sistema</option></select></div><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Descripción</label><textarea id="report-desc" required class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm h-24 resize-none"></textarea></div><div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Adjuntar Foto</label><input type="file" accept="image/*" onchange="handleImageUpload(this)" class="w-full text-xs"></div><button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl">Enviar Reporte</button></form></div>`); };
+                        // ======================================================
+        // BLOQUE NUEVO: MODAL REPORTAR (ACTUALIZADO)
+        // ======================================================
+        window.openReportModal = () => { 
+            localStorage.removeItem('report_evidence'); 
+            
+            // Lista de servicios
+            const services = ["Crunchyroll", "Disney", "Max", "Netflix", "Paramount", "Prime Video", "Universidad", "Vix", "IPTV", "YouTube", "Spotify", "Tidal", "Deezer", "Amazon Music", "Game Pass"];
+            const servicesOptions = services.map(s => `<option value="${s}">${s}</option>`).join('');
+
+            openModal(`
+            <div class="text-left bounce-enter">
+                <div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="alert-triangle" class="w-7 h-7"></i></div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2 text-center">Reportar Problema</h3>
+                
+                <form onsubmit="submitReport(event)" class="space-y-4">
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Tipo de Problema</label>
+                        <select id="report-type" onchange="toggleReportFields()" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">
+                            <option value="account">Fallo de Cuenta</option>
+                            <option value="payment">Pago no reflejado</option>
+                            <option value="bug">Error de Sistema</option>
+                        </select>
+                    </div>
+
+                    <div id="account-failure-section" class="space-y-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <div>
+                            <label class="block text-[10px] font-bold text-indigo-500 uppercase mb-1">Plataforma</label>
+                            <select id="report-service" onchange="searchPurchasesForReport()" class="neumo-inset w-full bg-white border-none rounded-xl p-2 text-sm font-bold text-gray-700">
+                                ${servicesOptions}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[10px] font-bold text-indigo-500 uppercase mb-1">Correo de la Cuenta (Buscar)</label>
+                            <div class="relative">
+                                <input type="email" id="search-account-email" oninput="searchPurchasesForReport()" class="neumo-inset w-full bg-white border-none rounded-xl p-3 pl-10 text-sm" placeholder="Ingresa el correo de la cuenta...">
+                                <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+                            </div>
+                            <p class="text-[9px] text-gray-400 mt-1">*Debes seleccionar una compra de la lista que aparecerá abajo.</p>
+                        </div>
+
+                        <div id="purchase-results-container" class="space-y-2 max-h-40 overflow-y-auto scrollbar-hide empty:hidden"></div>
+                        
+                        <input type="hidden" id="selected-tx-id" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Descripción del Fallo</label>
+                        <textarea id="report-desc" required class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm h-24 resize-none" placeholder="Explica detalladamente qué sucede..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Adjuntar Foto</label>
+                        <input type="file" accept="image/*" onchange="handleImageUpload(this)" class="w-full text-xs">
+                    </div>
+
+                    <button type="submit" id="btn-submit-report" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl">Enviar Reporte</button>
+                </form>
+            </div>`);
+            
+            toggleReportFields();
+            lucide.createIcons();
+        };
+
+        
+                        // ======================================================
+        // BLOQUE NUEVO: LÓGICA DE BÚSQUEDA (CON BLOQUEO DE BOTÓN)
+        // ======================================================
+
+        window.toggleReportFields = () => {
+            const type = document.getElementById('report-type').value;
+            const section = document.getElementById('account-failure-section');
+            const txInput = document.getElementById('selected-tx-id');
+            const btn = document.getElementById('btn-submit-report');
+
+            if (type === 'account') {
+                section.classList.remove('hidden');
+                txInput.setAttribute('required', 'true');
+                
+                // Si estamos en 'Fallo de Cuenta' y no hay ID seleccionado, BLOQUEAMOS el botón
+                if(!txInput.value) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            } else {
+                section.classList.add('hidden');
+                txInput.removeAttribute('required');
+                txInput.value = ''; 
+                
+                // En otros casos (Pago/Bug), el botón siempre está activo
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        };
+
+        window.searchPurchasesForReport = () => {
+            const queryEmail = document.getElementById('search-account-email').value.trim().toLowerCase();
+            const selectedPlatform = document.getElementById('report-service').value.toLowerCase();
+            const container = document.getElementById('purchase-results-container');
+            const hiddenInput = document.getElementById('selected-tx-id');
+            const btn = document.getElementById('btn-submit-report');
+
+            // 1. Resetear selección previa y BLOQUEAR BOTÓN
+            hiddenInput.value = '';
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            if (queryEmail.length < 3) {
+                container.innerHTML = '';
+                return;
+            }
+
+            // Filtrar transacciones (Validando Correo Y Plataforma)
+            const matches = window.userTransactions.filter(t => {
+                if (t.type !== 'purchase' || !t.details || !t.details.email) return false;
+                
+                const tEmail = t.details.email.toLowerCase();
+                const tService = (t.details.serviceName || '').toLowerCase();
+
+                const emailMatch = tEmail.includes(queryEmail);
+                const platformMatch = tService.includes(selectedPlatform);
+
+                return emailMatch && platformMatch;
+            });
+
+            if (matches.length === 0) {
+                container.innerHTML = `<div class="p-2 bg-rose-50 text-rose-500 text-[10px] font-bold rounded-lg text-center border border-rose-100">No se encontraron cuentas de <b class="uppercase">${selectedPlatform}</b> con ese correo.</div>`;
+                return;
+            }
+
+            let html = '';
+            matches.forEach(m => {
+                const service = m.details.serviceName || 'Servicio';
+                const date = m.timestamp ? m.timestamp.toDate().toLocaleDateString() : '';
+
+                html += `
+                <div onclick="selectPurchaseForReport('${m.id}', this)" class="purchase-option neumo-card p-2 rounded-lg cursor-pointer hover:bg-indigo-50 border border-transparent transition-all">
+                    <div class="flex justify-between items-center pointer-events-none">
+                        <div>
+                            <p class="font-bold text-gray-800 text-xs">${service}</p>
+                            <p class="text-[10px] text-gray-500 font-mono">${m.details.email}</p>
+                        </div>
+                        <div class="text-right pointer-events-none">
+                            <span class="text-[9px] bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">${date}</span>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        };
+
+        window.selectPurchaseForReport = (txId, element) => {
+            // 1. Guardar el ID
+            document.getElementById('selected-tx-id').value = txId;
+            const btn = document.getElementById('btn-submit-report');
+
+            // 2. Visualmente marcar seleccionado
+            document.querySelectorAll('.purchase-option').forEach(el => {
+                el.classList.remove('bg-indigo-100', 'border-indigo-500');
+                el.classList.add('border-transparent');
+            });
+            element.classList.remove('hover:bg-indigo-50', 'border-transparent');
+            element.classList.add('bg-indigo-100', 'border-indigo-500');
+
+            // 3. DESBLOQUEAR BOTÓN (Porque ya seleccionó una compra válida)
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        };
+
+
         window.handleImageUpload = (input) => { if (input.files[0]) { const reader = new FileReader(); reader.onload = (e) => localStorage.setItem('report_evidence', e.target.result); reader.readAsDataURL(input.files[0]); } };
-        window.submitReport = async (e) => { e.preventDefault(); const type = document.getElementById('report-type').value; const evidence = localStorage.getItem('report_evidence'); await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), { uid: currentUser.uid, email: currentUser.email, type, description: document.getElementById('report-desc').value, evidenceImage: evidence, timestamp: serverTimestamp(), status: 'unread' }); showToast('Reporte enviado', 'success'); closeModal(); };
+                // ======================================================
+        // BLOQUE NUEVO: ENVIAR REPORTE (CON DATOS EXTRA)
+        // ======================================================
+        window.submitReport = async (e) => { 
+            e.preventDefault(); 
+            
+            const type = document.getElementById('report-type').value;
+            const desc = document.getElementById('report-desc').value;
+            const evidence = localStorage.getItem('report_evidence');
+            
+            // Datos extra
+            let extraData = {};
+
+            if (type === 'account') {
+                const txId = document.getElementById('selected-tx-id').value;
+                const service = document.getElementById('report-service').value;
+                const accountEmail = document.getElementById('search-account-email').value;
+
+                // VALIDACIÓN CRÍTICA
+                if (!txId) {
+                    showToast('⚠️ Debes seleccionar una compra de la lista. Si el correo no aparece, no puedes reportarlo.', 'error');
+                    return;
+                }
+
+                extraData = {
+                    relatedTransactionId: txId,
+                    serviceName: service,
+                    accountEmail: accountEmail,
+                    isAccountFailure: true
+                };
+            }
+
+            // Bloquear botón
+            const btn = document.getElementById('btn-submit-report');
+            if(btn) { btn.disabled = true; btn.innerText = "Enviando..."; }
+
+            try {
+                // Construimos el objeto final
+                const reportData = { 
+                    uid: currentUser.uid, 
+                    email: currentUser.email, 
+                    type, 
+                    description: desc, 
+                    evidenceImage: evidence, 
+                    timestamp: serverTimestamp(), 
+                    status: 'unread',
+                    ...extraData // Agregamos los datos de la cuenta si existen
+                };
+
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), reportData); 
+                
+                showToast('Reporte enviado correctamente', 'success'); 
+                closeModal(); 
+
+            } catch(err) {
+                console.error(err);
+                showToast('Error al enviar reporte', 'error');
+                if(btn) { btn.disabled = false; btn.innerText = "Enviar Reporte"; }
+            }
+        };
         window.openReportDetails = (id) => { const r = window.adminReportsCache.find(x => x.id === id); if(!r) return; openModal(`<div class="text-left bounce-enter"><h3 class="font-bold text-gray-800 text-lg">Detalle Reporte</h3><p class="text-xs text-gray-500 mb-4">${r.email}</p><div class="neumo-card neumo-inset p-3 text-sm whitespace-pre-wrap">${r.description}</div>${r.evidenceImage ? `<img src="${r.evidenceImage}" class="mt-4 w-full rounded-lg border border-gray-200">` : ''}<div class="flex gap-2 mt-4"><button onclick="openReplyModal('${id}', '${r.uid}')" class="neumo-button flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold">Responder</button><button onclick="closeModal()" class="neumo-button flex-1 bg-gray-200 py-2 rounded-lg font-bold">Cerrar</button></div></div>`); };
-        window.openReplyModal = (rid, uid) => { openModal(`<div class="bounce-enter"><h3 class="font-bold mb-2">Responder</h3><textarea id="rep-text" class="neumo-inset w-full border rounded-xl p-2 h-24"></textarea><button onclick="sendAdminReply('${rid}','${uid}')" class="neumo-button w-full bg-blue-600 text-white font-bold py-2 rounded-xl mt-2">Enviar</button></div>`); };
-        window.sendAdminReply = async (rid, uid) => { const msg = document.getElementById('rep-text').value; await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', rid), { status: 'replied', adminReply: msg }); await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'), { type: 'support_reply', amount: 0, description: 'Respuesta Soporte', message: msg, timestamp: serverTimestamp() }); showToast('Enviado', 'success'); closeModal(); };
+                // ======================================================
+        // BLOQUE NUEVO: RESPONDER CON FOTO (ADMIN)
+        // ======================================================
+
+        window.openReplyModal = (rid, uid) => { 
+            // Limpiamos cualquier imagen previa de la memoria
+            localStorage.removeItem('admin_reply_evidence');
+            
+            openModal(`
+            <div class="bounce-enter text-left">
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 neumo-card neumo-inset"><i data-lucide="reply" class="w-6 h-6"></i></div>
+                <h3 class="font-bold text-gray-800 text-center text-lg mb-4">Responder al Usuario</h3>
+                
+                <textarea id="rep-text" class="neumo-inset w-full border-none bg-transparent rounded-xl p-3 h-24 resize-none text-sm mb-3 focus:ring-0" placeholder="Escribe tu respuesta aquí..."></textarea>
+                
+                <div class="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2 ml-1">Adjuntar Evidencia (Opcional)</label>
+                    <input type="file" accept="image/*" onchange="handleAdminReplyImage(this)" class="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition-colors">
+                </div>
+
+                <button onclick="sendAdminReply('${rid}','${uid}')" class="neumo-button w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-blue-700">
+                    <i data-lucide="send" class="w-4 h-4"></i> Enviar Respuesta
+                </button>
+            </div>`);
+            lucide.createIcons();
+        };
+
+        // Función auxiliar para procesar la imagen
+        window.handleAdminReplyImage = (input) => { 
+            if (input.files[0]) { 
+                const reader = new FileReader(); 
+                reader.onload = (e) => localStorage.setItem('admin_reply_evidence', e.target.result); 
+                reader.readAsDataURL(input.files[0]); 
+            } 
+        };
+
+        window.sendAdminReply = async (rid, uid) => { 
+            const msg = document.getElementById('rep-text').value; 
+            const img = localStorage.getItem('admin_reply_evidence'); // Recuperamos la imagen
+
+            if(!msg && !img) return showToast('Escribe algo o adjunta una foto', 'error');
+
+            const btn = document.querySelector('button[onclick^="sendAdminReply"]');
+            btn.disabled = true; btn.innerHTML = "Enviando...";
+
+            try {
+                // 1. Actualizamos el reporte (Para que el admin vea lo que envió en su historial)
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', rid), { 
+                    status: 'replied', 
+                    adminReply: msg,
+                    adminEvidence: img // Guardamos la foto aquí
+                }); 
+                
+                // 2. Enviamos la notificación al usuario (Para que el usuario reciba la foto)
+                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'), { 
+                    type: 'support_reply', 
+                    amount: 0, 
+                    description: 'Respuesta Soporte', 
+                    message: msg, 
+                    evidenceImage: img, // Guardamos la foto aquí también
+                    timestamp: serverTimestamp() 
+                }); 
+                
+                showToast('Respuesta enviada', 'success'); 
+                closeModal(); 
+            } catch(e) {
+                console.error(e);
+                showToast('Error al enviar', 'error');
+                btn.disabled = false; btn.innerText = "Reintentar";
+            }
+        };
+
 
         // Gestión Usuarios
         window.openAddUserModal = () => { openModal(` <div class="text-left bounce-enter"><h3 class="text-xl font-bold text-gray-800 mb-4">Agregar Usuario</h3><form onsubmit="registerUserByAdmin(event)" class="space-y-4"><div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Correo</label><input type="email" id="new-user-email" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contraseña</label><input type="text" id="new-user-pass" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required minlength="6"></div><button type="submit" class="neumo-button w-full bg-success text-white font-bold py-3 rounded-xl shadow-lg mt-2">Crear</button></form></div> `); };
@@ -2009,15 +2307,16 @@
             }
         };
         
-                        // --- CONTROL DE INTERRUPTOR Y MONTOS PERSONALIZADOS ---
+                                // ======================================================
+        // SISTEMA REFERIDOS AVANZADO + SEGURIDAD (TOKEN)
+        // ======================================================
+        
+        // 1. Control del Interruptor (Ahora genera Token al activar)
         window.toggleCurrentRoleStatus = async () => {
             const btn = document.getElementById('ref-toggle-btn');
             const select = document.getElementById('invite-role-select');
-            
-            // Si no hay selector (cliente básico), es código '1'
             const currentCode = select ? select.value : '1'; 
 
-            // Loader
             btn.innerHTML = '<span class="animate-spin inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full"></span>';
             btn.disabled = true;
 
@@ -2026,15 +2325,19 @@
             try {
                 const snap = await getDoc(userRef);
                 const currentConfig = snap.data().referralConfig || {}; 
-                
-                // 1. Alternar Estado (Prendido/Apagado)
                 const currentState = currentConfig[currentCode] === true; 
                 const newState = !currentState;
 
                 const updateMap = {};
                 updateMap[`referralConfig.${currentCode}`] = newState;
 
-                // 2. LÓGICA ADMIN: Guardar monto personalizado si existe el input
+                // [NUEVO] Si activamos, generamos un Token de Seguridad Único
+                if (newState) {
+                    const newToken = generateSecureToken();
+                    updateMap['referralToken'] = newToken; 
+                }
+
+                // Lógica Admin (Montos personalizados)
                 const adminInput = document.getElementById('admin-custom-amount');
                 if (adminInput && currentUser.email === 'mrandroidtutorialeshd@gmail.com') {
                     const customValue = Number(adminInput.value);
@@ -2045,7 +2348,9 @@
 
                 await updateDoc(userRef, updateMap);
                 
-                // Recargar visuales
+                if(newState) showToast('¡Enlace seguro generado y activado!', 'success');
+                else showToast('Enlace desactivado', 'info');
+
                 await updateInviteModalVisuals(currentCode);
                 
             } catch (e) {
@@ -2055,22 +2360,21 @@
                 btn.innerText = "Error";
             }
         };
-        
 
-        // --- MODAL INVITAR ---
-                                                                window.openInviteModal = async () => {
+        // 2. Modal de Invitación (Muestra el enlace con Token)
+        window.openInviteModal = async () => {
             const myRole = currentUserRole; 
-            const isAdmin = currentUser.email === 'mrandroidtutorialeshd@gmail.com'; // Detectar Admin
+            const isAdmin = currentUser.email === 'mrandroidtutorialeshd@gmail.com'; 
 
-            // Construir opciones del selector
+            // Opciones del selector
             let roleOptionsHTML = `<option value="1">Cliente (Básico)</option>`;
             if(myRole === 'reseller' || myRole === 'lider' || isAdmin) roleOptionsHTML += `<option value="2">Cliente VIP</option>`;
             if(myRole === 'lider' || isAdmin) roleOptionsHTML += `<option value="3">Revendedor</option>`;
 
             openModal(`
                 <div class="text-center bounce-enter">
-                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-2 neumo-card neumo-inset"><i data-lucide="users" class="w-8 h-8"></i></div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-1">Invita y Gana</h3>
+                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-2 neumo-card neumo-inset"><i data-lucide="shield-check" class="w-8 h-8"></i></div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">Invita y Gana (Seguro)</h3>
                     
                     <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2">Estados Actuales</p>
                     <div id="active-roles-summary" class="flex flex-wrap justify-center gap-2 mb-4 min-h-[24px]">
@@ -2100,22 +2404,21 @@
                             <p class="text-[10px] font-black text-indigo-500 uppercase flex items-center gap-1 mb-1">
                                 <i data-lucide="info" class="w-3 h-3"></i> Configuración del Bono
                             </p>
-                            
                             ${ isAdmin ? `
-                                <p class="text-xs text-gray-600 mb-2">Define cuánto quieres regalar (y descontar) para esta membresía:</p>
+                                <p class="text-xs text-gray-600 mb-2">Define cuánto quieres regalar:</p>
                                 <div class="flex items-center gap-2">
                                     <span class="font-bold text-gray-500">$</span>
                                     <input type="number" id="admin-custom-amount" class="neumo-inset flex-1 bg-white rounded-lg px-3 py-1 font-bold text-indigo-700" placeholder="0">
                                 </div>
                             ` : `
                                 <p class="text-xs text-gray-600 leading-relaxed">
-                                    Se descontarán <strong id="dynamic-bonus-amount" class="text-indigo-700">$10</strong> de tu saldo y se sumarán al referido. Tu ganarás el <strong>10%</strong> de todas las compras que realice tu referido.
+                                    Se descontarán <strong id="dynamic-bonus-amount" class="text-indigo-700">$10</strong> de tu saldo. Ganas el <strong>10%</strong> de sus compras.
                                 </p>
                             `}
                         </div>
 
                         <div id="link-container" class="neumo-card neumo-inset p-4 mb-4 flex items-center justify-between gap-3 transition-opacity duration-300">
-                            <span id="invite-link-text" class="text-xs font-mono text-gray-600 truncate select-all">Generando...</span>
+                            <span id="invite-link-text" class="text-xs font-mono text-gray-600 truncate select-all">Generando enlace seguro...</span>
                             <button onclick="copyCurrentInviteLink()" class="neumo-button text-indigo-600 hover:bg-indigo-50/50 p-2 rounded-lg"><i data-lucide="copy" class="w-4 h-4"></i></button>
                         </div>
                     </div>
@@ -2124,7 +2427,7 @@
                 </div>
             `);
 
-            // Funciones Auxiliares
+            // Funciones Auxiliares Internas
             window.handleRoleChange = () => {
                 const code = document.getElementById('invite-role-select').value;
                 updateInviteModalVisuals(code);
@@ -2138,37 +2441,33 @@
                 const summaryContainer = document.getElementById('active-roles-summary');
                 const baseUrl = `${window.location.origin}${window.location.pathname}`;
                 
-                document.getElementById('invite-link-text').innerText = `${baseUrl}?ref=${currentUser.uid}&c=${code}`;
+                // Leemos datos frescos para obtener el Token actual
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+                const snap = await getDoc(userRef);
+                const uData = snap.data();
+                const config = uData.referralConfig || {};
+                
+                // [NUEVO] Agregamos &t=TOKEN al enlace
+                const token = uData.referralToken || 'v1'; 
+                document.getElementById('invite-link-text').innerText = `${baseUrl}?ref=${currentUser.uid}&c=${code}&t=${token}`;
 
-                // --- CÁLCULO DE COSTOS VISUAL ---
                 let bonusAmount = 10;
                 if(code === '2') bonusAmount = 50;
                 if(code === '3') bonusAmount = 100;
                 
-                // Si NO es admin, actualizamos el texto fijo
                 if (!isAdmin) {
                     const amountLabel = document.getElementById('dynamic-bonus-amount');
                     if(amountLabel) amountLabel.innerText = `$${bonusAmount}`;
                 }
 
-                // Obtener configuración de BD
-                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
-                const snap = await getDoc(userRef);
-                const config = snap.data().referralConfig || {};
-                
-                // Si ES ADMIN, llenamos el input con el valor guardado
                 if (isAdmin) {
                     const savedAmount = config[`amount_${code}`];
                     const inputAdmin = document.getElementById('admin-custom-amount');
-                    if(inputAdmin) {
-                        // Si existe guardado usa ese, si no, usa el default standard
-                        inputAdmin.value = (savedAmount !== undefined) ? savedAmount : bonusAmount;
-                    }
-                    // Para el admin, el valor a mostrar en el botón es el del input o guardado
+                    if(inputAdmin) inputAdmin.value = (savedAmount !== undefined) ? savedAmount : bonusAmount;
                     bonusAmount = (savedAmount !== undefined) ? savedAmount : bonusAmount;
                 }
 
-                // 1. BARRA DE RESUMEN
+                // Summary
                 let summaryHTML = '';
                 const labels = { '1': 'Cliente', '2': 'VIP', '3': 'Revendedor' };
                 const availableCodes = ['1'];
@@ -2178,17 +2477,14 @@
                 availableCodes.forEach(c => {
                     const isItemActive = config[c] === true;
                     const badgeClass = isItemActive ? 'bg-emerald-100 text-emerald-600 border-emerald-200' : 'bg-gray-100 text-gray-400 border-gray-200 opacity-60 grayscale';
-                    const icon = isItemActive ? 'check-circle-2' : 'circle-off';
-                    summaryHTML += `<span class="text-[9px] font-bold px-2 py-1 rounded-lg border flex items-center gap-1 transition-all ${badgeClass}"><i data-lucide="${icon}" class="w-3 h-3"></i> ${labels[c]}</span>`;
+                    summaryHTML += `<span class="text-[9px] font-bold px-2 py-1 rounded-lg border flex items-center gap-1 transition-all ${badgeClass}">${labels[c]}</span>`;
                 });
                 if(summaryContainer) summaryContainer.innerHTML = summaryHTML;
 
-                // 2. INTERRUPTOR PRINCIPAL
+                // Estado del Botón
                 const isActive = config[code] === true; 
-
                 if(isActive) {
                     container.className = "flex items-center justify-between p-3 rounded-xl border mb-4 mt-2 transition-colors text-success bg-success/10 border-success/20";
-                    textLabel.className = "text-xs font-bold uppercase tracking-wider flex items-center gap-2";
                     textLabel.innerHTML = `<i data-lucide="wifi" class="w-4 h-4"></i> ACTIVO (Regala $${bonusAmount})`;
                     btn.className = "neumo-button px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-colors bg-rose-50 text-rose-500 hover:bg-rose-100";
                     btn.innerText = "Desactivar";
@@ -2196,10 +2492,9 @@
                     linkArea.classList.remove('opacity-50', 'pointer-events-none', 'blur-[1px]');
                 } else {
                     container.className = "flex items-center justify-between p-3 rounded-xl border mb-4 mt-2 transition-colors text-gray-400 bg-gray-100 border-gray-200";
-                    textLabel.className = "text-xs font-bold uppercase tracking-wider flex items-center gap-2";
                     textLabel.innerHTML = `<i data-lucide="wifi-off" class="w-4 h-4"></i> APAGADO`;
                     btn.className = "neumo-button px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-colors bg-success text-white hover:bg-emerald-600";
-                    btn.innerText = "Activar";
+                    btn.innerText = "Activar (Nuevo Link)";
                     btn.disabled = false;
                     linkArea.classList.add('opacity-50', 'pointer-events-none', 'blur-[1px]');
                 }
@@ -2213,7 +2508,7 @@
 
             const initialCode = document.getElementById('invite-role-select') ? document.getElementById('invite-role-select').value : '1';
             updateInviteModalVisuals(initialCode);
-        }
+        };
 
 
         // --- MODALES DE PRODUCTO CON DOBLE PRECIO ---
@@ -2963,10 +3258,42 @@
             let html = `<div class="text-center mb-4 bounce-enter"><h3 class="text-xl font-bold text-gray-800">Respuestas de Soporte</h3><p class="text-xs text-gray-400">Toca para leer</p></div>`;
             if (replies.length === 0) { html += `<div class="flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="message-circle-off" class="w-12 h-12 mb-2 text-gray-300"></i><p class="text-sm text-gray-400">Sin respuestas nuevas</p></div>`; } else { html += `<div class="space-y-3">`; replies.forEach(r => { const time = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente'; html += ` <div onclick="openSupportReplyDetail('${r.id}')" class="neumo-card neumo-inset p-4 rounded-xl text-left cursor-pointer hover:scale-[0.99] transition-transform group relative"> <div class="flex justify-between items-start mb-2"> <span class="text-xs font-bold text-blue-600 uppercase bg-blue-50/50 px-2 py-0.5 rounded flex items-center gap-1 neumo-flat"><i data-lucide="mail-open" class="w-3 h-3"></i> Respuesta Admin</span> <span class="text-[10px] text-gray-400">${time}</span> </div> <p class="text-sm text-gray-700 line-clamp-2 font-medium">${r.message}</p> <div class="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="chevron-right" class="w-4 h-4 text-blue-400"></i></div> </div> `; }); html += `</div>`; } openModal(html);
         };
+                // ======================================================
+        // BLOQUE NUEVO: VER RESPUESTA CON FOTO (USUARIO)
+        // ======================================================
         window.openSupportReplyDetail = (id) => {
-            const r = window.userTransactions.find(t => t.id === id); if(!r) return;
-            openModal(` <div class="text-left bounce-enter p-1 h-[70vh] flex flex-col"> <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4"> <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center neumo-card neumo-inset"><i data-lucide="message-circle" class="w-5 h-5"></i></div> <div> <h3 class="font-bold text-lg text-gray-800 leading-tight">Mensaje de Soporte</h3> <p class="text-xs text-gray-400">${r.timestamp ? r.timestamp.toDate().toLocaleString() : ''}</p> </div> </div> <div class="neumo-card neumo-inset p-5 rounded-2xl text-sm text-gray-700 whitespace-pre-wrap flex-1 overflow-y-auto leading-relaxed font-medium">${r.message}</div> <button onclick="openSupportReplies()" class="neumo-button mt-4 w-full bg-gray-900 text-white py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver</button> </div> `);
+            const r = window.userTransactions.find(t => t.id === id); 
+            if(!r) return;
+            
+            // Verificamos si hay imagen adjunta por el admin
+            const evidenceHtml = r.evidenceImage 
+                ? `<div class="mt-4"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Adjunto del Administrador:</p><img src="${r.evidenceImage}" class="w-full rounded-xl border border-gray-200 shadow-sm"></div>` 
+                : '';
+
+            openModal(` 
+            <div class="text-left bounce-enter p-1 h-[75vh] flex flex-col"> 
+                <div class="flex items-center gap-3 mb-4 border-b border-gray-100 pb-4 flex-shrink-0"> 
+                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center neumo-card neumo-inset flex-shrink-0"><i data-lucide="message-circle" class="w-5 h-5"></i></div> 
+                    <div> 
+                        <h3 class="font-bold text-lg text-gray-800 leading-tight">Mensaje de Soporte</h3> 
+                        <p class="text-xs text-gray-400">${r.timestamp ? r.timestamp.toDate().toLocaleString() : ''}</p> 
+                    </div> 
+                </div> 
+                
+                <div class="flex-1 overflow-y-auto scrollbar-hide pr-2">
+                    <div class="neumo-card neumo-inset p-5 rounded-2xl text-sm text-gray-700 whitespace-pre-wrap leading-relaxed font-medium">
+                        ${r.message || '<i class="text-gray-400">Sin texto...</i>'}
+                    </div>
+                    ${evidenceHtml}
+                </div>
+
+                <button onclick="openSupportReplies()" class="neumo-button mt-4 w-full bg-gray-900 text-white py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 flex-shrink-0">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver
+                </button> 
+            </div> `);
+            lucide.createIcons();
         };
+
 
         // --- RENOVACIONES CLIENTE ---
         window.openRenewalModal = () => {
@@ -3759,32 +4086,41 @@ window.filterExpirations = (mode) => {
             }
         };
         
-                // --- FUNCIÓN PARA VER LA RESPUESTA ENVIADA ---
+                        // ======================================================
+        // BLOQUE NUEVO: VER MI RESPUESTA ENVIADA (ADMIN)
+        // ======================================================
         window.viewAdminReply = (id) => {
-            // Buscamos el reporte en la memoria caché
             const r = window.adminReportsCache.find(x => x.id === id);
             
-            if (!r || !r.adminReply) {
-                return showToast('No se encontró el texto de la respuesta.', 'info');
+            if (!r || (!r.adminReply && !r.adminEvidence)) {
+                return showToast('No hay contenido en la respuesta.', 'info');
             }
             
+            const evidenceHtml = r.adminEvidence 
+                ? `<div class="mt-4 border-t border-gray-100 pt-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Imagen enviada:</p><img src="${r.adminEvidence}" class="w-full rounded-xl border border-gray-200 shadow-sm"></div>` 
+                : '';
+            
             openModal(`
-                <div class="text-center bounce-enter pt-2">
-                    <div class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 border border-green-200">
+                <div class="text-center bounce-enter pt-2 h-[70vh] flex flex-col">
+                    <div class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 border border-green-200 flex-shrink-0">
                         <i data-lucide="check-circle-2" class="w-7 h-7"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-800 mb-1">Respuesta Enviada</h3>
-                    <p class="text-xs text-gray-400 mb-4">Lo que le respondiste al usuario:</p>
+                    <h3 class="text-lg font-bold text-gray-800 mb-1 flex-shrink-0">Respuesta Enviada</h3>
+                    <p class="text-xs text-gray-400 mb-4 flex-shrink-0">Lo que le respondiste al usuario:</p>
                     
-                    <div class="neumo-card neumo-inset p-4 text-left text-sm text-gray-700 rounded-xl mb-4 whitespace-pre-wrap font-medium border border-gray-100 shadow-inner">
-                        ${r.adminReply}
+                    <div class="flex-1 overflow-y-auto scrollbar-hide text-left px-1">
+                        <div class="neumo-card neumo-inset p-4 text-sm text-gray-700 rounded-xl whitespace-pre-wrap font-medium border border-gray-100 shadow-inner">
+                            ${r.adminReply || '<i class="text-gray-400">Sin texto...</i>'}
+                        </div>
+                        ${evidenceHtml}
                     </div>
                     
-                    <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg">Cerrar</button>
+                    <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mt-4 flex-shrink-0">Cerrar</button>
                 </div>
             `);
             lucide.createIcons();
         };
+
         window.deleteActiveMembership = async (id) => {
     // 1. Confirmación de seguridad
     if(!confirm("⚠️ ¿Eliminar esta membresía del registro?\n\nAl hacerlo, desaparecerá de esta lista y del historial. Esta acción no se puede deshacer.")) return;
@@ -4193,6 +4529,14 @@ window.filterExpirations = (mode) => {
             container.innerHTML = html;
             lucide.createIcons();
         };
+        
+                // ==========================================
+        // HELPER: TOKEN DE SEGURIDAD
+        // ==========================================
+        const generateSecureToken = () => {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        };
+
     </script>
 </body>
 </html>
