@@ -185,16 +185,31 @@
                 </a>                
             </form>
 
-            <form id="register-form" class="space-y-4 hidden auth-view">
+                        <form id="register-form" class="space-y-4 hidden auth-view">
                 <h2 class="text-xl font-bold text-gray-800 mb-2">Registro</h2>
                 <div id="referral-badge" class="hidden bg-indigo-50 text-indigo-600 p-3 rounded-xl text-xs font-bold border border-indigo-100 flex items-center gap-2 neumo-card neumo-flat">
                     <i data-lucide="gift" class="w-4 h-4"></i> <span>¡Te han invitado! Recibe $10 de regalo.</span>
                 </div>
+                
+                <input type="text" id="reg-name" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="Nombre y Apellido" required>
+
                 <input type="email" id="reg-email" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="Correo electrónico" required>
                 <input type="password" id="reg-password" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="Contraseña" required>
                 <input type="password" id="reg-confirm-password" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="Confirmar contraseña" required>
+
+                <input type="number" id="reg-whatsapp" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="WhatsApp (Solo números)" required>
+                <input type="text" id="reg-city" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 px-4" placeholder="Ciudad / Municipio" required>
+
                 <button type="submit" class="neumo-button w-full bg-accent text-white font-bold py-4 rounded-2xl shadow-accent">Registrarse</button>
-                <div class="text-center text-sm text-gray-500 mt-4"><button type="button" onclick="switchAuthView('login')" class="text-gray-900 font-bold hover:underline">Volver al Login</button></div>
+                
+                <a href="https://www.mediafire.com/file/tweka8kkm1jg5sx/StreamEvolution.apk/file" target="_blank" class="neumo-button w-full bg-emerald-600 text-white font-bold py-3 rounded-2xl shadow-lg hover:bg-emerald-700 flex justify-center items-center gap-2 mt-3 no-underline transition-all active:scale-95">
+                    <i data-lucide="smartphone" class="w-5 h-5"></i>
+                    <span>Descargar Aplicación Android</span>
+                </a>
+                
+                <div class="text-center mt-2">
+                    <button type="button" onclick="switchAuthView('login')" class="text-xs text-gray-400 font-bold hover:text-gray-600 transition-colors">¿Ya tienes cuenta? Inicia Sesión</button>
+                </div>
             </form>
             
              <form id="forgot-form" class="space-y-4 hidden auth-view">
@@ -272,24 +287,24 @@
                     </button>                         
                 </div>
                 
-                                                                <div id="admin-menu-items" class="hidden">
-                    <div onclick="switchView('admin'); returnToAdminDashboard(); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl bg-gray-800 text-white font-semibold cursor-pointer mb-2 shadow-lg">
+                                                                                <div id="admin-menu-items" class="hidden">
+                    <div onclick="switchView('admin'); returnToAdminDashboard(); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl bg-gray-800 text-white font-semibold cursor-pointer mb-4 shadow-lg">
                         <i data-lucide="layout-grid" class="w-5 h-5 text-accent"></i>
                         <span class="text-sm">Panel Admin</span>
                     </div>
-
-                    <button onclick="openCocinaExpress(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-orange-600 bg-orange-50/50 hover:bg-orange-100 transition-all mb-4 border border-orange-100">
-                        <i data-lucide="chef-hat" class="w-5 h-5"></i>
-                        <span class="text-sm font-bold">Cocina Express</span>
-                    </button>
                     
                     <div onclick="switchView('user'); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl text-gray-600 font-medium cursor-pointer hover:bg-gray-100 mb-2">
                         <i data-lucide="shopping-bag" class="w-5 h-5"></i>
                         <span class="text-sm">Vista Tienda</span>
                     </div>
 
+                    <button onclick="renderReferralsView(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-600 hover:bg-gray-100 transition-all mb-2">
+                        <i data-lucide="users" class="w-5 h-5"></i>
+                        <span class="text-sm font-medium">Mis Referidos</span>
+                    </button>
+
                     <button onclick="openInviteModal(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 transition-all">
-                        <i data-lucide="users" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
+                        <i data-lucide="share-2" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
                     </button>
                 </div>
 
@@ -1272,18 +1287,44 @@
                 lucide.createIcons();
             });
 
-                        // 5. USUARIOS (MEJORADO CON EDICIÓN Y BORRADO)
+                                                // 5. USUARIOS (ORDENADOS: NUEVOS ARRIBA, LUEGO POR ACTIVIDAD)
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'), (snapshot) => {
-                let html = ''; 
+                let usersList = [];
                 snapshot.forEach(doc => { 
-                    const d = doc.data(); 
+                    usersList.push({ id: doc.id, ...doc.data() });
+                });
+
+                // LÓGICA DE ORDENAMIENTO CORREGIDA
+                usersList.sort((a, b) => {
+                    // 1. Obtenemos fechas (0 si no existen)
+                    const dateA = a.createdAt ? a.createdAt.toMillis() : 0;
+                    const dateB = b.createdAt ? b.createdAt.toMillis() : 0;
+                    
+                    // 2. Si ambos tienen fecha de registro, gana el más nuevo
+                    if (dateA > 0 && dateB > 0) return dateB - dateA;
+
+                    // 3. Si uno es nuevo (tiene fecha) y el otro antiguo (no), el nuevo va arriba
+                    if (dateA > 0) return -1;
+                    if (dateB > 0) return 1;
+
+                    // 4. Si AMBOS son antiguos, los ordenamos por "Último Login" para que no se vean desordenados
+                    const loginA = a.lastLogin ? a.lastLogin.toMillis() : 0;
+                    const loginB = b.lastLogin ? b.lastLogin.toMillis() : 0;
+                    return loginB - loginA;
+                });
+
+                let html = ''; 
+                usersList.forEach(d => { 
                     const susp = d.suspended === true; 
                     const uRole = d.role || 'client';
-                    // Colores según rol
+                    
                     let roleBadgeColor = 'bg-gray-100 text-gray-500';
                     if(uRole === 'reseller') roleBadgeColor = 'bg-indigo-100 text-indigo-600';
                     if(uRole === 'lider') roleBadgeColor = 'bg-amber-100 text-amber-600';
                     if(uRole === 'vip') roleBadgeColor = 'bg-purple-100 text-purple-600';
+
+                    // Si tiene fecha de registro la mostramos, si no, mostramos "Antiguo" (o su último login)
+                    const dateDisplay = d.createdAt ? d.createdAt.toDate().toLocaleDateString() : 'Antiguo';
 
                     html += `
                     <div onclick="openUserHistory('${d.uid}', '${d.email}')" class="neumo-card p-3 flex flex-col gap-3 relative cursor-pointer hover:bg-gray-50 transition-colors group slide-up mb-2">
@@ -1292,7 +1333,10 @@
                                 ${d.email.substring(0,2).toUpperCase()}
                             </div>
                             <div class="overflow-hidden flex-1">
-                                <p class="font-bold text-sm text-gray-800 truncate">${d.email}</p>
+                                <div class="flex justify-between">
+                                    <p class="font-bold text-sm text-gray-800 truncate">${d.email}</p>
+                                    <span class="text-[9px] text-gray-400 font-mono">${dateDisplay}</span>
+                                </div>
                                 <div class="flex items-center gap-2 mt-0.5">
                                     <span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border border-gray-200 ${roleBadgeColor}">${uRole}</span>
                                     <p class="text-[9px] text-gray-400 font-mono">ID: ${d.uid.substring(0,6)}</p>
@@ -1301,29 +1345,25 @@
                         </div>
 
                         <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-100" onclick="event.stopPropagation();">
-                            
                             <button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="neumo-button flex-1 bg-emerald-50 text-emerald-600 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 hover:bg-emerald-100 transition-colors" title="Sumar Saldo">
                                 <i data-lucide="plus" class="w-3 h-3"></i> Sumar
                             </button>
-
                             <button onclick="openEditBalanceExact('${d.uid}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-white text-blue-500 border border-blue-100 rounded-lg hover:bg-blue-50 transition-colors" title="Editar Saldo Exacto">
                                 <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                             </button>
-
-                            <button onclick="openChangeRoleModal('${doc.id}', '${uRole}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-white text-indigo-500 border border-indigo-100 rounded-lg hover:bg-indigo-50 transition-colors" title="Cambiar Rol">
+                            <button onclick="openChangeRoleModal('${d.id}', '${uRole}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-white text-indigo-500 border border-indigo-100 rounded-lg hover:bg-indigo-50 transition-colors" title="Cambiar Rol">
                                 <i data-lucide="user-cog" class="w-3.5 h-3.5"></i>
                             </button>
-
-                            <button onclick="toggleSuspend('${doc.id}', ${!susp})" class="neumo-button w-8 h-8 flex items-center justify-center bg-white ${susp ? 'text-emerald-500 border-emerald-100' : 'text-amber-500 border-amber-100'} rounded-lg hover:bg-gray-50 transition-colors" title="${susp?'Activar':'Suspender'}">
+                            <button onclick="toggleSuspend('${d.id}', ${!susp})" class="neumo-button w-8 h-8 flex items-center justify-center bg-white ${susp ? 'text-emerald-500 border-emerald-100' : 'text-amber-500 border-amber-100'} rounded-lg hover:bg-gray-50 transition-colors" title="${susp?'Activar':'Suspender'}">
                                 <i data-lucide="${susp?'play':'pause'}" class="w-3.5 h-3.5"></i>
                             </button>
-
-                            <button onclick="deleteUserSystem('${doc.id}', '${d.uid}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-rose-50 text-rose-500 border border-rose-100 rounded-lg hover:bg-rose-500 hover:text-white transition-colors" title="Eliminar Usuario">
+                            <button onclick="deleteUserSystem('${d.id}', '${d.uid}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-rose-50 text-rose-500 border border-rose-100 rounded-lg hover:bg-rose-500 hover:text-white transition-colors" title="Eliminar Usuario">
                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
                     </div>`; 
                 });
+                
                 const list = document.getElementById('admin-users-list');
                 if(list) list.innerHTML = html || '<div class="text-center py-10 text-gray-400 text-xs">No hay usuarios registrados</div>'; 
                 lucide.createIcons();
@@ -2037,7 +2077,36 @@
         // Gestión Usuarios
         window.openAddUserModal = () => { openModal(` <div class="text-left bounce-enter"><h3 class="text-xl font-bold text-gray-800 mb-4">Agregar Usuario</h3><form onsubmit="registerUserByAdmin(event)" class="space-y-4"><div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Correo</label><input type="email" id="new-user-email" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div><div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contraseña</label><input type="text" id="new-user-pass" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required minlength="6"></div><button type="submit" class="neumo-button w-full bg-success text-white font-bold py-3 rounded-xl shadow-lg mt-2">Crear</button></form></div> `); };
         
-        window.registerUserByAdmin = async (e) => { e.preventDefault(); const email = document.getElementById('new-user-email').value; const password = document.getElementById('new-user-pass').value; try { const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp"); const secondaryAuth = getAuth(secondaryApp); const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password); await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'wallet', 'main'), { balance: 0, profit: 0, createdAt: serverTimestamp() }); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', cred.user.uid), { email: email, uid: cred.user.uid, role: 'client', lastLogin: serverTimestamp(), suspended: false }, { merge: true }); await signOut(secondaryAuth); showToast('Usuario creado (Cliente)', 'success'); closeModal(); } catch (error) { showToast('Error: ' + error.message, 'error'); } };
+                // REGISTRO MANUAL POR ADMIN (CON FECHA CORRECTA)
+        window.registerUserByAdmin = async (e) => { 
+            e.preventDefault(); 
+            const email = document.getElementById('new-user-email').value; 
+            const password = document.getElementById('new-user-pass').value; 
+            try { 
+                const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp"); 
+                const secondaryAuth = getAuth(secondaryApp); 
+                const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password); 
+                
+                // Guardar billetera
+                await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'wallet', 'main'), { balance: 0, profit: 0, createdAt: serverTimestamp() }); 
+                
+                // Guardar usuario con FECHA DE CREACIÓN (createdAt)
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', cred.user.uid), { 
+                    email: email, 
+                    uid: cred.user.uid, 
+                    role: 'client', 
+                    lastLogin: serverTimestamp(),
+                    createdAt: serverTimestamp(), // <--- ESTO ORDENARÁ AL USUARIO ARRIBA
+                    suspended: false 
+                }, { merge: true }); 
+                
+                await signOut(secondaryAuth); 
+                showToast('Usuario creado (Cliente)', 'success'); 
+                closeModal(); 
+            } catch (error) { 
+                showToast('Error: ' + error.message, 'error'); 
+            } 
+        };
         window.openManualBalanceModal = (uid, email) => { openModal(`<div class="text-center bounce-enter"><h3 class="text-xl font-bold text-gray-800 mb-1">Cargar Saldo Manual</h3><p class="text-xs text-gray-400 mb-4">${email}</p><input type="number" id="manual-amount" class="neumo-inset w-full bg-transparent border-none rounded-xl px-4 py-3 text-lg font-bold text-center mb-4" placeholder="$0"><button onclick="confirmManualBalance('${uid}')" class="neumo-button w-full bg-success text-white font-bold py-3 rounded-xl shadow-lg">Confirmar Recarga</button></div>`); };
                 window.confirmManualBalance = async (uid) => { 
             const inputVal = document.getElementById('manual-amount').value;
@@ -3407,13 +3476,23 @@
             }
         });
         
+        // REGISTRO PÚBLICO (CON CAMPOS NUEVOS: NOMBRE, WA, CIUDAD)
         document.getElementById('register-form').addEventListener('submit', async(e)=>{
             e.preventDefault(); 
-            const btn = document.querySelector('#register-form button'); const originalText = btn.innerText; btn.disabled = true; btn.innerText = 'Creando cuenta...';
-            const p1=document.getElementById('reg-password').value; 
-            const p2=document.getElementById('reg-confirm-password').value; 
+            const btn = document.querySelector('#register-form button'); const originalText = btn.innerText; btn.disabled = true; btn.innerText = 'Guardando datos...';
+            
+            // 1. OBTENER VALORES DEL FORMULARIO
+            const p1 = document.getElementById('reg-password').value; 
+            const p2 = document.getElementById('reg-confirm-password').value; 
             const email = document.getElementById('reg-email').value;
-            if(p1!==p2) { btn.disabled=false; btn.innerText=originalText; return showToast('Contraseñas no coinciden','error'); }
+            const fullName = document.getElementById('reg-name').value;       // Nuevo
+            const whatsapp = document.getElementById('reg-whatsapp').value;   // Nuevo
+            const city = document.getElementById('reg-city').value;           // Nuevo
+
+            // 2. VALIDACIONES
+            if(p1 !== p2) { btn.disabled=false; btn.innerText=originalText; return showToast('Contraseñas no coinciden','error'); }
+            if(!fullName || !whatsapp || !city) { btn.disabled=false; btn.innerText=originalText; return showToast('Todos los campos son obligatorios','error'); }
+
             const urlParams = new URLSearchParams(window.location.search); const referrerId = urlParams.get('ref');
 
             try{
@@ -3422,119 +3501,121 @@
                 await sendEmailVerification(c.user);
 
                 if(referrerId) {
-                                                                                                    try {
-                    await runTransaction(db, async (t) => {
-                        // 1. Obtener datos del Líder/Referrer
-                        const referrerRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', referrerId);
-                        const referrerSnap = await t.get(referrerRef);
-                        
-                        if (!referrerSnap.exists()) throw new Error("Referido inválido");
-                        
-                        const rData = referrerSnap.data();
-                        const config = rData.referralConfig || {};
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const code = urlParams.get('c') || '1'; 
-                        
-                        // Validar si está activo
-                        if (config[code] !== true) {
-                            throw new Error("ENLACE_APAGADO"); 
-                        }
+                    try {
+                        await runTransaction(db, async (t) => {
+                            const referrerRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', referrerId);
+                            const referrerSnap = await t.get(referrerRef);
+                            
+                            if (!referrerSnap.exists()) throw new Error("Referido inválido");
+                            
+                            const rData = referrerSnap.data();
+                            const config = rData.referralConfig || {};
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const code = urlParams.get('c') || '1'; 
+                            
+                            if (config[code] !== true) throw new Error("ENLACE_APAGADO"); 
 
-                        // --- CÁLCULO DE COSTO Y ROL ---
-                        let requestedRole = 'client';
-                        let bonusAmount = 10; // Default Standard
+                            let requestedRole = 'client';
+                            let bonusAmount = 10; 
+                            if (code === '2') { requestedRole = 'vip'; bonusAmount = 50; }
+                            if (code === '3') { requestedRole = 'reseller'; bonusAmount = 100; }
 
-                        // Costos ESTÁNDAR
-                        if (code === '2') { requestedRole = 'vip'; bonusAmount = 50; }
-                        if (code === '3') { requestedRole = 'reseller'; bonusAmount = 100; }
-
-                        // *** OVERRIDE DE ADMINISTRADOR ***
-                        // Si el que invita es el Admin, buscamos si tiene un monto personalizado
-                        if (rData.email === 'mrandroidtutorialeshd@gmail.com') {
-                            const customAdminAmount = config[`amount_${code}`];
-                            if (customAdminAmount !== undefined && customAdminAmount !== null) {
-                                bonusAmount = Number(customAdminAmount);
+                            if (rData.email === 'mrandroidtutorialeshd@gmail.com') {
+                                const customAdminAmount = config[`amount_${code}`];
+                                if (customAdminAmount !== undefined && customAdminAmount !== null) bonusAmount = Number(customAdminAmount);
                             }
-                        }
-                        // *********************************
 
-                        // Verificación de Jerarquía (Seguridad)
-                        const referrerRole = rData.role || 'client';
-                        let finalRole = 'client'; 
-                        let finalBonus = 10; // Fallback seguro
+                            const referrerRole = rData.role || 'client';
+                            let finalRole = 'client'; 
+                            let finalBonus = 10; 
 
-                        // Reglas de Jerarquía
-                        if (referrerRole === 'lider' || rData.email === 'mrandroidtutorialeshd@gmail.com') {
-                            // Líder y Admin pueden invitar a todos
-                            if(['client', 'vip', 'reseller'].includes(requestedRole)) {
-                                finalRole = requestedRole;
-                                finalBonus = bonusAmount;
+                            if (referrerRole === 'lider' || rData.email === 'mrandroidtutorialeshd@gmail.com') {
+                                if(['client', 'vip', 'reseller'].includes(requestedRole)) { finalRole = requestedRole; finalBonus = bonusAmount; }
+                            } else if (referrerRole === 'reseller') {
+                                if(['client', 'vip'].includes(requestedRole)) { finalRole = requestedRole; finalBonus = bonusAmount; }
                             }
-                        } else if (referrerRole === 'reseller') {
-                            // Revendedor: Client y Vip
-                            if(['client', 'vip'].includes(requestedRole)) {
-                                finalRole = requestedRole;
-                                finalBonus = bonusAmount;
-                            }
-                        } else {
-                            // Cliente: Solo cliente
-                            finalRole = 'client';
-                            finalBonus = 10;
-                        }
 
-                        // Verificar saldo
-                        const resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
-                        const resellerSnap = await t.get(resellerWalletRef);
-                        
-                        if (!resellerSnap.exists()) throw new Error("Revendedor inválido");
-                        const resellerBalance = resellerSnap.data().balance || 0;
-                        
-                        if (resellerBalance < finalBonus) throw new Error("SIN_SALDO");
+                            const resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
+                            const resellerSnap = await t.get(resellerWalletRef);
+                            if (!resellerSnap.exists()) throw new Error("Revendedor inválido");
+                            const resellerBalance = resellerSnap.data().balance || 0;
+                            if (resellerBalance < finalBonus) throw new Error("SIN_SALDO");
 
-                        // EJECUTAR TRANSACCIÓN
-                        // 1. Cobrar al Líder
-                        t.update(resellerWalletRef, { balance: resellerBalance - finalBonus });
-                        
-                        // 2. Abonar al Referido
-                        const newWalletRef = doc(db,'artifacts',appId,'users',uid,'wallet','main');
-                        t.set(newWalletRef, { balance: finalBonus, profit: 0, createdAt: serverTimestamp() });
-                        
-                        // 3. Crear Perfil con Jerarquía
-                        const newUserProfileRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
-                        t.set(newUserProfileRef, { 
-                            email: email, 
-                            uid: uid, 
-                            role: finalRole, 
-                            referredBy: referrerId, // IMPORTANTE: Esto habilita la futura comisión del 10%
-                            suspended: false, 
-                            lastLogin: serverTimestamp() 
+                            t.update(resellerWalletRef, { balance: resellerBalance - finalBonus });
+                            t.set(doc(db,'artifacts',appId,'users',uid,'wallet','main'), { balance: finalBonus, profit: 0, createdAt: serverTimestamp() });
+                            
+                            // 3. GUARDAR DATOS COMPLETOS EN FIRESTORE
+                            t.set(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { 
+                                email: email, 
+                                uid: uid, 
+                                role: finalRole, 
+                                fullName: fullName,  // Guardamos Nombre
+                                whatsapp: whatsapp,  // Guardamos WA
+                                city: city,          // Guardamos Ciudad
+                                referredBy: referrerId, 
+                                suspended: false, 
+                                lastLogin: serverTimestamp(),
+                                createdAt: serverTimestamp()
+                            }, {merge: true});
+                            
+                            const resellerTx = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
+                            t.set(resellerTx, { type: 'charge', amount: -finalBonus, description: `Bono regalo (${finalRole}): ${email}`, timestamp: serverTimestamp() });
+                            
+                            const newUserTx = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'));
+                            t.set(newUserTx, { type: 'deposit', amount: finalBonus, description: 'Bono de Bienvenida', timestamp: serverTimestamp(), status: 'approved' });
+                        });
+                    } catch (txError) {
+                        console.log("Registro sin bono:", txError.message);
+                        await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
+                        // FALLBACK SIN BONO: También guardamos los datos nuevos aquí
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { 
+                            email: email, uid: uid, role: 'client', suspended: false, 
+                            fullName: fullName, whatsapp: whatsapp, city: city, // Guardar aquí también
+                            lastLogin: serverTimestamp(), createdAt: serverTimestamp() 
                         }, {merge: true});
-                        
-                        // 4. Historial
-                        const resellerTx = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
-                        t.set(resellerTx, { type: 'charge', amount: -finalBonus, description: `Bono regalo (${finalRole}): ${email}`, timestamp: serverTimestamp() });
-                        
-                        const newUserTx = doc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'));
-                        t.set(newUserTx, { type: 'deposit', amount: finalBonus, description: 'Bono de Bienvenida', timestamp: serverTimestamp(), status: 'approved' });
-                    });
-                } catch (txError) {
-                    console.log("Registro sin bono:", txError.message);
-                    await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { email: email, uid: uid, role: 'client', suspended: false, lastLogin: serverTimestamp() }, {merge: true});
-                }
-
-
+                    }
                 } else {
+                    // REGISTRO DIRECTO (SIN REFERIDO)
                     await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { email: email, uid: uid, role: 'client', suspended: false, lastLogin: serverTimestamp() }, {merge: true});
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { 
+                        email: email, uid: uid, role: 'client', suspended: false, 
+                        fullName: fullName, whatsapp: whatsapp, city: city, // Guardar aquí también
+                        lastLogin: serverTimestamp(), createdAt: serverTimestamp() 
+                    }, {merge: true});
                 }
                 
                 await signOut(auth);
-                document.getElementById('reg-email').value = ''; document.getElementById('reg-password').value = ''; document.getElementById('reg-confirm-password').value = '';
+                // Limpiar campos
+                document.getElementById('reg-name').value = ''; 
+                document.getElementById('reg-email').value = ''; 
+                document.getElementById('reg-password').value = ''; 
+                document.getElementById('reg-confirm-password').value = '';
+                document.getElementById('reg-whatsapp').value = ''; 
+                document.getElementById('reg-city').value = '';
+
                 showToast('¡Registro exitoso! 📩 Verifica tu correo.', 'success');
                 switchAuthView('login');
                 btn.disabled=false; btn.innerText=originalText;
-            }catch(e){ showToast('Error en registro', 'error'); btn.disabled=false; btn.innerText=originalText; }
+                        } catch (e) {
+                console.error(e);
+                let msg = 'Ocurrió un error al registrarse.';
+
+                // --- PERSONALIZACIÓN DE ERRORES ---
+                if (e.code === 'auth/weak-password') {
+                    // AQUÍ ESTÁ EL MENSAJE QUE PEDISTE:
+                    msg = '⚠️ Contraseña poco segura. Te recomendamos usar al menos una Mayúscula, un punto (.) y números.';
+                } else if (e.code === 'auth/email-already-in-use') {
+                    msg = '📧 Este correo ya está registrado. Por favor inicia sesión.';
+                } else if (e.code === 'auth/invalid-email') {
+                    msg = 'El correo electrónico no tiene un formato válido.';
+                } else {
+                    msg = 'Error: ' + e.message;
+                }
+
+                showToast(msg, 'error');
+                btn.disabled = false; 
+                btn.innerText = originalText; 
+            }
         });
         
         window.handleLogout = async () => { await signOut(auth); document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('login-email').value = ''; document.getElementById('login-password').value = ''; };
