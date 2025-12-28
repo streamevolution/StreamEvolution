@@ -2005,14 +2005,37 @@
         // BLOQUE NUEVO: RESPONDER CON FOTO (ADMIN)
         // ======================================================
 
-        window.openReplyModal = (rid, uid) => { 
-            // Limpiamos cualquier imagen previa de la memoria
+        // ======================================================
+        // RESPONDER A USUARIO + SISTEMA DE REEMBOLSOS
+        // ======================================================
+        window.openReplyModal = async (rid, uid) => { 
             localStorage.removeItem('admin_reply_evidence');
+            
+            // Buscamos el reporte en caché para ver si tiene una transacción asociada
+            const r = window.adminReportsCache.find(x => x.id === rid);
+            let refundButtonsHTML = '';
+
+            // Solo mostramos botones de reembolso si el reporte tiene una compra vinculada
+            if (r && r.relatedTransactionId) {
+                refundButtonsHTML = `
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Opciones de Reembolso</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="checkRefundOptions('${rid}', 'full')" class="neumo-button bg-rose-50 text-rose-600 border border-rose-100 py-2 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1">
+                            <i data-lucide="refresh-ccw" class="w-3 h-3"></i> Reembolso Total
+                        </button>
+                        <button onclick="checkRefundOptions('${rid}', 'partial')" class="neumo-button bg-amber-50 text-amber-600 border border-amber-100 py-2 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors flex items-center justify-center gap-1">
+                            <i data-lucide="pie-chart" class="w-3 h-3"></i> Reembolso Parcial
+                        </button>
+                    </div>
+                </div>`;
+            }
             
             openModal(`
             <div class="bounce-enter text-left">
                 <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 neumo-card neumo-inset"><i data-lucide="reply" class="w-6 h-6"></i></div>
-                <h3 class="font-bold text-gray-800 text-center text-lg mb-4">Responder al Usuario</h3>
+                <h3 class="font-bold text-gray-800 text-center text-lg mb-1">Responder al Usuario</h3>
+                <p class="text-xs text-gray-400 text-center mb-4">Ticket ID: ${rid.substring(0,6)}</p>
                 
                 <textarea id="rep-text" class="neumo-inset w-full border-none bg-transparent rounded-xl p-3 h-24 resize-none text-sm mb-3 focus:ring-0" placeholder="Escribe tu respuesta aquí..."></textarea>
                 
@@ -2021,14 +2044,15 @@
                     <input type="file" accept="image/*" onchange="handleAdminReplyImage(this)" class="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition-colors">
                 </div>
 
-                <button onclick="sendAdminReply('${rid}','${uid}')" class="neumo-button w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-blue-700">
+                ${refundButtonsHTML}
+
+                <button onclick="sendAdminReply('${rid}','${uid}')" class="neumo-button w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-blue-700 mt-4">
                     <i data-lucide="send" class="w-4 h-4"></i> Enviar Respuesta
                 </button>
             </div>`);
             lucide.createIcons();
         };
 
-        // Función auxiliar para procesar la imagen
         window.handleAdminReplyImage = (input) => { 
             if (input.files[0]) { 
                 const reader = new FileReader(); 
@@ -4629,6 +4653,192 @@ window.filterExpirations = (mode) => {
         // ==========================================
         const generateSecureToken = () => {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        };
+        
+                // ======================================================
+        // LÓGICA AVANZADA DE REEMBOLSOS (TOTAL Y PARCIAL)
+        // ======================================================
+
+        // 1. Calcular y mostrar confirmación
+        window.checkRefundOptions = async (reportId, type) => {
+            const report = window.adminReportsCache.find(x => x.id === reportId);
+            if (!report || !report.relatedTransactionId) return showToast('Error: No hay transacción asociada.', 'error');
+
+            const btnText = type === 'full' ? 'Calculando Total...' : 'Calculando Parcial...';
+            showToast(btnText, 'info');
+
+            try {
+                // Obtenemos la transacción original de compra
+                const txSnap = await getDoc(doc(db, 'artifacts', appId, 'users', report.uid, 'transactions', report.relatedTransactionId));
+                if (!txSnap.exists()) throw new Error("Transacción original no encontrada");
+                
+                const txData = txSnap.data();
+                const paidAmount = Number(txData.amount);
+                const purchaseDate = txData.timestamp.toDate();
+                const now = new Date();
+
+                let refundAmount = 0;
+                let modalTitle = "";
+                let modalDesc = "";
+
+                if (type === 'full') {
+                    refundAmount = paidAmount;
+                    modalTitle = "Reembolso Total";
+                    modalDesc = `Se devolverá el 100% del monto pagado por el usuario.`;
+                } else {
+                    // CÁLCULO PARCIAL
+                    modalTitle = "Reembolso Parcial";
+                    const durationStr = txData.details.duration || "1 Mes"; // Default 1 mes si no hay dato
+                    const totalDays = getDaysFromDurationString(durationStr);
+                    
+                    // Días trascurridos
+                    const diffTime = Math.abs(now - purchaseDate);
+                    const daysUsed = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    const daysRemaining = totalDays - daysUsed;
+
+                    if (daysRemaining <= 0) throw new Error("La membresía ya venció, no hay días para reembolsar.");
+
+                    const costPerDay = paidAmount / totalDays;
+                    refundAmount = Math.floor(costPerDay * daysRemaining); // Redondeamos hacia abajo para no perder centavos
+
+                    modalDesc = `
+                        <div class="bg-gray-50 p-2 rounded border border-gray-200 text-left text-xs space-y-1 mb-2">
+                            <div class="flex justify-between"><span>Costo Original:</span> <b>$${paidAmount}</b></div>
+                            <div class="flex justify-between"><span>Duración:</span> <span>${durationStr} (${totalDays} días)</span></div>
+                            <div class="flex justify-between"><span>Días Usados:</span> <span>${daysUsed} días</span></div>
+                            <div class="flex justify-between text-indigo-600"><span>Días Restantes:</span> <b>${daysRemaining} días</b></div>
+                        </div>
+                        Se devolverá el monto proporcional a los días no utilizados.
+                    `;
+                }
+
+                // Confirmación
+                openModal(`
+                    <div class="text-center bounce-enter pt-4">
+                        <div class="w-16 h-16 bg-${type==='full'?'rose':'amber'}-100 text-${type==='full'?'rose':'amber'}-600 rounded-full flex items-center justify-center mx-auto mb-3 neumo-card neumo-inset">
+                            <i data-lucide="${type==='full'?'refresh-ccw':'pie-chart'}" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">${modalTitle}</h3>
+                        <p class="text-3xl font-black text-gray-800 mb-4">$${refundAmount}</p>
+                        
+                        <div class="text-sm text-gray-500 mb-6 px-4">
+                            ${modalDesc}
+                            <p class="text-[10px] text-rose-500 mt-3 font-bold bg-rose-50 p-2 rounded border border-rose-100">
+                                ⚠️ ALERTA: Si el usuario fue invitado, se descontará automáticamente la comisión ($${(refundAmount * 0.10).toFixed(1)}) al patrocinador, incluso si queda en saldo negativo.
+                            </p>
+                        </div>
+
+                        <button onclick="executeRefund('${reportId}', ${refundAmount}, ${paidAmount})" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg mb-2">
+                            Confirmar Reembolso
+                        </button>
+                        <button onclick="openReplyModal('${reportId}', '${report.uid}')" class="neumo-button w-full text-gray-500 font-bold text-xs py-2">Cancelar</button>
+                    </div>
+                `);
+                lucide.createIcons();
+
+            } catch (e) {
+                console.error(e);
+                showToast(e.message, 'error');
+            }
+        };
+
+        // 2. Ejecutar Reembolso en BD
+        window.executeRefund = async (reportId, amountToRefund, originalAmount) => {
+            const btn = document.querySelector('button[onclick^="executeRefund"]');
+            btn.disabled = true; 
+            btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Procesando...';
+
+            try {
+                const report = window.adminReportsCache.find(x => x.id === reportId);
+                const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', report.uid);
+                
+                await runTransaction(db, async (t) => {
+                    // A. Leer datos del usuario (para ver si tiene referido)
+                    const userSnap = await t.get(userDocRef);
+                    const referrerId = userSnap.exists() ? userSnap.data().referredBy : null;
+
+                    // B. Leer billetera del usuario
+                    const userWalletRef = doc(db, 'artifacts', appId, 'users', report.uid, 'wallet', 'main');
+                    const userWalletSnap = await t.get(userWalletRef);
+                    const currentUserBal = userWalletSnap.exists() ? (userWalletSnap.data().balance || 0) : 0;
+
+                    // C. Leer billetera del patrocinador (si existe)
+                    let refWalletRef = null;
+                    let refWalletSnap = null;
+                    if (referrerId) {
+                        refWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
+                        refWalletSnap = await t.get(refWalletRef);
+                    }
+
+                    // --- OPERACIONES ---
+
+                    // 1. Devolver dinero al usuario
+                    t.set(userWalletRef, { balance: currentUserBal + amountToRefund }, { merge: true });
+                    
+                    const userTx = doc(collection(db, 'artifacts', appId, 'users', report.uid, 'transactions'));
+                    t.set(userTx, {
+                        type: 'deposit',
+                        amount: amountToRefund,
+                        description: 'Reembolso por Soporte',
+                        timestamp: serverTimestamp(),
+                        status: 'approved'
+                    });
+
+                    // 2. Descontar al patrocinador (Si existe)
+                    // NOTA: Se descuenta el 10% del monto reembolsado (Proporcional)
+                    if (referrerId && refWalletSnap) {
+                        const commissionToReverse = amountToRefund * 0.10; 
+                        const currentRefBal = refWalletSnap.exists() ? (refWalletSnap.data().balance || 0) : 0;
+                        const currentRefProfit = refWalletSnap.exists() ? (refWalletSnap.data().profit || 0) : 0;
+
+                        // Restamos de las ganancias acumuladas y del saldo (permitiendo negativo)
+                        t.set(refWalletRef, { 
+                            balance: currentRefBal - commissionToReverse,
+                            profit: currentRefProfit - commissionToReverse
+                        }, { merge: true });
+
+                        const refTx = doc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'));
+                        t.set(refTx, {
+                            type: 'charge',
+                            amount: -commissionToReverse, // Negativo visualmente
+                            description: `Ajuste: Reembolso de referido (${report.email})`,
+                            timestamp: serverTimestamp()
+                        });
+                    }
+
+                    // 3. Actualizar Reporte
+                    const reportRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', reportId);
+                    t.update(reportRef, { 
+                        status: 'resolved', 
+                        adminReply: `Se ha realizado un reembolso de $${amountToRefund} a tu saldo.`,
+                        resolvedAt: serverTimestamp()
+                    });
+                });
+
+                showToast('Reembolso aplicado correctamente', 'success');
+                closeModal();
+
+            } catch (e) {
+                console.error(e);
+                showToast('Error en reembolso: ' + e.message, 'error');
+                btn.disabled = false; btn.innerText = "Reintentar";
+            }
+        };
+
+        // 3. Helper para convertir texto a días
+        window.getDaysFromDurationString = (str) => {
+            if (!str) return 30;
+            const s = str.toLowerCase();
+            if (s.includes('año') || s.includes('ano') || s.includes('anual')) return 365;
+            if (s.includes('semana')) return 7;
+            if (s.includes('dia') || s.includes('día')) return parseInt(s) || 1;
+            
+            // Meses
+            if (s.includes('mes')) {
+                const num = parseInt(s);
+                return (num || 1) * 30;
+            }
+            return 30; // Default
         };
 
     </script>
