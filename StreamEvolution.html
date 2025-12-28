@@ -3476,7 +3476,7 @@
             }
         });
         
-        // REGISTRO PÚBLICO (CON CAMPOS NUEVOS: NOMBRE, WA, CIUDAD)
+                // REGISTRO PÚBLICO (CON AUTO-APAGADO DE LINK + SEGURIDAD)
         document.getElementById('register-form').addEventListener('submit', async(e)=>{
             e.preventDefault(); 
             const btn = document.querySelector('#register-form button'); const originalText = btn.innerText; btn.disabled = true; btn.innerText = 'Guardando datos...';
@@ -3485,9 +3485,9 @@
             const p1 = document.getElementById('reg-password').value; 
             const p2 = document.getElementById('reg-confirm-password').value; 
             const email = document.getElementById('reg-email').value;
-            const fullName = document.getElementById('reg-name').value;       // Nuevo
-            const whatsapp = document.getElementById('reg-whatsapp').value;   // Nuevo
-            const city = document.getElementById('reg-city').value;           // Nuevo
+            const fullName = document.getElementById('reg-name').value;       
+            const whatsapp = document.getElementById('reg-whatsapp').value;   
+            const city = document.getElementById('reg-city').value;           
 
             // 2. VALIDACIONES
             if(p1 !== p2) { btn.disabled=false; btn.innerText=originalText; return showToast('Contraseñas no coinciden','error'); }
@@ -3541,7 +3541,17 @@
                             const resellerBalance = resellerSnap.data().balance || 0;
                             if (resellerBalance < finalBonus) throw new Error("SIN_SALDO");
 
+                            // 1. Descontar saldo al patrocinador
                             t.update(resellerWalletRef, { balance: resellerBalance - finalBonus });
+                            
+                            // [NUEVO] APAGAR ENLACE AUTOMÁTICAMENTE PARA EVITAR MULTI-CUENTAS
+                            // Esto pone el interruptor en 'false' en la base de datos inmediatamente
+                            const linkUpdate = {};
+                            linkUpdate[`referralConfig.${code}`] = false;
+                            t.update(referrerRef, linkUpdate);
+                            // -------------------------------------------------------------
+
+                            // 2. Crear billetera del nuevo usuario
                             t.set(doc(db,'artifacts',appId,'users',uid,'wallet','main'), { balance: finalBonus, profit: 0, createdAt: serverTimestamp() });
                             
                             // 3. GUARDAR DATOS COMPLETOS EN FIRESTORE
@@ -3549,9 +3559,9 @@
                                 email: email, 
                                 uid: uid, 
                                 role: finalRole, 
-                                fullName: fullName,  // Guardamos Nombre
-                                whatsapp: whatsapp,  // Guardamos WA
-                                city: city,          // Guardamos Ciudad
+                                fullName: fullName,  
+                                whatsapp: whatsapp,  
+                                city: city,          
                                 referredBy: referrerId, 
                                 suspended: false, 
                                 lastLogin: serverTimestamp(),
@@ -3567,10 +3577,10 @@
                     } catch (txError) {
                         console.log("Registro sin bono:", txError.message);
                         await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
-                        // FALLBACK SIN BONO: También guardamos los datos nuevos aquí
+                        // FALLBACK SIN BONO
                         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { 
                             email: email, uid: uid, role: 'client', suspended: false, 
-                            fullName: fullName, whatsapp: whatsapp, city: city, // Guardar aquí también
+                            fullName: fullName, whatsapp: whatsapp, city: city, 
                             lastLogin: serverTimestamp(), createdAt: serverTimestamp() 
                         }, {merge: true});
                     }
@@ -3579,7 +3589,7 @@
                     await setDoc(doc(db,'artifacts',appId,'users',uid,'wallet','main'),{balance:0,profit:0}); 
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), { 
                         email: email, uid: uid, role: 'client', suspended: false, 
-                        fullName: fullName, whatsapp: whatsapp, city: city, // Guardar aquí también
+                        fullName: fullName, whatsapp: whatsapp, city: city, 
                         lastLogin: serverTimestamp(), createdAt: serverTimestamp() 
                     }, {merge: true});
                 }
@@ -3596,19 +3606,22 @@
                 showToast('¡Registro exitoso! 📩 Verifica tu correo.', 'success');
                 switchAuthView('login');
                 btn.disabled=false; btn.innerText=originalText;
-                        } catch (e) {
-                console.error(e);
+
+            } catch (e) {
+                console.error("Error registro:", e);
                 let msg = 'Ocurrió un error al registrarse.';
 
-                // --- PERSONALIZACIÓN DE ERRORES ---
-                if (e.code === 'auth/weak-password') {
-                    // AQUÍ ESTÁ EL MENSAJE QUE PEDISTE:
-                    msg = '⚠️ Contraseña poco segura. Te recomendamos usar al menos una Mayúscula, un punto (.) y números.';
-                } else if (e.code === 'auth/email-already-in-use') {
+                // DETECCIÓN DE ERRORES (Mantenemos tu código corregido anterior)
+                if (e.code === 'auth/weak-password' || e.code === 'auth/password-does-not-meet-requirements' || e.message.includes('password')) {
+                    msg = '⚠️ Contraseña poco segura. Te recomendamos usar una Mayúscula, números y un punto (.)';
+                } 
+                else if (e.code === 'auth/email-already-in-use') {
                     msg = '📧 Este correo ya está registrado. Por favor inicia sesión.';
-                } else if (e.code === 'auth/invalid-email') {
+                } 
+                else if (e.code === 'auth/invalid-email') {
                     msg = 'El correo electrónico no tiene un formato válido.';
-                } else {
+                } 
+                else {
                     msg = 'Error: ' + e.message;
                 }
 
