@@ -1189,7 +1189,7 @@
                 lucide.createIcons();
             });
 
-            // 3. SOPORTE TÉCNICO (MODIFICADO: Badge Clickable)
+                        // 3. SOPORTE TÉCNICO (ORDENADO: NUEVOS ARRIBA)
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '!=', 'renewal')), (s) => {
                 const list = document.getElementById('admin-support-list');
                 const badge = document.getElementById('support-count-badge');
@@ -1197,32 +1197,49 @@
 
                 window.adminPendingReports = []; 
                 window.adminReportsCache = []; 
+                
+                // 1. Recolectar todos los reportes en un array temporal
+                let allReports = [];
+                s.forEach(doc => { 
+                    const r = doc.data(); 
+                    r.id = doc.id; 
+                    allReports.push(r);
+                    window.adminReportsCache.push(r);
+                });
+
+                // 2. ORDENAR POR FECHA (Descendente: Nuevos primero)
+                allReports.sort((a, b) => {
+                    const dateA = a.timestamp ? a.timestamp.toMillis() : 0;
+                    const dateB = b.timestamp ? b.timestamp.toMillis() : 0;
+                    return dateB - dateA; // El más reciente gana
+                });
+
                 let html = '';
                 let pendingCount = 0;
 
-                if (s.empty) { html = '<div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Sin tickets de soporte.</p></div>'; }
-                else {
-                    s.forEach(doc => { 
-                        const r = doc.data(); r.id = doc.id; 
-                        window.adminReportsCache.push(r); 
-                        
+                if (allReports.length === 0) { 
+                    html = '<div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Sin tickets de soporte.</p></div>'; 
+                } else {
+                    allReports.forEach(r => { 
+                        // Contar pendientes para el badge rojo
                         if(r.status !== 'replied' && r.status !== 'resolved') {
                             window.adminPendingReports.push(r);
                             pendingCount++;
                         }
+                        
                         let typeIcon = r.type === 'payment' ? 'dollar-sign' : (r.type === 'bug' ? 'bug' : 'message-circle');
                         let typeColor = r.type === 'payment' ? 'text-green-500' : (r.type === 'bug' ? 'text-rose-500' : 'text-blue-500');
 
-                        // LÓGICA DEL BADGE (BOTÓN VERDE)
+                        // LÓGICA DEL BOTÓN DE ESTADO
                         let statusBadge = '';
                         if(r.status === 'replied') {
-                             statusBadge = `<span onclick="event.stopPropagation(); viewAdminReply('${doc.id}')" class="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-green-100 text-green-600 border border-green-200 cursor-pointer hover:scale-105 transition-transform shadow-sm" title="Ver mi respuesta">REPLIED</span>`;
+                             statusBadge = `<span onclick="event.stopPropagation(); viewAdminReply('${r.id}')" class="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-green-100 text-green-600 border border-green-200 cursor-pointer hover:scale-105 transition-transform shadow-sm" title="Ver mi respuesta">REPLIED</span>`;
                         } else {
                              statusBadge = `<span class="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-600 border border-amber-100">${r.status || 'Pendiente'}</span>`;
                         }
 
                         html += `
-                        <div onclick="openReportDetails('${doc.id}')" class="neumo-card p-4 mb-3 cursor-pointer hover:bg-gray-50 transition-colors relative bg-white" title="Ver Detalle">
+                        <div onclick="openReportDetails('${r.id}')" class="neumo-card p-4 mb-3 cursor-pointer hover:bg-gray-50 transition-colors relative bg-white" title="Ver Detalle">
                             <div class="flex items-start gap-3">
                                 <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center ${typeColor} neumo-inset flex-shrink-0"><i data-lucide="${typeIcon}" class="w-5 h-5"></i></div>
                                 <div class="flex-1 min-w-0">
@@ -1235,16 +1252,14 @@
                                 </div>
                             </div>
                             <div class="mt-3 flex justify-between items-center border-t border-gray-100 pt-2">
-                                <button onclick="event.stopPropagation(); deleteReport('${doc.id}')" class="text-gray-300 hover:text-rose-500 transition-colors p-1" title="Eliminar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                <button onclick="event.stopPropagation(); deleteReport('${r.id}')" class="text-gray-300 hover:text-rose-500 transition-colors p-1" title="Eliminar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                 
-                                ${r.status !== 'replied' ? `<button onclick="event.stopPropagation(); openReplyModal('${doc.id}', '${r.uid}')" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"><i data-lucide="corner-down-right" class="w-3 h-3"></i> Responder</button>` : '<span></span>'}
+                                ${r.status !== 'replied' ? `<button onclick="event.stopPropagation(); openReplyModal('${r.id}', '${r.uid}')" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"><i data-lucide="corner-down-right" class="w-3 h-3"></i> Responder</button>` : '<span></span>'}
                             </div>
                         </div>`;
                     });
                 }
                 
-                if (html === '') html = '<div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Sin tickets pendientes.</p></div>';
-
                 list.innerHTML = html;
                 if(badge) badge.textContent = `${pendingCount} Activos`;
                 const navBadge = document.getElementById('badge-support'); 
