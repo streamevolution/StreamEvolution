@@ -253,10 +253,18 @@
 
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300"></div>
         <aside id="sidebar" class="neumo-flat fixed top-0 left-0 h-full w-72 shadow-2xl z-50 transition-transform duration-300 -translate-x-full flex flex-col" style="border-right: 1px solid rgba(0,0,0,0.05);">
-            <div class="p-6 border-b border-gray-100">
+                        <div class="p-6 border-b border-gray-100">
                 <h2 class="font-bold text-lg text-gray-800">Mi Cuenta</h2>
-                <p class="text-xs text-gray-400 truncate font-mono mt-1" id="sidebar-email">Cargando...</p>
-                <div id="sidebar-role-tag" class="inline-block mt-2 bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded font-bold uppercase neumo-card neumo-flat">Cliente</div>
+                
+                <p class="text-sm font-bold text-gray-700 truncate mt-1 capitalize" id="sidebar-user-name">Cargando...</p>
+                
+                <div class="flex items-center justify-between mt-3">
+                    <div id="sidebar-role-tag" class="inline-block bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded font-bold uppercase neumo-card neumo-flat">Cliente</div>
+                    
+                    <button onclick="openUserProfile()" class="neumo-button px-3 py-1.5 rounded-lg text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 flex items-center gap-1 hover:bg-indigo-100 transition-colors shadow-sm">
+                        <i data-lucide="user-cog" class="w-3 h-3"></i> Mi Perfil
+                    </button>
+                </div>
             </div>
             <div class="p-4 space-y-2 overflow-y-auto flex-1 scrollbar-hide">
                 <div id="user-menu-items">
@@ -468,11 +476,17 @@
                     </div>
                 </section>
 
-                <section id="admin-users-section" class="hidden bounce-enter">
+                 <section id="admin-users-section" class="hidden bounce-enter">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-800 text-xl">Usuarios</h3>
                         <button onclick="openAddUserModal()" class="neumo-button bg-success text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 shadow-accent"><i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo</button>
                     </div>
+                    
+                    <div class="relative mb-4">
+                        <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+                        <input type="text" id="admin-user-search" oninput="filterAdminUsers()" class="neumo-inset w-full bg-transparent border-none rounded-xl pl-10 pr-4 py-3 text-sm font-bold text-gray-700 placeholder-gray-400" placeholder="Buscar por Nombre, Correo o WhatsApp...">
+                    </div>
+
                     <div id="admin-users-list" class="space-y-3"></div>
                 </section>
 
@@ -609,7 +623,17 @@
 
                 currentUser = user;
                 isAdmin = user.email === ADMIN_EMAIL;
-                document.getElementById('sidebar-email').textContent = user.email;
+                                // --- CAMBIO: OBTENER NOMBRE PARA EL SIDEBAR ---
+                let displayName = 'Usuario';
+                if (userStatusSnap.exists()) {
+                    const uData = userStatusSnap.data();
+                    // Usamos el nombre registrado o una parte del correo si no tiene nombre
+                    displayName = uData.fullName || user.email.split('@')[0];
+                }
+                
+                const sidebarNameEl = document.getElementById('sidebar-user-name');
+                if(sidebarNameEl) sidebarNameEl.textContent = displayName;
+                // ----------------------------------------------
                 
                                 // --- INICIO NUEVA LÓGICA DE BADGES ---
                 const roleData = getRoleData(currentUserRole);
@@ -1302,86 +1326,108 @@
                 lucide.createIcons();
             });
 
-                                                // 5. USUARIOS (ORDENADOS: NUEVOS ARRIBA, LUEGO POR ACTIVIDAD)
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'), (snapshot) => {
-                let usersList = [];
-                snapshot.forEach(doc => { 
-                    usersList.push({ id: doc.id, ...doc.data() });
+                                                                        // 5. USUARIOS (CON BUSCADOR Y FILTROS)
+            window.allUsersCache = []; // Variable global para guardar usuarios
+
+                        // Función para renderizar la lista (CON BOTÓN BORRAR HISTORIAL)
+            window.renderAdminUsersList = (usersList) => {
+                let html = ''; 
+                
+                if (usersList.length === 0) {
+                    html = '<div class="text-center py-10 text-gray-400 text-xs">No se encontraron usuarios.</div>';
+                } else {
+                    usersList.forEach(d => { 
+                        const susp = d.suspended === true; 
+                        const uRole = d.role || 'client';
+                        const displayName = d.fullName || 'Sin Nombre';
+                        
+                        let roleBadgeColor = 'bg-gray-100 text-gray-500';
+                        if(uRole === 'reseller') roleBadgeColor = 'bg-indigo-100 text-indigo-600';
+                        if(uRole === 'lider') roleBadgeColor = 'bg-amber-100 text-amber-600';
+                        if(uRole === 'vip') roleBadgeColor = 'bg-purple-100 text-purple-600';
+
+                        const dateDisplay = d.createdAt ? d.createdAt.toDate().toLocaleDateString() : 'Antiguo';
+
+                        html += `
+                        <div onclick="openUserHistory('${d.uid}', '${d.email}')" class="neumo-card p-3 flex flex-col gap-3 relative cursor-pointer hover:bg-gray-50 transition-colors group slide-up mb-2">
+                            <div class="flex items-center gap-3">
+                                <div onclick="event.stopPropagation(); showUserDetails('${d.uid}')" class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs neumo-inset border border-white cursor-pointer hover:scale-110 transition-transform shadow-sm relative z-10" title="Ver Datos Personales">
+                                    ${d.email.substring(0,2).toUpperCase()}
+                                </div>
+                                <div class="overflow-hidden flex-1">
+                                    <div class="flex justify-between items-start">
+                                        <div class="min-w-0 flex-1 mr-2">
+                                            <p class="font-bold text-sm text-gray-800 truncate capitalize">${displayName}</p>
+                                            <p class="text-[10px] text-gray-500 truncate font-mono">${d.email}</p>
+                                            ${d.whatsapp ? `<p class="text-[9px] text-green-600 font-mono flex items-center gap-1"><i data-lucide="phone" class="w-2 h-2"></i> ${d.whatsapp}</p>` : ''}
+                                        </div>
+                                        <span class="text-[9px] text-gray-400 font-mono whitespace-nowrap pt-0.5">${dateDisplay}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border border-gray-200 ${roleBadgeColor}">${uRole}</span>
+                                        <p class="text-[9px] text-gray-400 font-mono">ID: ${d.uid.substring(0,6)}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-100" onclick="event.stopPropagation();">
+                                <button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="neumo-button flex-1 bg-emerald-50 text-emerald-600 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 hover:bg-emerald-100 transition-colors" title="Sumar Saldo"><i data-lucide="plus" class="w-3 h-3"></i> Sumar</button>
+                                <button onclick="openEditBalanceExact('${d.uid}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-white text-blue-500 border border-blue-100 rounded-lg hover:bg-blue-50 transition-colors" title="Editar Saldo Exacto"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="openChangeRoleModal('${d.id}', '${uRole}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-white text-indigo-500 border border-indigo-100 rounded-lg hover:bg-indigo-50 transition-colors" title="Cambiar Rol"><i data-lucide="user-cog" class="w-3.5 h-3.5"></i></button>
+                                
+                                <button onclick="clearUserHistory('${d.uid}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-orange-50 text-orange-500 border border-orange-100 rounded-lg hover:bg-orange-100 transition-colors" title="Borrar Historial Completo">
+                                    <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+                                </button>
+
+                                <button onclick="toggleSuspend('${d.id}', ${!susp})" class="neumo-button w-8 h-8 flex items-center justify-center bg-white ${susp ? 'text-emerald-500 border-emerald-100' : 'text-amber-500 border-amber-100'} rounded-lg hover:bg-gray-50 transition-colors" title="${susp?'Activar':'Suspender'}"><i data-lucide="${susp?'play':'pause'}" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="deleteUserSystem('${d.id}', '${d.uid}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-rose-50 text-rose-500 border border-rose-100 rounded-lg hover:bg-rose-500 hover:text-white transition-colors" title="Eliminar Usuario"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                        </div>`; 
+                    });
+                }
+                
+                const list = document.getElementById('admin-users-list');
+                if(list) list.innerHTML = html;
+                lucide.createIcons();
+            };
+
+            // Función del Buscador
+            window.filterAdminUsers = () => {
+                const query = document.getElementById('admin-user-search')?.value.toLowerCase().trim() || '';
+                
+                // Filtramos la caché global
+                const filtered = window.allUsersCache.filter(u => {
+                    const name = (u.fullName || '').toLowerCase();
+                    const email = (u.email || '').toLowerCase();
+                    const whatsapp = (u.whatsapp || '').toLowerCase();
+                    
+                    return name.includes(query) || email.includes(query) || whatsapp.includes(query);
                 });
 
-                // LÓGICA DE ORDENAMIENTO CORREGIDA
-                usersList.sort((a, b) => {
-                    // 1. Obtenemos fechas (0 si no existen)
+                renderAdminUsersList(filtered);
+            };
+
+            // Listener de Firebase (Carga inicial y cambios)
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'), (snapshot) => {
+                window.allUsersCache = [];
+                snapshot.forEach(doc => { 
+                    window.allUsersCache.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Ordenar: Nuevos arriba
+                window.allUsersCache.sort((a, b) => {
                     const dateA = a.createdAt ? a.createdAt.toMillis() : 0;
                     const dateB = b.createdAt ? b.createdAt.toMillis() : 0;
-                    
-                    // 2. Si ambos tienen fecha de registro, gana el más nuevo
                     if (dateA > 0 && dateB > 0) return dateB - dateA;
-
-                    // 3. Si uno es nuevo (tiene fecha) y el otro antiguo (no), el nuevo va arriba
                     if (dateA > 0) return -1;
                     if (dateB > 0) return 1;
-
-                    // 4. Si AMBOS son antiguos, los ordenamos por "Último Login" para que no se vean desordenados
                     const loginA = a.lastLogin ? a.lastLogin.toMillis() : 0;
                     const loginB = b.lastLogin ? b.lastLogin.toMillis() : 0;
                     return loginB - loginA;
                 });
 
-                let html = ''; 
-                usersList.forEach(d => { 
-                    const susp = d.suspended === true; 
-                    const uRole = d.role || 'client';
-                    
-                    let roleBadgeColor = 'bg-gray-100 text-gray-500';
-                    if(uRole === 'reseller') roleBadgeColor = 'bg-indigo-100 text-indigo-600';
-                    if(uRole === 'lider') roleBadgeColor = 'bg-amber-100 text-amber-600';
-                    if(uRole === 'vip') roleBadgeColor = 'bg-purple-100 text-purple-600';
-
-                    // Si tiene fecha de registro la mostramos, si no, mostramos "Antiguo" (o su último login)
-                    const dateDisplay = d.createdAt ? d.createdAt.toDate().toLocaleDateString() : 'Antiguo';
-
-                    html += `
-                    <div onclick="openUserHistory('${d.uid}', '${d.email}')" class="neumo-card p-3 flex flex-col gap-3 relative cursor-pointer hover:bg-gray-50 transition-colors group slide-up mb-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs neumo-inset border border-white">
-                                ${d.email.substring(0,2).toUpperCase()}
-                            </div>
-                            <div class="overflow-hidden flex-1">
-                                <div class="flex justify-between">
-                                    <p class="font-bold text-sm text-gray-800 truncate">${d.email}</p>
-                                    <span class="text-[9px] text-gray-400 font-mono">${dateDisplay}</span>
-                                </div>
-                                <div class="flex items-center gap-2 mt-0.5">
-                                    <span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border border-gray-200 ${roleBadgeColor}">${uRole}</span>
-                                    <p class="text-[9px] text-gray-400 font-mono">ID: ${d.uid.substring(0,6)}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-100" onclick="event.stopPropagation();">
-                            <button onclick="openManualBalanceModal('${d.uid}', '${d.email}')" class="neumo-button flex-1 bg-emerald-50 text-emerald-600 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 hover:bg-emerald-100 transition-colors" title="Sumar Saldo">
-                                <i data-lucide="plus" class="w-3 h-3"></i> Sumar
-                            </button>
-                            <button onclick="openEditBalanceExact('${d.uid}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-white text-blue-500 border border-blue-100 rounded-lg hover:bg-blue-50 transition-colors" title="Editar Saldo Exacto">
-                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                            </button>
-                            <button onclick="openChangeRoleModal('${d.id}', '${uRole}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-white text-indigo-500 border border-indigo-100 rounded-lg hover:bg-indigo-50 transition-colors" title="Cambiar Rol">
-                                <i data-lucide="user-cog" class="w-3.5 h-3.5"></i>
-                            </button>
-                            <button onclick="toggleSuspend('${d.id}', ${!susp})" class="neumo-button w-8 h-8 flex items-center justify-center bg-white ${susp ? 'text-emerald-500 border-emerald-100' : 'text-amber-500 border-amber-100'} rounded-lg hover:bg-gray-50 transition-colors" title="${susp?'Activar':'Suspender'}">
-                                <i data-lucide="${susp?'play':'pause'}" class="w-3.5 h-3.5"></i>
-                            </button>
-                            <button onclick="deleteUserSystem('${d.id}', '${d.uid}', '${d.email}')" class="neumo-button w-8 h-8 flex items-center justify-center bg-rose-50 text-rose-500 border border-rose-100 rounded-lg hover:bg-rose-500 hover:text-white transition-colors" title="Eliminar Usuario">
-                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                            </button>
-                        </div>
-                    </div>`; 
-                });
-                
-                const list = document.getElementById('admin-users-list');
-                if(list) list.innerHTML = html || '<div class="text-center py-10 text-gray-400 text-xs">No hay usuarios registrados</div>'; 
-                lucide.createIcons();
+                // Renderizar lista completa o filtrada si ya había texto
+                filterAdminUsers();
             });
 
 
@@ -2237,11 +2283,12 @@
 
 
         window.toggleSuspend = async (uid, val) => { await updateDoc(doc(db,'artifacts',appId,'public','data','all_users',uid), {suspended: val}); };
-                window.openUserHistory = async (uid, email) => { 
+                        // 5. USUARIOS: HISTORIAL CON ESTADOS DINÁMICOS
+        window.openUserHistory = async (uid, email) => { 
             const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main')); 
             const balance = walletSnap.exists() ? walletSnap.data().balance : 0; 
             
-            // Renderizar el modal principal del historial
+            // Renderizar el modal principal
             openModal(`
                 <div class="h-[80vh] flex flex-col bounce-enter">
                     <div class="border-b border-gray-100 pb-4 mb-4">
@@ -2268,15 +2315,38 @@
                 h='<div class="text-center text-gray-400 py-10 text-xs">Sin movimientos.</div>'; 
             } else { 
                 s.forEach(d=>{ 
-                    const t=d.data(); 
-                    // AQUI ESTA EL CAMBIO: Se agrega onclick, cursor pointer y efectos hover
+                    const t = d.data(); 
+                    
+                    // --- LÓGICA DE VISUALIZACIÓN DINÁMICA ---
+                    let displayText = t.description; // Por defecto usamos la descripción original
+                    let amountColor = t.amount > 0 ? 'text-success' : 'text-danger'; // Por defecto verde si suma, rojo si resta
+
+                    // Si es una RECARGA (Deposit), cambiamos el texto según el estado
+                    if (t.type === 'deposit') {
+                        const st = (t.status || '').toLowerCase(); // Convertimos a minúsculas para comparar fácil
+
+                        if (st === 'pending' || st === 'pendiente') {
+                            displayText = 'Recarga Pendiente';
+                            amountColor = 'text-amber-500'; // Naranja para pendientes
+                        } 
+                        else if (st === 'approved' || st === 'éxito' || st === 'exito' || st === 'success') {
+                            displayText = 'Recarga Exitosa';
+                            amountColor = 'text-emerald-600'; // Verde fuerte
+                        } 
+                        else if (st === 'rejected' || st === 'rechazado' || st === 'cancelled' || st === 'cancelado') {
+                            displayText = 'Recarga Cancelada';
+                            amountColor = 'text-rose-400 line-through opacity-60'; // Rojo claro y tachado
+                        }
+                    }
+                    // ----------------------------------------
+
                     h+=`
                     <div onclick="openUserTransactionDetail('${d.id}', '${uid}', '${email}')" class="neumo-card p-3 text-xs cursor-pointer hover:scale-[0.99] transition-transform relative group">
                         <div class="flex justify-between items-center">
-                            <p class="font-bold text-gray-700 truncate pr-4">${t.description}</p>
+                            <p class="font-bold text-gray-700 truncate pr-4">${displayText}</p>
                             <span class="text-[10px] text-gray-400 whitespace-nowrap">${t.timestamp?.toDate().toLocaleDateString()}</span>
                         </div>
-                        <p class="font-bold ${t.type==='deposit'?'text-success':'text-danger'} mt-1">
+                        <p class="font-bold ${amountColor} mt-1">
                             ${t.amount > 0 ? '$'+t.amount.toLocaleString() : (t.amount < 0 ? '-$'+Math.abs(t.amount).toLocaleString() : 'Info')}
                         </p>
                         <div class="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -2288,6 +2358,7 @@
             document.getElementById('usr-hist-list').innerHTML=h; 
             lucide.createIcons();
         };
+
                 window.openUserTransactionDetail = async (txId, uid, email) => {
             // Obtener datos frescos de la transacción
             const txDoc = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'transactions', txId));
@@ -4854,6 +4925,400 @@ window.filterExpirations = (mode) => {
                 return (num || 1) * 30;
             }
             return 30; // Default
+        };
+        
+        // ======================================================
+        // MOSTRAR FICHA DE DATOS (CON BOTÓN DE EDICIÓN)
+        // ======================================================
+        window.showUserDetails = async (uid) => {
+            // Buscamos datos frescos
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
+            const snap = await getDoc(docRef);
+            
+            if(!snap.exists()) return showToast('Usuario no encontrado', 'error');
+            const u = snap.data();
+
+            openModal(`
+                <div class="text-center bounce-enter pt-4 relative">
+                    <button onclick="editUserDetails('${uid}')" class="absolute top-0 right-2 p-2.5 text-gray-400 hover:text-indigo-600 transition-colors bg-white rounded-xl hover:bg-indigo-50 border border-gray-100 shadow-sm z-20 group" title="Editar Información">
+                        <i data-lucide="pencil" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                    </button>
+
+                    <div class="w-20 h-20 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg text-white font-black text-2xl border-4 border-white">
+                        ${(u.email||'??').substring(0,2).toUpperCase()}
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">${u.fullName || 'Sin Nombre'}</h3>
+                    <p class="text-xs text-gray-500 mb-6 font-mono bg-gray-100 inline-block px-2 py-1 rounded">${u.email}</p>
+
+                    <div class="space-y-3 text-left max-w-xs mx-auto">
+                        <div class="neumo-card neumo-inset p-3 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0"><i data-lucide="phone" class="w-5 h-5"></i></div>
+                            <div class="overflow-hidden flex-1">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">WhatsApp</p>
+                                <p class="font-bold text-gray-700 text-sm truncate">${u.whatsapp || 'No registrado'}</p>
+                            </div>
+                            ${u.whatsapp ? `<button onclick="window.open('https://wa.me/${u.whatsapp}','_blank')" class="text-green-500 hover:text-green-700 bg-white p-2 rounded-lg shadow-sm border border-green-100"><i data-lucide="message-circle" class="w-4 h-4"></i></button>` : ''}
+                        </div>
+                        
+                        <div class="neumo-card neumo-inset p-3 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0"><i data-lucide="map-pin" class="w-5 h-5"></i></div>
+                            <div class="overflow-hidden">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">Ciudad</p>
+                                <p class="font-bold text-gray-700 text-sm truncate">${u.city || 'No registrada'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl mt-6 shadow-lg">Cerrar Ficha</button>
+                </div>
+            `);
+            lucide.createIcons();
+        };
+
+        // --- FUNCIÓN NUEVA: MODO EDICIÓN ---
+        window.editUserDetails = async (uid) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
+            const snap = await getDoc(docRef);
+            if(!snap.exists()) return;
+            const u = snap.data();
+
+            openModal(`
+                <div class="text-left bounce-enter pt-2">
+                    <div class="text-center mb-6">
+                        <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-2 neumo-card neumo-inset"><i data-lucide="user-cog" class="w-6 h-6"></i></div>
+                        <h3 class="text-lg font-bold text-gray-800">Editar Información</h3>
+                        <p class="text-xs text-gray-400">${u.email}</p>
+                    </div>
+                    
+                    <form onsubmit="saveUserDetails(event, '${uid}')" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Nombre y Apellido</label>
+                            <div class="relative">
+                                <i data-lucide="user" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+                                <input type="text" id="edit-u-name" value="${u.fullName || ''}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700" placeholder="Nombre completo">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-green-600 uppercase mb-1 ml-1">WhatsApp</label>
+                            <div class="relative">
+                                <i data-lucide="phone" class="absolute left-3 top-3 w-4 h-4 text-green-500"></i>
+                                <input type="number" id="edit-u-whatsapp" value="${u.whatsapp || ''}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700" placeholder="Solo números">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-orange-500 uppercase mb-1 ml-1">Ciudad / Municipio</label>
+                            <div class="relative">
+                                <i data-lucide="map-pin" class="absolute left-3 top-3 w-4 h-4 text-orange-500"></i>
+                                <input type="text" id="edit-u-city" value="${u.city || ''}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700" placeholder="Ciudad">
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3 mt-6 pt-2">
+                            <button type="button" onclick="showUserDetails('${uid}')" class="neumo-button flex-1 bg-white text-gray-500 border border-gray-200 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors">Cancelar</button>
+                            <button type="submit" class="neumo-button flex-1 bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `);
+            lucide.createIcons();
+        };
+
+        // --- FUNCIÓN NUEVA: GUARDAR CAMBIOS ---
+        window.saveUserDetails = async (e, uid) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.disabled = true; 
+            btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>';
+
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid), {
+                    fullName: document.getElementById('edit-u-name').value,
+                    whatsapp: document.getElementById('edit-u-whatsapp').value,
+                    city: document.getElementById('edit-u-city').value
+                });
+                
+                showToast('Datos actualizados correctamente', 'success');
+                showUserDetails(uid); // Regresamos a la ficha ya actualizada
+            } catch(err) {
+                console.error(err);
+                showToast('Error al actualizar: ' + err.message, 'error');
+                btn.disabled = false; 
+                btn.innerHTML = originalText;
+            }
+        };
+        
+                // ======================================================
+        // FUNCIÓN: ELIMINAR HISTORIAL DE USUARIO (CON REPORTE DETALLADO)
+        // ======================================================
+        window.clearUserHistory = async (uid, email) => {
+            // 1. Confirmación de Seguridad
+            if(!confirm(`⚠️ ¿ATENCIÓN?\n\nEstás a punto de borrar TODO el historial de transacciones de:\n${email}\n\nEsto eliminará registros de compras, recargas y movimientos.\nEl saldo actual NO se verá afectado.\n\n¿Estás seguro de continuar?`)) return;
+
+            try {
+                // 2. Referencia a la subcolección de transacciones
+                const transactionsRef = collection(db, 'artifacts', appId, 'users', uid, 'transactions');
+                
+                // 3. Obtenemos todos los documentos
+                const snapshot = await getDocs(transactionsRef);
+
+                if (snapshot.empty) {
+                    return showToast('El historial de este usuario ya está vacío.', 'info');
+                }
+
+                // 4. Contamos cuántos archivos vamos a borrar
+                const totalRecords = snapshot.size;
+
+                // 5. Borrado masivo (Promise.all para velocidad)
+                const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+                await Promise.all(deletePromises);
+
+                // MENSAJE PERSONALIZADO CON CANTIDAD Y USUARIO
+                showToast(`Eliminado: Se borraron ${totalRecords} registros del historial de ${email}`, 'success');
+
+            } catch (e) {
+                console.error(e);
+                showToast('Error al eliminar historial: ' + e.message, 'error');
+            }
+        };
+        
+        // ======================================================
+        // 1. MI PERFIL: VISTA DE LECTURA + ESTADÍSTICAS
+        // ======================================================
+        window.openUserProfile = async () => {
+            if(!currentUser) return;
+            
+            // 1. Cargar datos del perfil
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+            const snap = await getDoc(docRef);
+            const u = snap.exists() ? snap.data() : {};
+
+            // 2. Cargar billetera (Para ver ganancias actuales)
+            const walletRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main');
+            const walletSnap = await getDoc(walletRef);
+            const currentProfit = walletSnap.exists() ? (walletSnap.data().profit || 0) : 0;
+
+            // 3. Calcular Totales Históricos (Recargado y Gastado)
+            let totalDeposited = 0;
+            let totalSpent = 0;
+
+            try {
+                const txRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions');
+                const txSnaps = await getDocs(txRef);
+                
+                txSnaps.forEach(doc => {
+                    const t = doc.data();
+                    // Sumar Recargas (Deposit)
+                    if (t.type === 'deposit') {
+                        // Filtramos para no sumar recargas canceladas o pendientes si el sistema guarda esos estados
+                        const status = (t.status || '').toLowerCase();
+                        if (status !== 'rejected' && status !== 'cancelled' && status !== 'cancelado' && status !== 'pending') {
+                            totalDeposited += (Number(t.amount) || 0);
+                        }
+                    }
+                    // Sumar Compras (Purchase)
+                    if (t.type === 'purchase') {
+                        totalSpent += (Number(t.amount) || 0);
+                    }
+                });
+            } catch (e) { console.log("Error calculando totales", e); }
+
+            // 4. Renderizar Modal
+            openModal(`
+                <div class="text-center bounce-enter pt-4 relative h-[75vh] flex flex-col">
+                    <button onclick="enableMyProfileEdit()" class="absolute top-0 right-2 p-2.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors shadow-sm z-20 group border border-indigo-100" title="Editar mis datos">
+                        <i data-lucide="pencil" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                    </button>
+
+                    <div class="w-20 h-20 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg text-white font-black text-2xl border-4 border-white flex-shrink-0">
+                        ${(currentUser.email||'??').substring(0,2).toUpperCase()}
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-gray-800 mb-1 capitalize">${u.fullName || 'Sin Nombre'}</h3>
+                    <p class="text-xs text-gray-500 mb-4 font-mono bg-gray-100 inline-block px-2 py-1 rounded">${currentUser.email}</p>
+
+                    <div class="flex-1 overflow-y-auto scrollbar-hide px-1 pb-4 space-y-3 text-left max-w-xs mx-auto w-full">
+                        
+                        <div class="neumo-card neumo-inset p-3 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0"><i data-lucide="phone" class="w-5 h-5"></i></div>
+                            <div class="overflow-hidden flex-1">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">WhatsApp</p>
+                                <p class="font-bold text-gray-700 text-sm truncate">${u.whatsapp || 'No registrado'}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="neumo-card neumo-inset p-3 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0"><i data-lucide="map-pin" class="w-5 h-5"></i></div>
+                            <div class="overflow-hidden">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">Ciudad</p>
+                                <p class="font-bold text-gray-700 text-sm truncate">${u.city || 'No registrada'}</p>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <p class="text-[10px] font-black text-gray-300 uppercase tracking-widest text-center mb-2">Resumen Financiero</p>
+                            
+                            <div class="grid gap-3">
+                                <div class="neumo-card p-3 flex justify-between items-center border-l-4 border-emerald-400">
+                                    <div>
+                                        <p class="text-[9px] font-bold text-gray-400 uppercase">Total Recargado</p>
+                                        <p class="text-xs text-gray-500">Histórico</p>
+                                    </div>
+                                    <p class="text-lg font-black text-emerald-600">$${totalDeposited.toLocaleString()}</p>
+                                </div>
+
+                                <div class="neumo-card p-3 flex justify-between items-center border-l-4 border-rose-400">
+                                    <div>
+                                        <p class="text-[9px] font-bold text-gray-400 uppercase">Total Gastado</p>
+                                        <p class="text-xs text-gray-500">En compras</p>
+                                    </div>
+                                    <p class="text-lg font-black text-rose-500">$${totalSpent.toLocaleString()}</p>
+                                </div>
+
+                                <div class="neumo-card p-3 flex justify-between items-center border-l-4 border-indigo-400">
+                                    <div>
+                                        <p class="text-[9px] font-bold text-gray-400 uppercase">Saldo Ganancias</p>
+                                        <p class="text-xs text-gray-500">Disponible</p>
+                                    </div>
+                                    <p class="text-lg font-black text-indigo-600">$${currentProfit.toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl mt-2 shadow-lg flex-shrink-0">Cerrar</button>
+                </div>
+            `);
+            lucide.createIcons();
+        };
+        
+                // ======================================================
+        // 2. MI PERFIL: MODO EDICIÓN
+        // ======================================================
+        window.enableMyProfileEdit = async () => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+            const snap = await getDoc(docRef);
+            const u = snap.exists() ? snap.data() : {};
+
+            openModal(`
+                <div class="text-left bounce-enter">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center neumo-card neumo-inset">
+                            <i data-lucide="user-cog" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800 leading-tight">Editar Perfil</h3>
+                            <p class="text-xs text-gray-400">Modifica tus datos</p>
+                        </div>
+                    </div>
+                    
+                    <form onsubmit="saveMyProfile(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Nombre y Apellido</label>
+                            <div class="relative">
+                                <i data-lucide="user" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+                                <input type="text" id="my-profile-name" value="${u.fullName || ''}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" required placeholder="Tu nombre completo">
+                            </div>
+                            <p class="text-[9px] text-orange-400 mt-1 ml-1">* Solo puedes cambiar el nombre cada 28 días.</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-green-600 uppercase mb-1 ml-1">WhatsApp</label>
+                                <div class="relative">
+                                    <i data-lucide="phone" class="absolute left-3 top-3 w-4 h-4 text-green-500"></i>
+                                    <input type="number" id="my-profile-whatsapp" value="${u.whatsapp || ''}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="Número">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-orange-500 uppercase mb-1 ml-1">Ciudad</label>
+                                <div class="relative">
+                                    <i data-lucide="map-pin" class="absolute left-3 top-3 w-4 h-4 text-orange-500"></i>
+                                    <input type="text" id="my-profile-city" value="${u.city || ''}" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="Ciudad">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3 mt-4">
+                            <button type="button" onclick="openUserProfile()" class="neumo-button flex-1 bg-gray-100 text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-200">Cancelar</button>
+                            <button type="submit" class="neumo-button flex-[2] bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `);
+            lucide.createIcons();
+        };
+
+          // ======================================================
+        // 3. GUARDAR PERFIL (CON RESTRICCIÓN Y RETORNO A VISTA)
+        // ======================================================
+        window.saveMyProfile = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true; 
+            btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>';
+
+            try {
+                const newName = document.getElementById('my-profile-name').value.trim();
+                const newWhatsapp = document.getElementById('my-profile-whatsapp').value.trim();
+                const newCity = document.getElementById('my-profile-city').value.trim();
+
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+                
+                const snap = await getDoc(userRef);
+                const currentData = snap.data();
+                const currentName = currentData.fullName || '';
+
+                let updateData = {
+                    whatsapp: newWhatsapp,
+                    city: newCity
+                };
+
+                if (newName !== currentName) {
+                    if (!isAdmin) {
+                        const lastUpdate = currentData.lastFullNameUpdate ? currentData.lastFullNameUpdate.toDate() : null;
+                        if (lastUpdate) {
+                            const now = new Date();
+                            const nextAllowedDate = new Date(lastUpdate);
+                            nextAllowedDate.setDate(nextAllowedDate.getDate() + 28);
+
+                            if (now < nextAllowedDate) {
+                                const diffTime = Math.abs(nextAllowedDate - now);
+                                const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                throw new Error(`⚠️ Solo puedes cambiar tu nombre cada 28 días. Espera ${daysRemaining} días más.`);
+                            }
+                        }
+                    }
+                    updateData.fullName = newName;
+                    updateData.lastFullNameUpdate = serverTimestamp();
+                }
+
+                await updateDoc(userRef, updateData);
+                
+                // Actualizar sidebar visualmente
+                const sidebarNameEl = document.getElementById('sidebar-user-name');
+                if(sidebarNameEl && updateData.fullName) sidebarNameEl.textContent = updateData.fullName;
+                
+                showToast('Perfil actualizado correctamente', 'success');
+                
+                // VOLVER A LA VISTA DE LECTURA PARA VER LOS CAMBIOS
+                openUserProfile(); 
+
+            } catch (err) {
+                console.error(err);
+                showToast(err.message, 'error');
+                btn.disabled = false; 
+                btn.innerHTML = originalHTML;
+            }
         };
 
     </script>
