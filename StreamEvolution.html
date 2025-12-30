@@ -5087,8 +5087,8 @@ window.filterExpirations = (mode) => {
             }
         };
         
-        // ======================================================
-        // 1. MI PERFIL: VISTA DE LECTURA + ESTADÍSTICAS
+         // ======================================================
+        // 1. MI PERFIL: VISTA DE LECTURA (LÁPIZ A LA IZQUIERDA)
         // ======================================================
         window.openUserProfile = async () => {
             if(!currentUser) return;
@@ -5098,12 +5098,12 @@ window.filterExpirations = (mode) => {
             const snap = await getDoc(docRef);
             const u = snap.exists() ? snap.data() : {};
 
-            // 2. Cargar billetera (Para ver ganancias actuales)
+            // 2. Cargar billetera
             const walletRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main');
             const walletSnap = await getDoc(walletRef);
             const currentProfit = walletSnap.exists() ? (walletSnap.data().profit || 0) : 0;
 
-            // 3. Calcular Totales Históricos (Recargado y Gastado)
+            // 3. Calcular Totales Históricos
             let totalDeposited = 0;
             let totalSpent = 0;
 
@@ -5113,15 +5113,12 @@ window.filterExpirations = (mode) => {
                 
                 txSnaps.forEach(doc => {
                     const t = doc.data();
-                    // Sumar Recargas (Deposit)
                     if (t.type === 'deposit') {
-                        // Filtramos para no sumar recargas canceladas o pendientes si el sistema guarda esos estados
                         const status = (t.status || '').toLowerCase();
                         if (status !== 'rejected' && status !== 'cancelled' && status !== 'cancelado' && status !== 'pending') {
                             totalDeposited += (Number(t.amount) || 0);
                         }
                     }
-                    // Sumar Compras (Purchase)
                     if (t.type === 'purchase') {
                         totalSpent += (Number(t.amount) || 0);
                     }
@@ -5131,7 +5128,7 @@ window.filterExpirations = (mode) => {
             // 4. Renderizar Modal
             openModal(`
                 <div class="text-center bounce-enter pt-4 relative h-[75vh] flex flex-col">
-                    <button onclick="enableMyProfileEdit()" class="absolute top-0 right-2 p-2.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors shadow-sm z-20 group border border-indigo-100" title="Editar mis datos">
+                    <button onclick="enableMyProfileEdit()" class="absolute top-0 left-0 p-2.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors shadow-sm z-20 group border border-indigo-100" title="Editar mis datos">
                         <i data-lucide="pencil" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
                     </button>
 
@@ -5165,31 +5162,21 @@ window.filterExpirations = (mode) => {
                             
                             <div class="grid gap-3">
                                 <div class="neumo-card p-3 flex justify-between items-center border-l-4 border-emerald-400">
-                                    <div>
-                                        <p class="text-[9px] font-bold text-gray-400 uppercase">Total Recargado</p>
-                                        <p class="text-xs text-gray-500">Histórico</p>
-                                    </div>
+                                    <div><p class="text-[9px] font-bold text-gray-400 uppercase">Total Recargado</p><p class="text-xs text-gray-500">Histórico</p></div>
                                     <p class="text-lg font-black text-emerald-600">$${totalDeposited.toLocaleString()}</p>
                                 </div>
 
                                 <div class="neumo-card p-3 flex justify-between items-center border-l-4 border-rose-400">
-                                    <div>
-                                        <p class="text-[9px] font-bold text-gray-400 uppercase">Total Gastado</p>
-                                        <p class="text-xs text-gray-500">En compras</p>
-                                    </div>
+                                    <div><p class="text-[9px] font-bold text-gray-400 uppercase">Total Gastado</p><p class="text-xs text-gray-500">En compras</p></div>
                                     <p class="text-lg font-black text-rose-500">$${totalSpent.toLocaleString()}</p>
                                 </div>
 
                                 <div class="neumo-card p-3 flex justify-between items-center border-l-4 border-indigo-400">
-                                    <div>
-                                        <p class="text-[9px] font-bold text-gray-400 uppercase">Saldo Ganancias</p>
-                                        <p class="text-xs text-gray-500">Disponible</p>
-                                    </div>
+                                    <div><p class="text-[9px] font-bold text-gray-400 uppercase">Saldo Ganancias</p><p class="text-xs text-gray-500">Disponible</p></div>
                                     <p class="text-lg font-black text-indigo-600">$${currentProfit.toLocaleString()}</p>
                                 </div>
                             </div>
                         </div>
-
                     </div>
 
                     <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl mt-2 shadow-lg flex-shrink-0">Cerrar</button>
