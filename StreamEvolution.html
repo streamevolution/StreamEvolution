@@ -237,6 +237,9 @@
                 </div>
             </div>
             <div class="p-4 space-y-2 overflow-y-auto flex-1 scrollbar-hide">
+                            <button id="admin-cocina-btn" onclick="openCocinaExpress(); toggleSidebar();" class="neumo-button hidden w-full flex items-center gap-3 p-3.5 rounded-xl text-orange-500 bg-orange-50/50 hover:bg-orange-100 transition-colors mb-2 shadow-sm">
+                    <i data-lucide="chef-hat" class="w-5 h-5"></i><span class="text-sm font-medium">Cocina Express</span>
+                </button>
                 <div id="user-menu-items">
                     <div onclick="switchView('user'); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl bg-accent/10 text-accent font-semibold cursor-pointer">
                         <i data-lucide="home" class="w-5 h-5"></i><span class="text-sm">Inicio</span>
@@ -631,11 +634,21 @@
                 if (isAdmin) {
                     document.getElementById('user-menu-items').classList.add('hidden');
                     document.getElementById('admin-menu-items').classList.remove('hidden');
+                    
+                    // MOSTRAR BOTÓN COCINA SOLO PARA ADMIN
+                    const cocinaBtn = document.getElementById('admin-cocina-btn');
+                    if(cocinaBtn) cocinaBtn.classList.remove('hidden');
+
                     initAdminPanel();
                     switchView('admin'); 
                 } else {
                     document.getElementById('user-menu-items').classList.remove('hidden');
                     document.getElementById('admin-menu-items').classList.add('hidden');
+                    
+                    // OCULTAR BOTÓN COCINA PARA CLIENTES
+                    const cocinaBtn = document.getElementById('admin-cocina-btn');
+                    if(cocinaBtn) cocinaBtn.classList.add('hidden');
+
                     switchView('user');
                 }
 
