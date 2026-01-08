@@ -818,35 +818,37 @@
             });
         }
 
-          function renderUserCategories() {
+         function renderUserCategories() {
             const grid = document.getElementById('categories-grid');
             if (!grid) return;
             if (window.categoriesCache.length === 0) { grid.innerHTML = `<div class="col-span-full text-center text-gray-400 text-sm py-8">No hay servicios disponibles.</div>`; return; }
             
             let html = '';
             window.categoriesCache.forEach(cat => {
-                // CAMBIOS AQUÍ:
-                // 1. w-full h-32: La imagen intenta ocupar todo el ancho y una altura considerable.
-                // 2. object-contain: Asegura que la imagen 3D completa se vea sin recortarse.
+                // CAMBIOS REALIZADOS:
+                // 1. h-36: Aumentamos la altura de la imagen (antes era h-32).
+                // 2. scale-105: Hacemos un pequeño zoom permanente para que llene más visualmente.
+                // 3. -mb-2: Un margen negativo pequeño abajo para acercar el texto y ganar espacio.
                 const iconContent = cat.imageUrl 
-                    ? `<img src="${cat.imageUrl}" class="w-full h-32 object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-300" alt="${cat.name}">` 
+                    ? `<img src="${cat.imageUrl}" class="w-full h-36 object-contain transform scale-105 drop-shadow-lg group-hover:scale-115 transition-transform duration-300 -mb-2" alt="${cat.name}">` 
                     : `<i data-lucide="${cat.icon || 'box'}" class="w-16 h-16 text-${cat.color || 'gray'}-500 group-hover:scale-110 transition-transform duration-300"></i>`;
 
                 html += `
-                <div onclick="openCategoryModule('${cat.slug || cat.id}', '${cat.name}')" class="bg-white rounded-[1.5rem] p-3 flex flex-col items-center justify-between cursor-pointer shadow-md hover:shadow-xl transition-all hover:scale-[1.02] group h-44 border border-gray-100 relative overflow-hidden">
+                <div onclick="openCategoryModule('${cat.slug || cat.id}', '${cat.name}')" class="bg-white rounded-[1.5rem] p-2 flex flex-col items-center justify-between cursor-pointer shadow-md hover:shadow-xl transition-all hover:scale-[1.02] group h-48 border border-gray-100 relative overflow-hidden">
                     
                     <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-gray-50 to-transparent opacity-50"></div>
                     
-                    <div class="relative z-10 flex-1 flex items-center justify-center w-full">
+                    <div class="relative z-10 flex-1 flex items-center justify-center w-full overflow-visible">
                         ${iconContent}
                     </div>
                     
-                    <span class="relative z-10 font-bold text-gray-800 text-sm text-center tracking-wide mb-1 group-hover:text-indigo-600 transition-colors">${cat.name}</span>
+                    <span class="relative z-10 font-bold text-gray-800 text-sm text-center tracking-wide mb-2 group-hover:text-indigo-600 transition-colors">${cat.name}</span>
                 </div>`;
             });
             grid.innerHTML = html; 
             lucide.createIcons();
         }
+
 
 
         function renderAdminCategories() {
