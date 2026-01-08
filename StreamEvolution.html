@@ -818,17 +818,36 @@
             });
         }
 
-        function renderUserCategories() {
+          function renderUserCategories() {
             const grid = document.getElementById('categories-grid');
             if (!grid) return;
             if (window.categoriesCache.length === 0) { grid.innerHTML = `<div class="col-span-full text-center text-gray-400 text-sm py-8">No hay servicios disponibles.</div>`; return; }
+            
             let html = '';
             window.categoriesCache.forEach(cat => {
-                const color = cat.color || 'slate';
-                html += `<div onclick="openCategoryModule('${cat.slug || cat.id}', '${cat.name}')" class="neumo-card p-5 flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 group h-36"><div class="w-14 h-14 rounded-2xl bg-${color}-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 neumo-inset"><i data-lucide="${cat.icon || 'box'}" class="w-7 h-7 text-${color}-600"></i></div><span class="font-bold text-gray-600 text-xs text-center group-hover:text-gray-900 transition-colors uppercase tracking-wide">${cat.name}</span></div>`;
+                // CAMBIOS AQUÍ:
+                // 1. w-full h-32: La imagen intenta ocupar todo el ancho y una altura considerable.
+                // 2. object-contain: Asegura que la imagen 3D completa se vea sin recortarse.
+                const iconContent = cat.imageUrl 
+                    ? `<img src="${cat.imageUrl}" class="w-full h-32 object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-300" alt="${cat.name}">` 
+                    : `<i data-lucide="${cat.icon || 'box'}" class="w-16 h-16 text-${cat.color || 'gray'}-500 group-hover:scale-110 transition-transform duration-300"></i>`;
+
+                html += `
+                <div onclick="openCategoryModule('${cat.slug || cat.id}', '${cat.name}')" class="bg-white rounded-[1.5rem] p-3 flex flex-col items-center justify-between cursor-pointer shadow-md hover:shadow-xl transition-all hover:scale-[1.02] group h-44 border border-gray-100 relative overflow-hidden">
+                    
+                    <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-gray-50 to-transparent opacity-50"></div>
+                    
+                    <div class="relative z-10 flex-1 flex items-center justify-center w-full">
+                        ${iconContent}
+                    </div>
+                    
+                    <span class="relative z-10 font-bold text-gray-800 text-sm text-center tracking-wide mb-1 group-hover:text-indigo-600 transition-colors">${cat.name}</span>
+                </div>`;
             });
-            grid.innerHTML = html; lucide.createIcons();
+            grid.innerHTML = html; 
+            lucide.createIcons();
         }
+
 
         function renderAdminCategories() {
             const list = document.getElementById('admin-categories-list');
@@ -882,9 +901,8 @@
             return html;
         }
 
-        // 2. Modal para Agregar Categoría
+         // 2. Modal para Agregar Categoría (ACTUALIZADO CON IMAGEN)
         window.openAddCategoryModal = () => {
-            // Por defecto marcamos email y pass como sugerencia
             openModal(`
             <div class="text-left bounce-enter">
                 <h3 class="text-xl font-bold text-gray-800 mb-4">Nuevo Servicio</h3>
@@ -893,10 +911,18 @@
                         <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre</label><input type="text" id="cat-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required></div>
                         <div><label class="block text-xs font-bold text-accent uppercase mb-1">Orden</label><input type="number" id="cat-order" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold" placeholder="Ej: 1" required></div>
                     </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-indigo-500 uppercase mb-1">URL Imagen 3D (Opcional)</label>
+                        <input type="url" id="cat-image-url" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" placeholder="https://imgur.com/...">
+                        <p class="text-[9px] text-gray-400 mt-1">Si dejas esto vacío, se usará el icono Lucide.</p>
+                    </div>
+
                     <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Slug (ID único)</label><input type="text" id="cat-slug" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: streaming"></div>
+                    
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono (Lucide)</label><input type="text" id="cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: tv"></div>
-                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm"><option value="amber">Ámbar</option><option value="blue">Azul</option><option value="emerald">Esmeralda</option><option value="rose">Rosa</option><option value="purple">Púrpura</option><option value="indigo">Índigo</option><option value="slate">Gris</option></select></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono (Fallback)</label><input type="text" id="cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" required placeholder="ej: tv" value="box"></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm"><option value="slate">Gris</option><option value="blue">Azul</option><option value="indigo">Índigo</option><option value="emerald">Verde</option><option value="rose">Rojo</option><option value="amber">Ambar</option></select></div>
                     </div>
                     
                     ${getFieldsConfigHTML(['email', 'password'])} 
@@ -906,14 +932,14 @@
             </div>`);
         };
 
-        // 3. Modal para Editar Categoría
+
+          // 3. Modal para Editar Categoría (ACTUALIZADO)
         window.openEditCategoryModal = (id) => {
             const cat = window.categoriesCache.find(c => c.id === id);
             if (!cat) return showToast('Categoría no encontrada', 'error');
             const colors = ['amber', 'blue', 'emerald', 'rose', 'purple', 'indigo', 'slate'];
             const colorOptions = colors.map(c => `<option value="${c}" ${c === cat.color ? 'selected' : ''}>${c.charAt(0).toUpperCase() + c.slice(1)}</option>`).join('');
             
-            // Recuperamos la configuración guardada o array vacío
             const savedFields = cat.fields || [];
 
             openModal(`
@@ -924,7 +950,14 @@
                         <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre</label><input type="text" id="edit-cat-name" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.name}" required></div>
                         <div><label class="block text-xs font-bold text-accent uppercase mb-1">Orden</label><input type="number" id="edit-cat-order" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm font-bold" value="${cat.order!==undefined?cat.order:''}" placeholder="Ej: 1" required></div>
                     </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-indigo-500 uppercase mb-1">URL Imagen 3D</label>
+                        <input type="url" id="edit-cat-image-url" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.imageUrl || ''}" placeholder="https://...">
+                    </div>
+
                     <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Slug</label><input type="text" id="edit-cat-slug" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.slug}" required></div>
+                    
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Icono</label><input type="text" id="edit-cat-icon" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm" value="${cat.icon}" required></div>
                         <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Color</label><select id="edit-cat-color" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">${colorOptions}</select></div>
@@ -937,7 +970,8 @@
             </div>`);
         };
 
-        // 4. Guardar Nueva Categoría
+
+         // 4. Guardar Nueva Categoría (ACTUALIZADO)
         window.saveCategory = async (e) => { 
             e.preventDefault(); 
             const selectedFields = Array.from(document.querySelectorAll('.field-checkbox:checked')).map(cb => cb.value);
@@ -946,10 +980,11 @@
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'categories'), { 
                     name: document.getElementById('cat-name').value, 
                     slug: document.getElementById('cat-slug').value.toLowerCase().trim(), 
+                    imageUrl: document.getElementById('cat-image-url').value, // <--- GUARDAMOS LA IMAGEN
                     icon: document.getElementById('cat-icon').value, 
                     color: document.getElementById('cat-color').value,
                     order: Number(document.getElementById('cat-order').value),
-                    fields: selectedFields, // Guardamos configuración
+                    fields: selectedFields, 
                     createdAt: serverTimestamp() 
                 }); 
                 showToast('Categoría creada', 'success'); 
@@ -957,7 +992,8 @@
             } catch(err) { showToast('Error', 'error'); } 
         };
 
-        // 5. Actualizar Categoría Existente
+
+            // 5. Actualizar Categoría Existente (ACTUALIZADO)
         window.updateCategory = async (e, id) => {
             e.preventDefault();
             const selectedFields = Array.from(document.querySelectorAll('.field-checkbox:checked')).map(cb => cb.value);
@@ -966,15 +1002,17 @@
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id), {
                     name: document.getElementById('edit-cat-name').value,
                     slug: document.getElementById('edit-cat-slug').value.toLowerCase().trim(),
+                    imageUrl: document.getElementById('edit-cat-image-url').value, // <--- GUARDAMOS
                     icon: document.getElementById('edit-cat-icon').value,
                     color: document.getElementById('edit-cat-color').value,
                     order: Number(document.getElementById('edit-cat-order').value),
-                    fields: selectedFields // Guardamos configuración
+                    fields: selectedFields 
                 });
                 showToast('Categoría actualizada', 'success');
                 closeModal();
             } catch(err) { showToast('Error al actualizar', 'error'); }
         };
+
         
         window.deleteCategory = async (id) => { if(confirm("¿Eliminar categoría?")) try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id)); showToast('Eliminada', 'success'); } catch(err) { showToast('Error', 'error'); } };
 
@@ -3074,7 +3112,7 @@
         // ======================================================
 
 
-                window.buyProduct = (id, name, price, stock, desc, imgUrl, category) => { 
+           window.buyProduct = (id, name, price, stock, desc, imgUrl, category) => { 
             // 1. Definimos qué categorías son infinitas
             const infiniteCategories = ['libros', 'documentos', 'herramientas', 'cursos', 'liberación móvil', 'liberacion-movil', 'liberacion movil', 'game pass'];
             
@@ -3089,12 +3127,22 @@
                 isInfinite = true;
             }
 
-            // 3. Lógica del botón: Si es infinito, el botón SIEMPRE está activo, aunque stock sea 0
+            // 3. Lógica del botón de compra
             const isButtonDisabled = (stock <= 0 && !isInfinite) ? 'disabled style="opacity:0.5; pointer-events:none;"' : '';
             const buttonText = (stock <= 0 && !isInfinite) ? 'Agotado' : `Confirmar Compra <i data-lucide="chevron-right" class="w-4 h-4"></i>`;
 
+            // 4. [NUEVO] Obtener el nombre de la categoría para poder regresar
+            // Buscamos en la memoria el nombre bonito (ej: "Streaming") usando el slug (ej: "streaming")
+            const catObj = window.categoriesCache.find(c => c.slug === category);
+            const catName = catObj ? catObj.name : 'Atrás';
+
             openModal(`
-                <div class="text-center bounce-enter">
+                <div class="text-center bounce-enter relative">
+                    
+                    <button onclick="openCategoryModule('${category}', '${catName}')" class="neumo-button absolute top-4 left-4 text-gray-400 hover:text-gray-800 z-50 bg-bg-primary rounded-full p-2 transition-colors" title="Regresar a ${catName}">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+
                     <div class="mx-auto mb-4 w-24 h-24 relative">
                         <img src="${imgUrl}" class="w-full h-full rounded-2xl object-cover shadow-md bg-gray-100 neumo-card">
                         <div class="neumo-button absolute -bottom-2 -right-2 bg-gray-900 text-white p-1.5 rounded-xl shadow-lg border-2 border-bg-primary"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div>
@@ -3112,6 +3160,7 @@
                 </div>
             `);
         };
+
 
                 window.processPurchase = async (pid, name, visualPrice) => {
             if(!currentUser) return showToast('Inicia sesión', 'error');
