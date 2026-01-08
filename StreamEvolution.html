@@ -106,7 +106,66 @@
         .bg-success { background-color: var(--color-success); }
         .text-danger { color: var(--color-danger); }
         .bg-danger { background-color: var(--color-danger); }
-        .hidden { display: none !important; }        
+        .hidden { display: none !important; }     
+                /* --- BADGES PREMIUM ANIMADOS (EFECTOS INCREÍBLES) --- */
+        .role-badge-premium {
+            position: relative;
+            overflow: hidden;
+            color: white !important; /* Texto blanco para contraste */
+            border: 1px solid rgba(255,255,255,0.4); /* Borde sutil */
+            background-size: 200% auto;
+            animation: gradient-move 3s linear infinite; /* Movimiento de fondo */
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+        
+        /* Efecto de "Destello" que pasa corriendo */
+        .role-badge-premium::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -200%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+            transform: skewX(-20deg);
+            animation: shine-sweep 3s infinite ease-in-out; /* Repite el brillo cada 3s */
+        }
+
+        /* Animación del fondo moviéndose */
+        @keyframes gradient-move { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        
+        /* Animación del destello */
+        @keyframes shine-sweep { 0% { left: -200%; } 20% { left: 200%; } 100% { left: 200%; } }
+
+        /* Colores Específicos Premium */
+        /* LIDER: Dorado Intenso + Resplandor Ámbar */
+        .badge-lider { 
+            background: linear-gradient(45deg, #f59e0b, #fbbf24, #d97706, #f59e0b); 
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+            border-color: #fcd34d;
+        }
+        
+        /* REVENDEDOR: Azul Neón + Resplandor Índigo */
+        .badge-reseller { 
+            background: linear-gradient(45deg, #4f46e5, #818cf8, #3730a3, #4f46e5); 
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.6);
+            border-color: #a5b4fc;
+        }
+
+        /* VIP: Púrpura Galáctico + Resplandor Violeta */
+        .badge-vip { 
+            background: linear-gradient(45deg, #9333ea, #c084fc, #6b21a8, #9333ea); 
+            box-shadow: 0 0 15px rgba(147, 51, 234, 0.6); 
+            border-color: #d8b4fe;
+        }
+
+        /* CLIENTE: Plata Metálica */
+        .badge-client { 
+            background: linear-gradient(45deg, #4b5563, #9ca3af, #374151, #4b5563); 
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }   
     </style>
 </head>
 <body class="text-gray-800 overflow-x-hidden min-h-screen relative bg-bg-primary selection:bg-accent">
@@ -222,82 +281,119 @@
         </header>
 
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300"></div>
-        <aside id="sidebar" class="neumo-flat fixed top-0 left-0 h-full w-72 shadow-2xl z-50 transition-transform duration-300 -translate-x-full flex flex-col" style="border-right: 1px solid rgba(0,0,0,0.05);">
-                        <div class="p-6 border-b border-gray-100">
-                <h2 class="font-bold text-lg text-gray-800">Mi Cuenta</h2>
-                
-                <p class="text-sm font-bold text-gray-700 truncate mt-1 capitalize" id="sidebar-user-name">Cargando...</p>
-                
-                <div class="flex items-center justify-between mt-3">
-                    <div id="sidebar-role-tag" class="inline-block bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded font-bold uppercase neumo-card neumo-flat">Cliente</div>
+          <aside id="sidebar" class="fixed top-0 left-0 h-full w-72 bg-[#f0f0f0] shadow-[10px_0_20px_rgba(163,177,198,0.3)] z-50 transition-transform duration-300 -translate-x-full flex flex-col border-r border-white/50">
+            
+            <div class="p-8 pb-4 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-gray-200 to-transparent rounded-bl-full opacity-50 pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col items-center text-center">
+                    <div class="w-20 h-20 rounded-full neumo-card flex items-center justify-center p-1 mb-3">
+                        <div class="w-full h-full rounded-full bg-gray-200 overflow-hidden flex items-center justify-center text-gray-500 font-bold text-xl neumo-inset">
+                            <span id="sidebar-avatar-initials">US</span> 
+                        </div>
+                    </div>
                     
-                    <button onclick="openUserProfile()" class="neumo-button px-3 py-1.5 rounded-lg text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 flex items-center gap-1 hover:bg-indigo-100 transition-colors shadow-sm">
-                        <i data-lucide="user-cog" class="w-3 h-3"></i> Mi Perfil
+                    <h2 id="sidebar-user-name" class="font-black text-gray-800 text-lg tracking-tight leading-tight mb-1 capitalize">Cargando...</h2>
+                    
+                    <div id="sidebar-role-tag" class="px-3 py-1 rounded-full bg-gray-200/50 border border-white text-[10px] font-bold uppercase tracking-widest text-gray-500 shadow-sm">
+                        Cliente
+                    </div>
+
+                    <button onclick="openUserProfile()" class="mt-4 text-xs font-bold text-indigo-500 hover:text-indigo-700 hover:underline flex items-center gap-1 transition-colors">
+                        <i data-lucide="user-cog" class="w-3 h-3"></i> Editar Perfil
                     </button>
                 </div>
             </div>
-            <div class="p-4 space-y-2 overflow-y-auto flex-1 scrollbar-hide">
-                            <button id="admin-cocina-btn" onclick="openCocinaExpress(); toggleSidebar();" class="neumo-button hidden w-full flex items-center gap-3 p-3.5 rounded-xl text-orange-500 bg-orange-50/50 hover:bg-orange-100 transition-colors mb-2 shadow-sm">
-                    <i data-lucide="chef-hat" class="w-5 h-5"></i><span class="text-sm font-medium">Cocina Express</span>
+
+            <div class="mx-6 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mb-2"></div>
+
+            <div class="p-4 space-y-1.5 overflow-y-auto flex-1 scrollbar-hide">
+                
+                <button id="admin-cocina-btn" onclick="openCocinaExpress(); toggleSidebar();" class="hidden w-full group relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 hover:bg-orange-50 border border-transparent hover:border-orange-100 mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center neumo-flat group-hover:scale-110 transition-transform shadow-sm">
+                        <i data-lucide="chef-hat" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-left">
+                        <span class="block font-bold text-gray-800 text-sm group-hover:text-orange-700">Cocina Express</span>
+                        <span class="block text-[10px] text-gray-400 group-hover:text-orange-400">Panel de pedidos</span>
+                    </div>
                 </button>
-                <div id="user-menu-items">
-                    <div onclick="switchView('user'); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl bg-accent/10 text-accent font-semibold cursor-pointer">
-                        <i data-lucide="home" class="w-5 h-5"></i><span class="text-sm">Inicio</span>
+
+                <div id="user-menu-items" class="space-y-1.5">
+                    
+                    <button onclick="switchView('user'); toggleSidebar();" class="w-full group flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-500 font-medium transition-all duration-300 hover:bg-[#f0f0f0] hover:text-indigo-600 hover:shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff]">
+                        <i data-lucide="home" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        <span class="text-sm">Inicio</span>
+                    </button>
+
+                    <button onclick="openReportModal(); toggleSidebar();" class="w-full group flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-500 font-medium transition-all duration-300 hover:bg-[#f0f0f0] hover:text-rose-500 hover:shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff]">
+                        <i data-lucide="life-buoy" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        <span class="text-sm">Reportar Fallo</span>
+                    </button>
+
+                    <button onclick="openSupportReplies(); toggleSidebar();" class="w-full group flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-500 font-medium transition-all duration-300 hover:bg-[#f0f0f0] hover:text-blue-500 hover:shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff]">
+                        <i data-lucide="message-circle-question" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        <span class="text-sm">Respuestas</span>
+                    </button>
+
+                    <button onclick="openNotifications(); toggleSidebar();" class="w-full group flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-500 font-medium transition-all duration-300 hover:bg-[#f0f0f0] hover:text-gray-800 hover:shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff]">
+                        <i data-lucide="clock" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        <span class="text-sm">Movimientos</span>
+                    </button>
+
+                    <button onclick="openRenewalModal(); toggleSidebar();" class="w-full group flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-500 font-medium transition-all duration-300 hover:bg-[#f0f0f0] hover:text-emerald-600 hover:shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff]">
+                        <i data-lucide="refresh-cw" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        <span class="text-sm">Renovar Servicio</span>
+                    </button>
+
+                    <button onclick="renderReferralsView(); toggleSidebar();" class="w-full group flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-500 font-medium transition-all duration-300 hover:bg-[#f0f0f0] hover:text-purple-600 hover:shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff]">
+                        <i data-lucide="users" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        <span class="text-sm">Mis Referidos</span>
+                    </button>
+                    
+                    <button id="btn-invite-reseller" onclick="openInviteModal(); toggleSidebar();" class="hidden w-full mt-2 group relative overflow-hidden flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-indigo-50 border border-indigo-100 transition-all hover:shadow-md">
+                         <div class="absolute inset-0 bg-indigo-100 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 opacity-50"></div>
+                         <i data-lucide="gift" class="w-5 h-5 text-indigo-600 relative z-10"></i>
+                         <span class="text-sm font-bold text-indigo-700 relative z-10">Invitar Amigos</span>
+                    </button>
+                </div>
+
+                <div id="admin-menu-items" class="hidden space-y-1.5">
+                    <div class="px-4 py-2 mt-2">
+                        <p class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Administración</p>
                     </div>
-                    <button onclick="openReportModal(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-500 hover:text-gray-800">
-                        <i data-lucide="life-buoy" class="w-5 h-5"></i><span class="text-sm font-medium">Reportar Fallo</span>
+
+                    <button onclick="switchView('admin'); returnToAdminDashboard(); toggleSidebar();" class="w-full group flex items-center gap-3 px-4 py-3 rounded-2xl bg-gray-800 text-white font-medium shadow-lg hover:bg-gray-700 transition-all transform hover:scale-[1.02]">
+                        <i data-lucide="layout-grid" class="w-5 h-5 text-accent"></i>
+                        <span class="text-sm">Panel Principal</span>
                     </button>
-                    <button onclick="openSupportReplies(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-500 hover:text-gray-800">
-                        <i data-lucide="message-circle-question" class="w-5 h-5"></i>
-                        <span class="text-sm font-medium">Respuestas Soporte</span>
+
+                    <button onclick="switchView('user'); toggleSidebar();" class="w-full group flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-500 font-medium transition-all duration-300 hover:bg-[#f0f0f0] hover:text-gray-900 hover:shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff]">
+                        <i data-lucide="shopping-bag" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        <span class="text-sm">Vista Tienda</span>
                     </button>
-                    <button onclick="openNotifications(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-500 hover:text-gray-800">
-                        <i data-lucide="clock" class="w-5 h-5"></i><span class="text-sm font-medium">Movimientos</span>
+                    
+                    <button onclick="openInviteModal(); toggleSidebar();" class="w-full group flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-500 font-medium transition-all duration-300 hover:bg-[#f0f0f0] hover:text-indigo-600 hover:shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff]">
+                        <i data-lucide="share-2" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                        <span class="text-sm">Invitar Amigos</span>
                     </button>
-                    <button onclick="openRenewalModal(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-500 hover:text-gray-800">
-                        <i data-lucide="refresh-cw" class="w-5 h-5"></i><span class="text-sm font-medium">Renovar</span>
-                    </button>
-                    <button onclick="renderReferralsView(); toggleSidebar();" class="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all duration-300 group mb-2">
-    <div class="p-2 bg-white rounded-lg shadow-sm group-hover:shadow-md text-gray-400 group-hover:text-indigo-500 transition-all">
-        <i data-lucide="users" class="w-5 h-5"></i>
-    </div>
-    <span class="font-medium group-hover:translate-x-1 transition-transform">Referidos</span>
-</button>
-                    <button id="btn-invite-reseller" onclick="openInviteModal(); toggleSidebar();" class="neumo-button hidden w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 transition-all">
-                        <i data-lucide="users" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
-                    </button>                         
                 </div>
                 
-                                                                                <div id="admin-menu-items" class="hidden">
-                    <div onclick="switchView('admin'); returnToAdminDashboard(); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl bg-gray-800 text-white font-semibold cursor-pointer mb-4 shadow-lg">
-                        <i data-lucide="layout-grid" class="w-5 h-5 text-accent"></i>
-                        <span class="text-sm">Panel Admin</span>
-                    </div>
-                    
-                    <div onclick="switchView('user'); toggleSidebar();" class="neumo-button flex items-center gap-3 p-3.5 rounded-xl text-gray-600 font-medium cursor-pointer hover:bg-gray-100 mb-2">
-                        <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-                        <span class="text-sm">Vista Tienda</span>
-                    </div>
-
-                    <button onclick="renderReferralsView(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-600 hover:bg-gray-100 transition-all mb-2">
-                        <i data-lucide="users" class="w-5 h-5"></i>
-                        <span class="text-sm font-medium">Mis Referidos</span>
-                    </button>
-
-                    <button onclick="openInviteModal(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 transition-all">
-                        <i data-lucide="share-2" class="w-5 h-5"></i><span class="text-sm font-bold">Invitar Amigos</span>
-                    </button>
-                </div>
-
-                                    <button onclick="renderMembershipsView(); toggleSidebar();" class="neumo-button w-full flex items-center gap-3 p-3.5 rounded-xl text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 transition-all mt-2">
-                        <i data-lucide="crown" class="w-5 h-5"></i><span class="text-sm font-bold">Membresías</span>
-                    </button>
+                 <button onclick="renderMembershipsView(); toggleSidebar();" class="w-full group flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-500 font-medium transition-all duration-300 hover:bg-[#f0f0f0] hover:text-amber-600 hover:shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff] mt-2">
+                    <i data-lucide="crown" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                    <span class="text-sm">Precios Membresías</span>
+                </button>
 
             </div>
-            <div class="p-4 border-t border-gray-100">
-                <button onclick="handleLogout()" class="neumo-button w-full flex items-center justify-center gap-2 p-3 rounded-xl text-rose-500 hover:bg-rose-50/10 font-bold transition-colors text-sm"><i data-lucide="log-out" class="w-4 h-4"></i> Cerrar Sesión</button>
+
+            <div class="p-6 border-t border-gray-200/50 bg-gray-50/30 backdrop-blur-sm">
+                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl text-rose-500 font-bold text-sm bg-white border border-gray-100 shadow-sm hover:bg-rose-50 hover:border-rose-100 hover:shadow-md transition-all active:scale-95">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> 
+                    Cerrar Sesión
+                </button>
             </div>
         </aside>
+
 
         <main id="user-view" class="px-5 py-6 space-y-8 max-w-md mx-auto md:max-w-4xl">
             <section class="flex justify-between items-center gap-4 overflow-x-auto pb-2 scrollbar-hide bounce-enter" style="animation-delay: 0.1s;">
@@ -630,10 +726,23 @@
                                 // --- INICIO NUEVA LÓGICA DE BADGES ---
                 const roleData = getRoleData(currentUserRole);
 
-                // Badge del Sidebar (Menú lateral)
+                     // Badge del Sidebar (Menú lateral) - VERSIÓN PREMIUM
                 const sidebarBadge = document.getElementById('sidebar-role-tag');
-                sidebarBadge.className = `inline-flex items-center gap-1 mt-2 text-[10px] px-2 py-0.5 rounded font-bold uppercase neumo-card neumo-flat ${roleData.bg} ${roleData.color}`;
-                sidebarBadge.innerHTML = `<i data-lucide="${roleData.icon}" class="w-3 h-3"></i> ${roleData.label}`;
+                
+                // Mapeamos los roles a las nuevas clases CSS
+                const badgeCssMap = {
+                    'lider': 'badge-lider',
+                    'reseller': 'badge-reseller',
+                    'vip': 'badge-vip',
+                    'client': 'badge-client'
+                };
+                const specificClass = badgeCssMap[currentUserRole] || 'badge-client';
+
+                // Aplicamos las clases premium + animación
+                sidebarBadge.className = `role-badge-premium ${specificClass} inline-flex items-center gap-1.5 mt-2 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest`;
+                
+                // Icono blanco para que resalte sobre el fondo degradado
+                sidebarBadge.innerHTML = `<i data-lucide="${roleData.icon}" class="w-3 h-3 text-white fill-white/20"></i> ${roleData.label}`;
                 
                 // Badge del Header (Arriba a la derecha)
                 const headerBadge = document.getElementById('header-role-badge');
@@ -1929,8 +2038,8 @@
             }
         };
 
-                        // ======================================================
-        // BLOQUE NUEVO: MODAL REPORTAR (ACTUALIZADO)
+                // ======================================================
+        // MODAL REPORTAR: DISEÑO PREMIUM (ACTUALIZADO)
         // ======================================================
         window.openReportModal = () => { 
             localStorage.removeItem('report_evidence'); 
@@ -1940,58 +2049,108 @@
             const servicesOptions = services.map(s => `<option value="${s}">${s}</option>`).join('');
 
             openModal(`
-            <div class="text-left bounce-enter">
-                <div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="alert-triangle" class="w-7 h-7"></i></div>
-                <h3 class="text-xl font-bold text-gray-800 mb-2 text-center">Reportar Problema</h3>
+            <div class="text-left bounce-enter bg-white rounded-3xl overflow-hidden relative">
                 
-                <form onsubmit="submitReport(event)" class="space-y-4">
+                <div class="bg-gradient-to-r from-rose-500 to-orange-500 p-6 pb-10 text-center relative">
+                    <div class="absolute top-0 left-0 w-full h-full opacity-20" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 10px 10px;"></div>
+                    <h3 class="text-xl font-black text-white uppercase tracking-wider relative z-10">Reportar Fallo</h3>
+                    <p class="text-xs text-white/80 font-medium relative z-10">Estamos aquí para ayudarte</p>
+                </div>
+
+                <div class="relative -mt-8 mb-4 text-center z-20">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-lg border-4 border-white">
+                        <i data-lucide="life-buoy" class="w-8 h-8 text-rose-500"></i>
+                    </div>
+                </div>
+                
+                <form onsubmit="submitReport(event)" class="px-6 pb-6 space-y-5">
                     
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Tipo de Problema</label>
-                        <select id="report-type" onchange="toggleReportFields()" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm">
-                            <option value="account">Fallo de Cuenta</option>
-                            <option value="payment">Pago no reflejado</option>
-                            <option value="bug">Error de Sistema</option>
-                        </select>
+                    <div class="relative group">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">¿Qué sucede?</label>
+                        <div class="relative">
+                            <i data-lucide="alert-circle" class="absolute left-4 top-3.5 w-5 h-5 text-gray-400"></i>
+                            <select id="report-type" onchange="toggleReportFields()" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-gray-700 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all appearance-none">
+                                <option value="account">Fallo de Cuenta / Contraseña</option>
+                                <option value="payment">Pago no reflejado</option>
+                                <option value="bug">Error de la App</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="absolute right-4 top-4 w-4 h-4 text-gray-400 pointer-events-none"></i>
+                        </div>
                     </div>
 
-                    <div id="account-failure-section" class="space-y-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
-                        <div>
-                            <label class="block text-[10px] font-bold text-indigo-500 uppercase mb-1">Plataforma</label>
-                            <select id="report-service" onchange="searchPurchasesForReport()" class="neumo-inset w-full bg-white border-none rounded-xl p-2 text-sm font-bold text-gray-700">
-                                ${servicesOptions}
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-[10px] font-bold text-indigo-500 uppercase mb-1">Correo de la Cuenta (Buscar)</label>
-                            <div class="relative">
-                                <input type="email" id="search-account-email" oninput="searchPurchasesForReport()" class="neumo-inset w-full bg-white border-none rounded-xl p-3 pl-10 text-sm" placeholder="Ingresa el correo de la cuenta...">
-                                <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
-                            </div>
-                            <p class="text-[9px] text-gray-400 mt-1">*Debes seleccionar una compra de la lista que aparecerá abajo.</p>
+                    <div id="account-failure-section" class="space-y-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 hidden">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i data-lucide="search" class="w-4 h-4 text-indigo-500"></i>
+                            <span class="text-xs font-black text-indigo-600 uppercase">Buscar Compra</span>
                         </div>
 
-                        <div id="purchase-results-container" class="space-y-2 max-h-40 overflow-y-auto scrollbar-hide empty:hidden"></div>
+                        <div class="grid grid-cols-1 gap-3">
+                            <div>
+                                <select id="report-service" onchange="searchPurchasesForReport()" class="w-full bg-white border-none rounded-xl p-3 text-xs font-bold text-gray-600 shadow-sm focus:ring-0">
+                                    ${servicesOptions}
+                                </select>
+                            </div>
+                            
+                            <div class="relative">
+                                <input type="email" id="search-account-email" oninput="searchPurchasesForReport()" class="w-full bg-white border-none rounded-xl py-3 pl-4 pr-10 text-sm shadow-sm placeholder:text-gray-400 focus:ring-0" placeholder="Correo de la cuenta...">
+                                <div class="absolute right-3 top-3 text-indigo-200"><i data-lucide="at-sign" class="w-4 h-4"></i></div>
+                            </div>
+                        </div>
+
+                        <div id="purchase-results-container" class="space-y-2 max-h-48 overflow-y-auto scrollbar-hide empty:hidden pt-1"></div>
                         
                         <input type="hidden" id="selected-tx-id" required>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Descripción del Fallo</label>
-                        <textarea id="report-desc" required class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 text-sm h-24 resize-none" placeholder="Explica detalladamente qué sucede..."></textarea>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Detalles del problema</label>
+                        <textarea id="report-desc" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-gray-400 transition-colors h-28 resize-none" placeholder="Explícanos brevemente qué paso..."></textarea>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Adjuntar Foto</label>
-                        <input type="file" accept="image/*" onchange="handleImageUpload(this)" class="w-full text-xs">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Evidencia (Captura)</label>
+                        <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:bg-gray-50 hover:border-indigo-400 transition-all group relative overflow-hidden">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6 relative z-10" id="upload-placeholder">
+                                <i data-lucide="image-plus" class="w-6 h-6 text-gray-300 group-hover:text-indigo-500 mb-1 transition-colors"></i>
+                                <p class="text-[10px] text-gray-400 group-hover:text-gray-600">Toca para subir imagen</p>
+                            </div>
+                            <div id="file-name-display" class="hidden flex-col items-center justify-center z-20">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-emerald-500 mb-1"></i>
+                                <p class="text-[10px] font-bold text-emerald-600 truncate max-w-[200px]" id="file-name-text"></p>
+                            </div>
+                            <input type="file" accept="image/*" onchange="handleImageUploadUI(this)" class="hidden">
+                        </label>
                     </div>
 
-                    <button type="submit" id="btn-submit-report" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl">Enviar Reporte</button>
+                    <button type="submit" id="btn-submit-report" class="w-full bg-gray-900 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-gray-800 transform active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <span>Enviar Reporte</span>
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
                 </form>
             </div>`);
             
             toggleReportFields();
+            lucide.createIcons();
+        };
+        
+                // Función UI para actualizar el input de archivo
+        window.handleImageUploadUI = (input) => {
+            handleImageUpload(input); // Llama a tu función original de lógica
+            
+            const placeholder = document.getElementById('upload-placeholder');
+            const nameDisplay = document.getElementById('file-name-display');
+            const nameText = document.getElementById('file-name-text');
+            
+            if (input.files && input.files[0]) {
+                placeholder.classList.add('hidden');
+                nameDisplay.classList.remove('hidden');
+                nameDisplay.classList.add('flex');
+                nameText.textContent = input.files[0].name;
+            } else {
+                placeholder.classList.remove('hidden');
+                nameDisplay.classList.add('hidden');
+                nameDisplay.classList.remove('flex');
+            }
             lucide.createIcons();
         };
 
@@ -2026,14 +2185,14 @@
             }
         };
 
-        window.searchPurchasesForReport = () => {
+           window.searchPurchasesForReport = () => {
             const queryEmail = document.getElementById('search-account-email').value.trim().toLowerCase();
             const selectedPlatform = document.getElementById('report-service').value.toLowerCase();
             const container = document.getElementById('purchase-results-container');
             const hiddenInput = document.getElementById('selected-tx-id');
             const btn = document.getElementById('btn-submit-report');
 
-            // 1. Resetear selección previa y BLOQUEAR BOTÓN
+            // Resetear
             hiddenInput.value = '';
             btn.disabled = true;
             btn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -2043,21 +2202,15 @@
                 return;
             }
 
-            // Filtrar transacciones (Validando Correo Y Plataforma)
             const matches = window.userTransactions.filter(t => {
                 if (t.type !== 'purchase' || !t.details || !t.details.email) return false;
-                
                 const tEmail = t.details.email.toLowerCase();
                 const tService = (t.details.serviceName || '').toLowerCase();
-
-                const emailMatch = tEmail.includes(queryEmail);
-                const platformMatch = tService.includes(selectedPlatform);
-
-                return emailMatch && platformMatch;
+                return tEmail.includes(queryEmail) && tService.includes(selectedPlatform);
             });
 
             if (matches.length === 0) {
-                container.innerHTML = `<div class="p-2 bg-rose-50 text-rose-500 text-[10px] font-bold rounded-lg text-center border border-rose-100">No se encontraron cuentas de <b class="uppercase">${selectedPlatform}</b> con ese correo.</div>`;
+                container.innerHTML = `<div class="p-3 bg-white text-rose-500 text-[10px] font-bold rounded-xl text-center border border-rose-100 shadow-sm">No encontramos cuentas de <b class="uppercase">${selectedPlatform}</b> que coincidan.</div>`;
                 return;
             }
 
@@ -2067,39 +2220,52 @@
                 const date = m.timestamp ? m.timestamp.toDate().toLocaleDateString() : '';
 
                 html += `
-                <div onclick="selectPurchaseForReport('${m.id}', this)" class="purchase-option neumo-card p-2 rounded-lg cursor-pointer hover:bg-indigo-50 border border-transparent transition-all">
+                <div onclick="selectPurchaseForReport('${m.id}', this)" class="purchase-option bg-white p-3 rounded-xl cursor-pointer border-2 border-transparent hover:border-indigo-200 shadow-sm transition-all relative group">
                     <div class="flex justify-between items-center pointer-events-none">
-                        <div>
-                            <p class="font-bold text-gray-800 text-xs">${service}</p>
-                            <p class="text-[10px] text-gray-500 font-mono">${m.details.email}</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                ${service.substring(0,1)}
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-800 text-xs">${service}</p>
+                                <p class="text-[10px] text-gray-400 font-mono">${m.details.email}</p>
+                            </div>
                         </div>
-                        <div class="text-right pointer-events-none">
-                            <span class="text-[9px] bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">${date}</span>
-                        </div>
+                        <span class="text-[9px] bg-gray-100 px-2 py-1 rounded-lg text-gray-500 font-bold">${date}</span>
+                    </div>
+                    <div class="absolute top-1/2 right-3 -translate-y-1/2 text-indigo-600 opacity-0 check-icon transition-opacity">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
                     </div>
                 </div>`;
             });
 
             container.innerHTML = html;
+            lucide.createIcons();
         };
 
-        window.selectPurchaseForReport = (txId, element) => {
+
+           window.selectPurchaseForReport = (txId, element) => {
             // 1. Guardar el ID
             document.getElementById('selected-tx-id').value = txId;
             const btn = document.getElementById('btn-submit-report');
 
-            // 2. Visualmente marcar seleccionado
+            // 2. Limpiar estilos anteriores
             document.querySelectorAll('.purchase-option').forEach(el => {
-                el.classList.remove('bg-indigo-100', 'border-indigo-500');
-                el.classList.add('border-transparent');
+                el.classList.remove('border-indigo-500', 'bg-indigo-50');
+                el.classList.add('bg-white', 'border-transparent');
+                el.querySelector('.check-icon').classList.add('opacity-0');
             });
-            element.classList.remove('hover:bg-indigo-50', 'border-transparent');
-            element.classList.add('bg-indigo-100', 'border-indigo-500');
 
-            // 3. DESBLOQUEAR BOTÓN (Porque ya seleccionó una compra válida)
+            // 3. Aplicar estilo seleccionado
+            element.classList.remove('bg-white', 'border-transparent');
+            element.classList.add('bg-indigo-50', 'border-indigo-500');
+            element.querySelector('.check-icon').classList.remove('opacity-0');
+
+            // 4. Activar botón
             btn.disabled = false;
             btn.classList.remove('opacity-50', 'cursor-not-allowed');
         };
+
 
 
                 // ======================================================
@@ -3371,28 +3537,146 @@
     navigator.clipboard.writeText(text).then(() => showToast('¡Ticket copiado!', 'success')).catch(() => showToast('Error al copiar', 'error'));
 };
         
-        // --- NOTIFICACIONES ---
+           // ======================================================
+        // MOVIMIENTOS: DISEÑO PREMIUM (ESTILO BANCARIO)
+        // ======================================================
         window.openNotifications = () => { 
-            const d = document.getElementById('notification-dot'); if(d) d.style.display='none'; 
-            let h=`<div class="text-center mb-4"><h3 class="text-xl font-bold text-gray-800">Notificaciones</h3><p class="text-xs text-gray-400">Actividad Reciente</p></div><div class="space-y-3">`; 
-            let all=[...window.globalNotifications, ...window.userTransactions]; 
-            if(isAdmin){all=[...all,...window.adminPendingRequests, ...window.adminPendingReports, ...window.adminPendingRenewals]} 
+            // 1. Ocultar punto rojo
+            const dot = document.getElementById('notification-dot'); 
+            if(dot) dot.style.display='none'; 
+
+            // 2. Recopilar todos los datos
+            let all = [...window.globalNotifications, ...window.userTransactions]; 
+            
+            // Si es admin, agregamos las pendientes también
+            if(isAdmin){
+                all = [...all, ...window.adminPendingRequests, ...window.adminPendingReports, ...window.adminPendingRenewals];
+            } 
+            
+            // 3. Ordenar por fecha (más reciente arriba)
             all.sort((a,b)=>(b.timestamp?.toMillis()||0)-(a.timestamp?.toMillis()||0)); 
-            if(all.length===0)h+=`<p class="text-center text-gray-400 py-8">Sin actividad reciente</p>`; 
-            else all.forEach(t=>{ 
-                let icon='circle', color='text-gray-400', bg='bg-gray-100';
-                let desc = t.title||t.description||t.email;
-                if(t.type==='deposit'){
-                    if(t.status==='Pending'||t.status==='pending'||t.status==='Pendiente'){ icon='clock'; color='text-accent'; bg='bg-accent/10'; desc = 'Recarga Pendiente'; } else if (t.status === 'rejected' || t.status === 'cancelled' || t.status === 'Rechazado' || t.status === 'Cancelado') { icon='x-circle'; color='text-danger'; bg='bg-danger/10'; desc = 'Recarga Cancelada'; } else { icon='check-circle'; color='text-success'; bg='bg-success/10'; desc = 'Recarga Exitosa'; }
-                } else if(t.type==='purchase'){ icon='shopping-bag'; color='text-gray-600'; bg='bg-gray-200'; }
-                else if(t.type==='charge'){ icon='alert-octagon'; color='text-rose-600'; bg='bg-rose-100'; }
-                else if(t.type==='support_reply'){ icon='message-circle'; color='text-blue-500'; bg='bg-blue-100'; }
-                else if(t.type==='renewal'){ icon='refresh-cw'; color='text-indigo-500'; bg='bg-indigo-100'; desc = 'Solicitud de Renovación'; }
-                else if(t.isGlobal){ icon='bell'; color='text-indigo-500'; bg='bg-indigo-100'; }
-                h+=`<div onclick="openTransactionDetail('${t.id}')" class="neumo-card p-3 flex justify-between items-center cursor-pointer hover:scale-105 transition-transform group"> <div class="flex items-center gap-3"> <div class="w-10 h-10 rounded-xl ${bg} flex items-center justify-center ${color} shadow-sm neumo-inset"><i data-lucide="${icon}" class="w-5 h-5"></i></div> <div><p class="font-bold text-xs text-gray-700 line-clamp-1">${desc}</p><p class="text-[10px] text-gray-400">${t.timestamp?.toDate().toLocaleString()}</p></div> </div> </div>`;
-            }); 
-            h+=`</div>`; openModal(h); 
+
+            let listHtml = '';
+
+            if(all.length === 0) {
+                listHtml = `
+                    <div class="flex flex-col items-center justify-center py-16 opacity-60 text-center">
+                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 neumo-inset">
+                            <i data-lucide="clock" class="w-8 h-8 text-gray-400"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-500">Sin movimientos</h3>
+                        <p class="text-xs text-gray-400 mt-1">Tu actividad aparecerá aquí.</p>
+                    </div>`; 
+            } else {
+                all.forEach(t => { 
+                    // --- LÓGICA DE APARIENCIA SEGÚN TIPO ---
+                    let icon='circle', iconColor='text-gray-400', iconBg='bg-gray-100';
+                    let title = t.title || t.description || t.email || 'Detalle';
+                    let amountDisplay = '';
+                    let statusBadge = '';
+
+                    // A. DEPÓSITOS (Recargas)
+                    if(t.type === 'deposit'){
+                        const status = (t.status || '').toLowerCase();
+                        if(status === 'pending' || status === 'pendiente'){ 
+                            icon='clock'; iconColor='text-amber-600'; iconBg='bg-amber-100'; 
+                            title = 'Recarga Pendiente';
+                            statusBadge = `<span class="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 ml-2">En Revisión</span>`;
+                        } else if (['rejected', 'cancelled', 'rechazado', 'cancelado'].includes(status)) { 
+                            icon='x'; iconColor='text-rose-500'; iconBg='bg-rose-100'; 
+                            title = 'Recarga Cancelada';
+                            amountDisplay = `<span class="text-xs font-bold text-gray-400 line-through">$${t.amount}</span>`;
+                        } else { 
+                            icon='arrow-down-left'; iconColor='text-emerald-600'; iconBg='bg-emerald-100'; 
+                            title = 'Recarga Exitosa';
+                            amountDisplay = `<span class="text-sm font-black text-emerald-600">+$${Number(t.amount).toLocaleString()}</span>`;
+                        }
+                    
+                    // B. COMPRAS
+                    } else if(t.type === 'purchase'){ 
+                        icon='shopping-bag'; iconColor='text-indigo-600'; iconBg='bg-indigo-100';
+                        title = t.description.replace('Compra: ', ''); // Limpiamos el texto
+                        amountDisplay = `<span class="text-sm font-bold text-gray-800">-$${Number(t.amount).toLocaleString()}</span>`;
+                    
+                    // C. CARGOS / MULTAS
+                    } else if(t.type === 'charge'){ 
+                        icon='alert-octagon'; iconColor='text-rose-600'; iconBg='bg-rose-100'; 
+                        amountDisplay = `<span class="text-sm font-bold text-rose-600">-$${Math.abs(t.amount).toLocaleString()}</span>`;
+                    
+                    // D. SOPORTE / RESPUESTAS
+                    } else if(t.type === 'support_reply'){ 
+                        icon='message-circle'; iconColor='text-blue-600'; iconBg='bg-blue-100'; 
+                        title = 'Respuesta de Soporte';
+                        amountDisplay = `<span class="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded">LEER</span>`;
+                    
+                    // E. RENOVACIONES
+                    } else if(t.type === 'renewal'){ 
+                        icon='refresh-cw'; iconColor='text-purple-600'; iconBg='bg-purple-100'; 
+                        title = 'Solicitud Renovación';
+                        statusBadge = `<span class="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 ml-2">Enviada</span>`;
+                    
+                    // F. NOTIFICACIONES GLOBALES
+                    } else if(t.isGlobal){ 
+                        icon='bell'; iconColor='text-orange-500'; iconBg='bg-orange-100'; 
+                    }
+
+                    // Formato Fecha
+                    const dateStr = t.timestamp ? t.timestamp.toDate().toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : 'Reciente';
+
+                    // HTML DE LA TARJETA
+                    listHtml += `
+                    <div onclick="openTransactionDetail('${t.id}')" class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100 mb-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all active:scale-95 group relative overflow-hidden">
+                        <div class="w-10 h-10 rounded-full ${iconBg} ${iconColor} flex items-center justify-center flex-shrink-0 shadow-sm border border-white">
+                            <i data-lucide="${icon}" class="w-5 h-5"></i>
+                        </div>
+                        
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold text-sm text-gray-800 truncate pr-2">${title}</h4>
+                                <div class="flex-shrink-0 pl-1">${amountDisplay}</div>
+                            </div>
+                            <div class="flex items-center mt-0.5">
+                                <span class="text-[10px] text-gray-400 font-medium tracking-wide">${dateStr}</span>
+                                ${statusBadge}
+                            </div>
+                        </div>
+
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-300">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </div>
+                    </div>`;
+                }); 
+            }
+
+            // --- RENDERIZAR MODAL COMPLETO ---
+            openModal(`
+                <div class="bg-gray-50 rounded-[2rem] overflow-hidden relative bounce-enter flex flex-col h-[80vh]">
+                    
+                    <div class="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 pb-12 text-center relative flex-shrink-0 shadow-lg z-10">
+                        <div class="absolute top-0 left-0 w-full h-full opacity-20" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 10px 10px;"></div>
+                        
+                        <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-3 text-white shadow-xl border border-white/30 transform rotate-3">
+                            <i data-lucide="activity" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="text-xl font-black text-white tracking-tight uppercase">Historial</h3>
+                        <p class="text-[10px] text-indigo-200 font-medium uppercase tracking-widest">Tus movimientos recientes</p>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto scrollbar-hide px-4 pt-6 -mt-6 relative z-20">
+                        ${listHtml}
+                    </div>
+
+                    <div class="p-4 bg-white border-t border-gray-200 z-30">
+                        <button onclick="closeModal()" class="neumo-button w-full bg-gray-100 text-gray-500 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-colors">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            `); 
+            
+            lucide.createIcons(); 
         };
+
         window.openTransactionDetail = (id) => {
             let t = window.userTransactions.find(x => x.id === id) || window.globalNotifications.find(x => x.id === id) || window.adminPendingRequests.find(x => x.id === id) || window.adminPendingRenewals.find(x => x.id === id); 
             if(!t) return;
@@ -3614,48 +3898,203 @@
             let html = `<div class="text-center mb-4 bounce-enter"><h3 class="text-xl font-bold text-gray-800">Respuestas de Soporte</h3><p class="text-xs text-gray-400">Toca para leer</p></div>`;
             if (replies.length === 0) { html += `<div class="flex flex-col items-center justify-center py-12 opacity-50"><i data-lucide="message-circle-off" class="w-12 h-12 mb-2 text-gray-300"></i><p class="text-sm text-gray-400">Sin respuestas nuevas</p></div>`; } else { html += `<div class="space-y-3">`; replies.forEach(r => { const time = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente'; html += ` <div onclick="openSupportReplyDetail('${r.id}')" class="neumo-card neumo-inset p-4 rounded-xl text-left cursor-pointer hover:scale-[0.99] transition-transform group relative"> <div class="flex justify-between items-start mb-2"> <span class="text-xs font-bold text-blue-600 uppercase bg-blue-50/50 px-2 py-0.5 rounded flex items-center gap-1 neumo-flat"><i data-lucide="mail-open" class="w-3 h-3"></i> Respuesta Admin</span> <span class="text-[10px] text-gray-400">${time}</span> </div> <p class="text-sm text-gray-700 line-clamp-2 font-medium">${r.message}</p> <div class="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="chevron-right" class="w-4 h-4 text-blue-400"></i></div> </div> `; }); html += `</div>`; } openModal(html);
         };
-                // ======================================================
-        // BLOQUE NUEVO: VER RESPUESTA CON FOTO (USUARIO)
+              // ======================================================
+        // DETALLE RESPUESTA SOPORTE: DISEÑO PREMIUM (TIPO CHAT)
         // ======================================================
         window.openSupportReplyDetail = (id) => {
             const r = window.userTransactions.find(t => t.id === id); 
             if(!r) return;
             
-            // Verificamos si hay imagen adjunta por el admin
+            // Formatear fecha
+            const dateStr = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente';
+
+            // HTML de la imagen adjunta (si el admin envió foto)
             const evidenceHtml = r.evidenceImage 
-                ? `<div class="mt-4"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Adjunto del Administrador:</p><img src="${r.evidenceImage}" class="w-full rounded-xl border border-gray-200 shadow-sm"></div>` 
+                ? `<div class="mt-4 ml-14">
+                     <p class="text-[10px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-1"><i data-lucide="paperclip" class="w-3 h-3"></i> Archivo Adjunto</p>
+                     <div class="relative group cursor-pointer overflow-hidden rounded-2xl border border-gray-200 shadow-sm w-full max-w-xs">
+                        <img src="${r.evidenceImage}" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" onclick="window.open(this.src, '_blank')">
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                     </div>
+                   </div>` 
                 : '';
 
             openModal(` 
-            <div class="text-left bounce-enter p-1 h-[75vh] flex flex-col"> 
-                <div class="flex items-center gap-3 mb-4 border-b border-gray-100 pb-4 flex-shrink-0"> 
-                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center neumo-card neumo-inset flex-shrink-0"><i data-lucide="message-circle" class="w-5 h-5"></i></div> 
-                    <div> 
-                        <h3 class="font-bold text-lg text-gray-800 leading-tight">Mensaje de Soporte</h3> 
-                        <p class="text-xs text-gray-400">${r.timestamp ? r.timestamp.toDate().toLocaleString() : ''}</p> 
-                    </div> 
-                </div> 
+            <div class="bg-white rounded-[2rem] overflow-hidden relative bounce-enter flex flex-col max-h-[85vh]">
                 
-                <div class="flex-1 overflow-y-auto scrollbar-hide pr-2">
-                    <div class="neumo-card neumo-inset p-5 rounded-2xl text-sm text-gray-700 whitespace-pre-wrap leading-relaxed font-medium">
-                        ${r.message || '<i class="text-gray-400">Sin texto...</i>'}
-                    </div>
-                    ${evidenceHtml}
+                <div class="bg-gradient-to-r from-blue-600 to-cyan-500 p-6 pb-10 text-center relative flex-shrink-0">
+                     <div class="absolute top-0 left-0 w-full h-full opacity-10" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 10px 10px;"></div>
+                     
+                     <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-2 text-white shadow-lg border border-white/30">
+                        <i data-lucide="headset" class="w-6 h-6"></i>
+                     </div>
+                     <h3 class="text-lg font-black text-white uppercase tracking-wider relative z-10">Soporte Técnico</h3>
+                     <p class="text-[10px] text-blue-50 font-medium relative z-10 uppercase tracking-widest">Respuesta Oficial</p>
                 </div>
 
-                <button onclick="openSupportReplies()" class="neumo-button mt-4 w-full bg-gray-900 text-white py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 flex-shrink-0">
-                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver
-                </button> 
+                <div class="flex-1 overflow-y-auto scrollbar-hide px-6 py-6 bg-white -mt-6 rounded-t-[2rem] relative z-20">
+                    
+                    <div class="flex gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div class="flex-shrink-0">
+                             <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100 shadow-sm relative">
+                                <span class="font-black text-[10px]">ADMIN</span>
+                                <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
+                             </div>
+                        </div>
+                        
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-1 px-1">
+                                <span class="text-xs font-bold text-gray-900">Agente de Soporte</span>
+                                <span class="text-[9px] text-gray-400">${dateStr}</span>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-2xl rounded-tl-none border border-gray-100 text-sm text-gray-700 leading-relaxed shadow-sm whitespace-pre-wrap text-left">
+                                ${r.message || '<i class="text-gray-400">Sin contenido de texto...</i>'}
+                            </div>
+                        </div>
+                    </div>
+
+                    ${evidenceHtml}
+
+                </div>
+
+                <div class="p-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0 z-30">
+                    <button onclick="openSupportReplies()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors active:scale-95">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>Volver a Mis Respuestas</span>
+                    </button>
+                </div>
+
             </div> `);
             lucide.createIcons();
         };
 
 
-        // --- RENOVACIONES CLIENTE ---
+            // ======================================================
+        // RENOVAR SERVICIO: DISEÑO PREMIUM
+        // ======================================================
         window.openRenewalModal = () => {
-            openModal(` <div class="text-center bounce-enter"> <div class="w-16 h-16 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="refresh-cw" class="w-8 h-8"></i></div> <h3 class="text-xl font-bold text-gray-800 mb-2">Renovar Servicio</h3> <p class="text-xs text-gray-400 mb-6 px-4">Ingresa el correo de la cuenta que compraste para verificar disponibilidad.</p> <form onsubmit="searchRenewal(event)" class="relative"> <i data-lucide="search" class="absolute left-4 top-3.5 w-5 h-5 text-gray-300"></i> <input type="email" id="renew-email" class="neumo-inset w-full bg-transparent border-none rounded-2xl py-3.5 pl-12 pr-4 text-gray-700 font-medium placeholder:text-gray-400 focus:ring-0 focus:outline-none" placeholder="ej: cliente@correo.com" required> <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 flex items-center justify-center gap-2">Buscar Suscripción</button> </form> <div id="renewal-results" class="mt-6 text-left space-y-3 empty:hidden"></div> </div> `);
+            openModal(`
+            <div class="bg-white rounded-[2rem] overflow-hidden relative bounce-enter flex flex-col max-h-[85vh]">
+                
+                <div class="bg-gradient-to-br from-violet-600 to-fuchsia-600 p-8 text-center relative flex-shrink-0 shadow-lg z-10">
+                    <div class="absolute top-0 left-0 w-full h-full opacity-20" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 10px 10px;"></div>
+                    
+                    <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-3 text-white shadow-xl border border-white/30 transform -rotate-6">
+                        <i data-lucide="refresh-cw" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-white tracking-tight uppercase relative z-10">Renovar Servicio</h3>
+                    <p class="text-[10px] text-violet-100 font-medium uppercase tracking-widest relative z-10">Extiende tu suscripción al instante</p>
+                </div>
+
+                <div class="p-6 flex-1 overflow-y-auto scrollbar-hide bg-gray-50 relative z-0">
+                    
+                    <div class="bg-white border border-gray-100 p-5 rounded-[1.5rem] shadow-sm mb-6 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-violet-500"></div>
+                        <p class="text-xs text-gray-800 font-bold mb-3 flex items-center gap-2 uppercase tracking-wide">
+                            <i data-lucide="search" class="w-4 h-4 text-violet-500"></i> Buscar Cuenta
+                        </p>
+                        
+                        <form onsubmit="searchRenewal(event)" class="relative">
+                            <input type="email" id="renew-email" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-4 pr-12 text-sm font-bold text-gray-700 shadow-inner focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder:text-gray-400" placeholder="Ingresa el correo de la cuenta..." required>
+                            
+                            <button type="submit" class="absolute right-2 top-2 p-1.5 bg-gray-900 text-white rounded-lg hover:bg-violet-600 hover:scale-105 transition-all shadow-md group">
+                                <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
+                            </button>
+                        </form>
+                        <p class="text-[9px] text-gray-400 mt-2 ml-1 font-medium">Busca por el correo exacto de la cuenta que compraste.</p>
+                    </div>
+
+                    <div id="renewal-results" class="space-y-3 empty:hidden min-h-[100px]">
+                        <div class="text-center py-8 opacity-40 select-none">
+                            <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 neumo-inset">
+                                <i data-lucide="history" class="w-8 h-8 text-gray-400"></i>
+                            </div>
+                            <p class="text-xs text-gray-400 font-medium">Tus resultados aparecerán aquí</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-white border-t border-gray-200 z-20">
+                    <button onclick="closeModal()" class="w-full py-3.5 rounded-xl text-xs font-bold text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
+                        Cancelar Operación
+                    </button>
+                </div>
+            </div>
+            `);
+            lucide.createIcons();
         };
-        window.searchRenewal = (e) => { e.preventDefault(); const emailQuery = document.getElementById('renew-email').value.trim().toLowerCase(); const container = document.getElementById('renewal-results'); container.innerHTML = '<div class="text-center py-4"><span class="animate-spin inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full"></span></div>'; const matches = window.userTransactions.filter(t => t.type === 'purchase' && t.details && t.details.email && t.details.email.toLowerCase() === emailQuery); if (matches.length === 0) { container.innerHTML = ` <div class="neumo-card neumo-inset p-4 rounded-xl text-center animate-pulse" style="border-left: 4px solid var(--color-danger);"> <p class="text-xs font-bold text-danger mb-1">No encontrado</p> <p class="text-[10px] text-gray-500">No tienes compras registradas con este correo.</p> </div>`; } else { let html = ''; matches.forEach(m => { const platformName = m.details.serviceName || m.description.replace('Compra: ', ''); html += ` <div class="neumo-card p-4 rounded-2xl shadow-sm flex flex-col gap-3 slide-up"> <div class="flex justify-between items-start"> <div> <p class="font-black text-gray-800 text-sm">${platformName}</p> <p class="text-[10px] text-gray-400 font-mono mt-0.5">${m.details.email}</p> </div> <span class="bg-indigo-50/50 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-lg neumo-flat">Renovable: SÍ</span> </div> <div class="flex gap-2 mt-1"> <button onclick="requestRenewal('${m.id}', '${platformName}', '${m.details.email}')" class="neumo-button flex-1 bg-gray-900 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-gray-800">Solicitar Renovación</button> </div> </div> `; }); container.innerHTML = html; lucide.createIcons(); } };
+
+                // ======================================================
+        // BÚSQUEDA DE RENOVACIÓN (LÓGICA + UI MEJORADA)
+        // ======================================================
+        window.searchRenewal = (e) => {
+            e.preventDefault();
+            const emailQuery = document.getElementById('renew-email').value.trim().toLowerCase();
+            const container = document.getElementById('renewal-results');
+            
+            // Loader Moderno
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10 animate-in fade-in duration-300">
+                    <div class="w-10 h-10 border-4 border-violet-100 border-t-violet-600 rounded-full animate-spin mb-3"></div>
+                    <span class="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Buscando coincidencias...</span>
+                </div>`;
+
+            // Pequeño delay para suavidad visual
+            setTimeout(() => {
+                // Filtramos las compras del historial
+                const matches = window.userTransactions.filter(t => t.type === 'purchase' && t.details && t.details.email && t.details.email.toLowerCase() === emailQuery);
+
+                if (matches.length === 0) {
+                    container.innerHTML = `
+                    <div class="bg-rose-50 border border-rose-100 p-5 rounded-[1.5rem] text-center animate-in fade-in zoom-in duration-300 shadow-sm">
+                        <div class="w-12 h-12 bg-white text-rose-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-rose-100">
+                            <i data-lucide="search-x" class="w-6 h-6"></i>
+                        </div>
+                        <p class="text-sm font-black text-rose-600 mb-1">Sin Resultados</p>
+                        <p class="text-[10px] text-rose-400 px-4">No encontramos compras activas registradas con ese correo en tu historial.</p>
+                    </div>`;
+                } else {
+                    let html = '';
+                    matches.forEach((m, index) => {
+                        const platformName = m.details.serviceName || m.description.replace('Compra: ', '');
+                        const date = m.timestamp ? m.timestamp.toDate().toLocaleDateString() : 'Reciente';
+                        const delay = index * 100; // Efecto cascada
+
+                        html += `
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 relative group hover:border-violet-200 hover:shadow-md transition-all animate-in slide-in-from-bottom-4 duration-500" style="animation-delay: ${delay}ms;">
+                            
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-100 to-fuchsia-50 text-violet-600 flex items-center justify-center font-black text-lg shadow-inner border border-white">
+                                        ${platformName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-800 text-sm leading-tight">${platformName}</h4>
+                                        <p class="text-[10px] text-gray-400 font-mono mt-0.5 select-all">${m.details.email}</p>
+                                    </div>
+                                </div>
+                                <span class="text-[8px] font-black bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg border border-emerald-100 uppercase tracking-widest">Disponible</span>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-3 border-t border-gray-50 mt-1">
+                                <span class="text-[10px] text-gray-400 font-bold flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
+                                    <i data-lucide="calendar" class="w-3 h-3"></i> ${date}
+                                </span>
+                                
+                                <button onclick="requestRenewal('${m.id}', '${platformName}', '${m.details.email}')" class="bg-gray-900 text-white px-4 py-2.5 rounded-xl text-[10px] font-bold shadow-lg hover:bg-violet-600 hover:shadow-violet-200 hover:-translate-y-0.5 transition-all flex items-center gap-2 active:scale-95">
+                                    <span>Solicitar</span>
+                                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+                lucide.createIcons();
+            }, 600);
+        };
+
         window.requestRenewal = async (txId, platform, email) => { if(!confirm(`¿Solicitar renovación para ${platform}?`)) return; try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), { uid: currentUser.uid, email: currentUser.email, type: 'renewal', description: `Solicitud de renovación para: ${platform}\nCuenta: ${email}\nID Compra Original: ${txId}`, timestamp: serverTimestamp(), status: 'unread' }); showToast('Solicitud enviada al administrador', 'success'); closeModal(); } catch (e) { showToast('Error al solicitar', 'error'); } };
 
         // --- UTILIDADES UI ---
@@ -5226,8 +5665,8 @@ window.filterExpirations = (mode) => {
             }
         };
         
-         // ======================================================
-        // 1. MI PERFIL: VISTA DE LECTURA (LÁPIZ A LA IZQUIERDA)
+           // ======================================================
+        // MI PERFIL: DISEÑO PREMIUM (MODERNO)
         // ======================================================
         window.openUserProfile = async () => {
             if(!currentUser) return;
@@ -5264,63 +5703,96 @@ window.filterExpirations = (mode) => {
                 });
             } catch (e) { console.log("Error calculando totales", e); }
 
-            // 4. Renderizar Modal
+            // 4. Renderizar Modal (NUEVO DISEÑO)
             openModal(`
-                <div class="text-center bounce-enter pt-4 relative h-[75vh] flex flex-col">
-                    <button onclick="enableMyProfileEdit()" class="absolute top-0 left-0 p-2.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors shadow-sm z-20 group border border-indigo-100" title="Editar mis datos">
-                        <i data-lucide="pencil" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
-                    </button>
+            <div class="relative w-full bg-white rounded-[2rem] overflow-hidden bounce-enter">
+                
+                <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600"></div>
+                
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i data-lucide="circuit-board" class="w-32 h-32 text-white"></i>
+                </div>
 
-                    <div class="w-20 h-20 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg text-white font-black text-2xl border-4 border-white flex-shrink-0">
-                        ${(currentUser.email||'??').substring(0,2).toUpperCase()}
+                <button onclick="enableMyProfileEdit()" class="absolute top-4 right-4 z-20 bg-white/20 backdrop-blur-md border border-white/30 text-white p-2 rounded-xl hover:bg-white hover:text-indigo-600 transition-all shadow-lg group">
+                    <i data-lucide="pencil" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                </button>
+
+                <div class="relative pt-16 px-6 pb-6 flex flex-col items-center">
+                    
+                    <div class="relative mb-3">
+                        <div class="absolute inset-0 bg-indigo-500 rounded-full blur-md opacity-50 translate-y-2"></div>
+                        <div class="w-24 h-24 rounded-full p-1 bg-white relative z-10 shadow-xl">
+                            <div class="w-full h-full rounded-full bg-gradient-to-tr from-gray-100 to-gray-200 flex items-center justify-center text-3xl font-black text-gray-400 uppercase">
+                                ${(currentUser.email||'??').substring(0,2)}
+                            </div>
+                        </div>
+                        <div class="absolute bottom-1 right-1 z-20 bg-emerald-500 w-6 h-6 rounded-full border-4 border-white"></div>
                     </div>
                     
-                    <h3 class="text-xl font-bold text-gray-800 mb-1 capitalize">${u.fullName || 'Sin Nombre'}</h3>
-                    <p class="text-xs text-gray-500 mb-4 font-mono bg-gray-100 inline-block px-2 py-1 rounded">${currentUser.email}</p>
+                    <h3 class="text-2xl font-black text-gray-800 capitalize tracking-tight mb-1 text-center">${u.fullName || 'Usuario'}</h3>
+                    <p class="text-xs font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full mb-6">${currentUser.email}</p>
 
-                    <div class="flex-1 overflow-y-auto scrollbar-hide px-1 pb-4 space-y-3 text-left max-w-xs mx-auto w-full">
-                        
-                        <div class="neumo-card neumo-inset p-3 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0"><i data-lucide="phone" class="w-5 h-5"></i></div>
-                            <div class="overflow-hidden flex-1">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase">WhatsApp</p>
-                                <p class="font-bold text-gray-700 text-sm truncate">${u.whatsapp || 'No registrado'}</p>
-                            </div>
+                    <div class="grid grid-cols-2 gap-3 w-full mb-6">
+                        <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100 flex flex-col items-center gap-1 group hover:bg-green-50 hover:border-green-100 transition-colors">
+                            <i data-lucide="phone" class="w-5 h-5 text-gray-400 group-hover:text-green-500 mb-1 transition-colors"></i>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">WhatsApp</span>
+                            <span class="text-xs font-bold text-gray-700 truncate max-w-full">${u.whatsapp || '--'}</span>
                         </div>
-                        
-                        <div class="neumo-card neumo-inset p-3 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0"><i data-lucide="map-pin" class="w-5 h-5"></i></div>
-                            <div class="overflow-hidden">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase">Ciudad</p>
-                                <p class="font-bold text-gray-700 text-sm truncate">${u.city || 'No registrada'}</p>
-                            </div>
-                        </div>
-
-                        <div class="pt-2">
-                            <p class="text-[10px] font-black text-gray-300 uppercase tracking-widest text-center mb-2">Resumen Financiero</p>
-                            
-                            <div class="grid gap-3">
-                                <div class="neumo-card p-3 flex justify-between items-center border-l-4 border-emerald-400">
-                                    <div><p class="text-[9px] font-bold text-gray-400 uppercase">Total Recargado</p><p class="text-xs text-gray-500">Histórico</p></div>
-                                    <p class="text-lg font-black text-emerald-600">$${totalDeposited.toLocaleString()}</p>
-                                </div>
-
-                                <div class="neumo-card p-3 flex justify-between items-center border-l-4 border-rose-400">
-                                    <div><p class="text-[9px] font-bold text-gray-400 uppercase">Total Gastado</p><p class="text-xs text-gray-500">En compras</p></div>
-                                    <p class="text-lg font-black text-rose-500">$${totalSpent.toLocaleString()}</p>
-                                </div>
-
-                                <div class="neumo-card p-3 flex justify-between items-center border-l-4 border-indigo-400">
-                                    <div><p class="text-[9px] font-bold text-gray-400 uppercase">Saldo Ganancias</p><p class="text-xs text-gray-500">Disponible</p></div>
-                                    <p class="text-lg font-black text-indigo-600">$${currentProfit.toLocaleString()}</p>
-                                </div>
-                            </div>
+                        <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100 flex flex-col items-center gap-1 group hover:bg-orange-50 hover:border-orange-100 transition-colors">
+                            <i data-lucide="map-pin" class="w-5 h-5 text-gray-400 group-hover:text-orange-500 mb-1 transition-colors"></i>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">Ciudad</span>
+                            <span class="text-xs font-bold text-gray-700 truncate max-w-full">${u.city || '--'}</span>
                         </div>
                     </div>
 
-                    <button onclick="closeModal()" class="neumo-button w-full bg-gray-900 text-white font-bold py-3 rounded-xl mt-2 shadow-lg flex-shrink-0">Cerrar</button>
+                    <div class="w-full space-y-3">
+                        
+                        <div class="flex items-center justify-between p-4 rounded-2xl bg-white border border-gray-100 shadow-sm relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase">Recargas</p>
+                                    <p class="text-xs text-gray-500">Histórico</p>
+                                </div>
+                            </div>
+                            <span class="text-lg font-black text-gray-800">$${totalDeposited.toLocaleString()}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 rounded-2xl bg-white border border-gray-100 shadow-sm relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-rose-500"></div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
+                                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase">Compras</p>
+                                    <p class="text-xs text-gray-500">Total gastado</p>
+                                </div>
+                            </div>
+                            <span class="text-lg font-black text-gray-800">$${totalSpent.toLocaleString()}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 rounded-2xl bg-gray-900 text-white shadow-lg relative overflow-hidden">
+                            <div class="flex items-center gap-3 relative z-10">
+                                <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                                    <i data-lucide="wallet" class="w-5 h-5 text-indigo-400"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase">Ganancias</p>
+                                    <p class="text-xs text-gray-300">Disponible</p>
+                                </div>
+                            </div>
+                            <span class="text-2xl font-black text-white relative z-10">$${currentProfit.toLocaleString()}</span>
+                            <i data-lucide="sparkles" class="absolute -bottom-2 -right-2 w-16 h-16 text-white/5"></i>
+                        </div>
+                    </div>
+
+                    <button onclick="closeModal()" class="mt-6 text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors">Cerrar</button>
                 </div>
-            `);
+            </div>`);
             lucide.createIcons();
         };
         
