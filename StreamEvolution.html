@@ -449,10 +449,18 @@
                     </div>
                 </section>
 
-                 <section id="admin-users-section" class="hidden bounce-enter">
+                  <section id="admin-users-section" class="hidden bounce-enter">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-800 text-xl">Usuarios</h3>
-                        <button onclick="openAddUserModal()" class="neumo-button bg-success text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 shadow-accent"><i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo</button>
+                        <div class="flex gap-2">
+                            <button onclick="cleanDatabaseOrphans()" class="neumo-button bg-orange-50 text-orange-600 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm border border-orange-100 hover:bg-orange-100 transition-colors" title="Borrar datos de usuarios inexistentes">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i> Limpiar BD
+                            </button>
+                            
+                            <button onclick="openAddUserModal()" class="neumo-button bg-success text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 shadow-accent hover:bg-emerald-600 transition-colors">
+                                <i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="relative mb-4">
@@ -557,9 +565,20 @@
         window.adminPendingRenewals = [];
         window.inventoryCache = [];
 
-        // Audio
-        const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-        window.playNotificationSound = () => { try { alertSound.currentTime = 0; alertSound.play().catch(e=>{}); } catch(e){} };
+                // --- SONIDO HD TIPO RED SOCIAL ---
+        // Usamos un sonido "Pop" corto y agradable
+        const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3");
+        
+        window.playNotificationSound = () => { 
+            try { 
+                alertSound.currentTime = 0; 
+                alertSound.volume = 0.6; // Volumen al 60% para no aturdir
+                alertSound.play().catch(e => {
+                    // Los navegadores bloquean el audio si el usuario no ha interactuado primero con la página.
+                    console.log("Audio bloqueado hasta interacción del usuario");
+                }); 
+            } catch(e){} 
+        };
 
         // --- AUTH OBSERVER ---
         onAuthStateChanged(auth, async (user) => {
@@ -1003,14 +1022,29 @@
             });
 
             // Carga del historial (Se mantiene igual, no afecta al saldo)
+                        // Carga del historial (CON SONIDO PARA NUEVOS MOVIMIENTOS)
             try {
                 const txRef = collection(db, 'artifacts', appId, 'users', user.uid, 'transactions');
+                let isFirstLoad = true; // Bandera para evitar ruido al recargar página
+
                 onSnapshot(query(txRef, orderBy('timestamp', 'desc'), limit(20)), (snapshot) => {
+                    // Detectar cambios
+                    if (!isFirstLoad) {
+                        snapshot.docChanges().forEach((change) => {
+                            if (change.type === "added") {
+                                window.playNotificationSound(); // <--- SONIDO AQUÍ
+                                showToast('¡Nueva notificación recibida!', 'success');
+                            }
+                        });
+                    }
+
                     window.userTransactions = [];
                     snapshot.forEach((docSnap) => {
                         window.userTransactions.push({id: docSnap.id, ...docSnap.data()});
                     });
+                    
                     if(typeof updateNotificationDot === 'function') updateNotificationDot();
+                    isFirstLoad = false; // Ya cargó la primera vez
                 });
             } catch(e) { console.log("Error historial", e); }
         }
@@ -1117,7 +1151,19 @@
         // --- ADMIN PANEL ---
                                                 function initAdminPanel() {
             // 1. SOLICITUDES DE SALDO
+            let firstLoadRequests = true;
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), orderBy('timestamp', 'desc'), limit(50)), (snapshot) => {
+                
+                // Detectar nuevos pagos entrantes
+                if (!firstLoadRequests) {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            window.playNotificationSound(); // <--- SONIDO
+                            showToast('💰 Nueva solicitud de saldo', 'success');
+                        }
+                    });
+                }
+
                 window.adminPendingRequests = []; 
                 let html = '';
                 snapshot.forEach(doc => { 
@@ -1125,6 +1171,7 @@
                     if(d.status === 'pending') { 
                         d.id = doc.id;
                         window.adminPendingRequests.push(d); 
+                        // ... (El resto de tu código HTML interno se mantiene igual aquí) ...
                         html += `
                         <div class="neumo-card p-4 flex flex-col md:flex-row justify-between items-center gap-3 slide-up" style="border-left: 4px solid var(--color-accent);">
                             <div class="flex-1">
@@ -1147,10 +1194,24 @@
                 const badge = document.getElementById('badge-requests'); 
                 if(badge) { if(window.adminPendingRequests.length > 0){badge.textContent=window.adminPendingRequests.length; badge.classList.remove('hidden');} else badge.classList.add('hidden'); }
                 lucide.createIcons();
+                firstLoadRequests = false;
             });
 
             // 2. RENOVACIONES
+            let firstLoadRenew = true;
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '==', 'renewal')), (s) => {
+                
+                // --- DETECCIÓN DE SONIDO ---
+                if(!firstLoadRenew) {
+                    s.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            window.playNotificationSound(); 
+                            showToast('🔄 Nueva Renovación solicitada', 'info');
+                        }
+                    });
+                }
+                // ---------------------------
+
                 const list = document.getElementById('admin-renewal-list');
                 const badge = document.getElementById('renewal-count-badge');
                 if(!list) return;
@@ -1194,10 +1255,25 @@
                 const navBadge = document.getElementById('badge-renewal'); 
                 if(navBadge) { if(pendingCount>0){navBadge.textContent=pendingCount; navBadge.classList.remove('hidden');} else navBadge.classList.add('hidden'); }
                 lucide.createIcons();
+
+                firstLoadRenew = false; // Desactivar bandera de primera carga
             });
 
                         // 3. SOPORTE TÉCNICO (ORDENADO: NUEVOS ARRIBA)
+            let firstLoadSupport = true;
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '!=', 'renewal')), (s) => {
+                
+                // --- DETECCIÓN DE SONIDO ---
+                if(!firstLoadSupport) {
+                    s.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            window.playNotificationSound(); 
+                            showToast('📩 Nuevo Ticket de Soporte', 'error'); // Usamos 'error' para que salga rojo y llame la atención
+                        }
+                    });
+                }
+                // ---------------------------
+
                 const list = document.getElementById('admin-support-list');
                 const badge = document.getElementById('support-count-badge');
                 if(!list) return;
@@ -1272,7 +1348,10 @@
                 const navBadge = document.getElementById('badge-support'); 
                 if(navBadge) { if(pendingCount>0){navBadge.textContent=pendingCount; navBadge.classList.remove('hidden');} else navBadge.classList.add('hidden'); }
                 lucide.createIcons();
+
+                firstLoadSupport = false; // Desactivar bandera
             });
+
 
             // 4. PRODUCTOS
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), (snapshot) => {
@@ -1983,7 +2062,71 @@
         };
 
 
-        window.handleImageUpload = (input) => { if (input.files[0]) { const reader = new FileReader(); reader.onload = (e) => localStorage.setItem('report_evidence', e.target.result); reader.readAsDataURL(input.files[0]); } };
+                // ======================================================
+        // CORRECCIÓN: COMPRESIÓN DE IMAGEN PARA EVITAR ERROR FIRESTORE
+        // ======================================================
+        window.handleImageUpload = (input) => {
+            const file = input.files[0];
+            if (!file) return;
+
+            // 1. Lector de archivo
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    // 2. Crear un canvas para redimensionar
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    // 3. Redimensionar si es mayor a 800px (Suficiente para reportes)
+                    const MAX_WIDTH = 800;
+                    const MAX_HEIGHT = 800;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // 4. Convertir a JPEG con calidad 0.7 (Reduce drásticamente el peso)
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+                    // 5. Verificación de seguridad (Firestore límite ~1MB)
+                    // Base64 string length * 0.75 ~= size in bytes
+                    const sizeInBytes = dataUrl.length * 0.75;
+                    
+                    if (sizeInBytes > 950000) { // Si aun comprimida pesa mas de 950KB
+                         showToast('La imagen es demasiado compleja, intenta con otra.', 'error');
+                         input.value = ""; // Limpiar input
+                         localStorage.removeItem('report_evidence');
+                    } else {
+                        // Guardar la versión comprimida
+                        localStorage.setItem('report_evidence', dataUrl);
+                        // Opcional: Avisar al usuario que la foto está lista
+                        // showToast('Foto adjuntada y comprimida.', 'success'); 
+                    }
+                };
+                img.onerror = () => {
+                    showToast('Error al procesar la imagen.', 'error');
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
                 // ======================================================
         // BLOQUE NUEVO: ENVIAR REPORTE (CON DATOS EXTRA)
         // ======================================================
@@ -4387,22 +4530,39 @@ window.filterExpirations = (mode) => {
         
                 // --- FUNCIONES ADMIN: ELIMINAR Y EDITAR SALDO EXACTO ---
 
-        // 1. Eliminar Usuario
+                // ======================================================
+        // ELIMINAR USUARIO (LIMPIEZA PROFUNDA DE BD)
+        // ======================================================
         window.deleteUserSystem = async (docId, uid, email) => {
-            if(!confirm(`⚠️ ¿Estás seguro de ELIMINAR a ${email}?\n\nSe borrará su billetera y acceso. Esta acción no se puede deshacer.`)) return;
+            if(!confirm(`⚠️ ¿ELIMINAR A ${email}?\n\nEsta acción borrará:\n1. Su perfil de usuario.\n2. Su billetera de saldo.\n3. TODO su historial de transacciones.\n\n¿Estás seguro?`)) return;
+
+            const btn = document.activeElement; 
+            if(btn) btn.disabled = true;
 
             try {
-                // Borrar documento de usuario
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', docId));
-                // Borrar billetera
+                // 1. Borrar todas las transacciones (Limpieza del historial)
+                // Es necesario borrar uno por uno los documentos de la subcolección
+                const txRef = collection(db, 'artifacts', appId, 'users', uid, 'transactions');
+                const txSnap = await getDocs(txRef);
+                const deletePromises = txSnap.docs.map(d => deleteDoc(d.ref));
+                await Promise.all(deletePromises);
+
+                // 2. Borrar Billetera
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main'));
+
+                // 3. Borrar Documento de Usuario (Perfil)
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', docId));
                 
-                showToast('Usuario eliminado correctamente', 'success');
+                // MENSAJE IMPORTANTE SOBRE EL CORREO
+                alert(`✅ ¡Base de Datos Limpia!\n\nSe eliminaron todos los registros, saldo e historial de ${email}.\n\n⚠️ IMPORTANTE:\nPara que este usuario pueda registrarse de nuevo con el mismo correo, DEBES borrarlo manualmente en la sección "Authentication" de tu consola de Firebase.`);
+                
             } catch (e) {
                 console.error(e);
                 showToast('Error al eliminar: ' + e.message, 'error');
+                if(btn) btn.disabled = false;
             }
         };
+
 
         // 2. Abrir Modal Editar Saldo
         window.openEditBalanceExact = async (uid, email) => {
@@ -5233,6 +5393,139 @@ window.filterExpirations = (mode) => {
                 showToast(err.message, 'error');
                 btn.disabled = false; 
                 btn.innerHTML = originalHTML;
+            }
+        };
+        
+                // ======================================================
+        // FUNCIÓN DE MANTENIMIENTO: LIMPIAR BD (USUARIOS FANTASMA)
+        // ======================================================
+        window.cleanOrphanedData = async () => {
+            if(!confirm("⚠️ MANTENIMIENTO DE BASE DE DATOS\n\nEsta función buscará residuos (billeteras, historiales) de usuarios que ya eliminaste anteriormente y los borrará definitivamente.\n\n¿Deseas proceder?")) return;
+
+            const btn = document.querySelector('button[onclick="cleanOrphanedData()"]');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full"></span>';
+
+            try {
+                showToast('Analizando base de datos...', 'info');
+
+                // 1. Obtener lista de Usuarios Válidos (Los que SI existen en la lista 'Usuarios')
+                const validUsersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'));
+                const validUserIds = new Set();
+                validUsersSnap.forEach(doc => validUserIds.add(doc.id));
+
+                // 2. Obtener lista de carpetas de datos ocultos (Billeteras y Transacciones)
+                const dataCollectionRef = collection(db, 'artifacts', appId, 'users');
+                const dataSnap = await getDocs(dataCollectionRef);
+
+                let deletedCount = 0;
+                const promises = [];
+
+                for (const docSnapshot of dataSnap.docs) {
+                    const uid = docSnapshot.id;
+
+                    // Si el ID de esta carpeta NO está en la lista de usuarios válidos... ES BASURA
+                    if (!validUserIds.has(uid)) {
+                        deletedCount++;
+                        console.log(`Eliminando residuos de: ${uid}`);
+
+                        // A. Borrar Billetera
+                        promises.push(deleteDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main')));
+
+                        // B. Borrar Transacciones (Leemos y borramos una por una)
+                        const txRef = collection(db, 'artifacts', appId, 'users', uid, 'transactions');
+                        const txSnap = await getDocs(txRef);
+                        txSnap.forEach(tx => {
+                            promises.push(deleteDoc(tx.ref));
+                        });
+
+                        // C. Borrar la carpeta contenedora
+                        promises.push(deleteDoc(docSnapshot.ref));
+                    }
+                }
+
+                if (deletedCount === 0) {
+                    showToast('La base de datos está limpia. No se encontraron residuos.', 'success');
+                } else {
+                    await Promise.all(promises);
+                    showToast(`Limpieza completada: Se eliminaron datos de ${deletedCount} usuarios antiguos.`, 'success');
+                }
+
+            } catch (e) {
+                console.error(e);
+                showToast('Error en limpieza: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        };
+        
+                // ======================================================
+        // FUNCIÓN: LIMPIEZA DE DATOS HUÉRFANOS (Borra basura de BD)
+        // ======================================================
+        window.cleanDatabaseOrphans = async () => {
+            if(!confirm("⚠️ MANTENIMIENTO DE BASE DE DATOS\n\nEsta función buscará carpetas de datos (billeteras, historiales) que pertenecen a usuarios que YA NO EXISTEN en tu lista de 'Usuarios'.\n\nSi borraste un usuario y quedó basura en la BD, esto lo eliminará.\n\n¿Deseas escanear y limpiar?")) return;
+
+            const btn = document.querySelector('button[onclick="cleanDatabaseOrphans()"]');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full"></span>';
+
+            try {
+                showToast('Escaneando usuarios activos...', 'info');
+
+                // 1. Obtener la lista OFICIAL de usuarios activos (all_users)
+                // Estos son los que SÍ existen y ves en tu panel.
+                const activeUsersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'));
+                const activeUserIds = new Set();
+                activeUsersSnap.forEach(doc => activeUserIds.add(doc.id));
+
+                // 2. Obtener TODAS las carpetas de datos (users)
+                // Aquí están las billeteras y transacciones (incluyendo las de usuarios borrados)
+                const dataCollectionRef = collection(db, 'artifacts', appId, 'users');
+                const dataSnap = await getDocs(dataCollectionRef);
+
+                let deletedCount = 0;
+                const promises = [];
+
+                // 3. Comparar y Borrar
+                for (const docSnapshot of dataSnap.docs) {
+                    const uid = docSnapshot.id;
+
+                    // Si el ID de esta carpeta NO está en la lista de activos... ¡ES BASURA!
+                    if (!activeUserIds.has(uid)) {
+                        console.log(`Encontrado residuo de usuario eliminado: ${uid}`);
+                        deletedCount++;
+
+                        // A. Borrar su Billetera
+                        promises.push(deleteDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main')));
+
+                        // B. Borrar sus Transacciones (una por una porque es subcolección)
+                        const txRef = collection(db, 'artifacts', appId, 'users', uid, 'transactions');
+                        const txSnap = await getDocs(txRef);
+                        txSnap.forEach(tx => {
+                            promises.push(deleteDoc(tx.ref));
+                        });
+
+                        // C. Borrar la carpeta principal del usuario fantasma
+                        promises.push(deleteDoc(docSnapshot.ref));
+                    }
+                }
+
+                if (promises.length > 0) {
+                    await Promise.all(promises);
+                    alert(`✅ LIMPIEZA COMPLETADA\n\nSe eliminaron los datos residuales de ${deletedCount} usuarios que ya no existían en tu lista.`);
+                } else {
+                    showToast('Tu base de datos ya está limpia. No hay residuos.', 'success');
+                }
+
+            } catch (e) {
+                console.error(e);
+                alert('Error durante la limpieza: ' + e.message + '\n\nVerifica que tengas los permisos de Administrador configurados en Firebase Rules.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
             }
         };
 
