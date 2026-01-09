@@ -732,22 +732,11 @@
             } catch(e){} 
         };
 
-        // --- AUTH OBSERVER ---
+            // --- AUTH OBSERVER (ACTUALIZADO CON ICONOS DE ROL) ---
         onAuthStateChanged(auth, async (user) => {
             const loader = document.getElementById('global-loader');
             const authContainer = document.getElementById('auth-container');
             const dashboardContainer = document.getElementById('dashboard-container');
-            
-                        /* BLOQUE ELIMINADO PARA PERMITIR REGISTRO
-            if (user && !user.emailVerified) {
-                await signOut(auth);
-                currentUser = null;
-                dashboardContainer.classList.add('hidden');
-                authContainer.classList.remove('hidden');
-                loader.style.display = 'none';
-                return;
-            }
-            */
 
             if (user) {
                 const userStatusRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', user.uid);
@@ -767,40 +756,39 @@
 
                 currentUser = user;
                 isAdmin = user.email === ADMIN_EMAIL;
-                                // --- CAMBIO: OBTENER NOMBRE PARA EL SIDEBAR ---
+
+                // --- OBTENER DATOS DEL ROL (Icono, Color, Etiqueta) ---
+                const roleData = getRoleData(currentUserRole);
+
+                // --- 1. ACTUALIZAR NOMBRE ---
                 let displayName = 'Usuario';
                 if (userStatusSnap.exists()) {
                     const uData = userStatusSnap.data();
-                    // Usamos el nombre registrado o una parte del correo si no tiene nombre
                     displayName = uData.fullName || user.email.split('@')[0];
                 }
-                
                 const sidebarNameEl = document.getElementById('sidebar-user-name');
                 if(sidebarNameEl) sidebarNameEl.textContent = displayName;
-                // ----------------------------------------------
                 
-                                // --- INICIO NUEVA LÓGICA DE BADGES ---
-                const roleData = getRoleData(currentUserRole);
+                // --- 2. ACTUALIZAR AVATAR POR ICONO DE ROL (NUEVO) ---
+                const avatarEl = document.getElementById('sidebar-avatar-initials');
+                if(avatarEl) {
+                    // Limpiamos las letras "US"
+                    avatarEl.innerHTML = '';
+                    // Insertamos el icono correspondiente al rol con su color
+                    // Aumentamos el tamaño (w-8 h-8) para que luzca bien en el círculo
+                    avatarEl.innerHTML = `<i data-lucide="${roleData.icon}" class="w-8 h-8 ${roleData.color}"></i>`;
+                }
 
-                     // Badge del Sidebar (Menú lateral) - VERSIÓN PREMIUM
+                // --- 3. ACTUALIZAR BADGES (ETIQUETAS) ---
+                // Badge del Sidebar
                 const sidebarBadge = document.getElementById('sidebar-role-tag');
-                
-                // Mapeamos los roles a las nuevas clases CSS
-                const badgeCssMap = {
-                    'lider': 'badge-lider',
-                    'reseller': 'badge-reseller',
-                    'vip': 'badge-vip',
-                    'client': 'badge-client'
-                };
+                const badgeCssMap = { 'lider': 'badge-lider', 'reseller': 'badge-reseller', 'vip': 'badge-vip', 'client': 'badge-client' };
                 const specificClass = badgeCssMap[currentUserRole] || 'badge-client';
 
-                // Aplicamos las clases premium + animación
                 sidebarBadge.className = `role-badge-premium ${specificClass} inline-flex items-center gap-1.5 mt-2 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest`;
-                
-                // Icono blanco para que resalte sobre el fondo degradado
                 sidebarBadge.innerHTML = `<i data-lucide="${roleData.icon}" class="w-3 h-3 text-white fill-white/20"></i> ${roleData.label}`;
                 
-                // Badge del Header (Arriba a la derecha)
+                // Badge del Header (Arriba derecha)
                 const headerBadge = document.getElementById('header-role-badge');
                 headerBadge.className = `text-[8px] uppercase font-black tracking-widest leading-none mt-0.5 flex items-center gap-1 ${roleData.color}`;
                 headerBadge.innerHTML = `<i data-lucide="${roleData.icon}" class="w-3 h-3"></i> ${roleData.label}`;
@@ -809,30 +797,24 @@
                 const btnInvite = document.getElementById('btn-invite-reseller');
                 if(currentUserRole !== 'client') btnInvite.classList.remove('hidden');
                 else btnInvite.classList.add('hidden');
-                // --- FIN NUEVA LÓGICA DE BADGES ---
 
 
+                // --- INICIALIZACIÓN DE DATOS ---
                 await initCategories();
                 initBanners();
 
                 if (isAdmin) {
                     document.getElementById('user-menu-items').classList.add('hidden');
                     document.getElementById('admin-menu-items').classList.remove('hidden');
-                    
-                    // MOSTRAR BOTÓN COCINA SOLO PARA ADMIN
                     const cocinaBtn = document.getElementById('admin-cocina-btn');
                     if(cocinaBtn) cocinaBtn.classList.remove('hidden');
-
                     initAdminPanel();
                     switchView('admin'); 
                 } else {
                     document.getElementById('user-menu-items').classList.remove('hidden');
                     document.getElementById('admin-menu-items').classList.add('hidden');
-                    
-                    // OCULTAR BOTÓN COCINA PARA CLIENTES
                     const cocinaBtn = document.getElementById('admin-cocina-btn');
                     if(cocinaBtn) cocinaBtn.classList.add('hidden');
-
                     switchView('user');
                 }
 
@@ -841,6 +823,10 @@
                 
                 authContainer.classList.add('hidden');
                 dashboardContainer.classList.remove('hidden');
+                
+                // Refrescamos los iconos recién insertados
+                lucide.createIcons();
+
             } else {
                 currentUser = null;
                 isAdmin = false;
