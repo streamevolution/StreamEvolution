@@ -2264,105 +2264,108 @@
             lucide.createIcons();
         };
 
-        // ======================================================
-        // 2. FORMULARIO ESPECÍFICO (Paso 2)
-        // ======================================================
-        window.openReportForm = (selectedType) => { 
-            localStorage.removeItem('report_evidence'); 
-            
-            const services = ["Crunchyroll", "Disney", "Max", "Netflix", "Paramount", "Prime Video", "Universidad", "Vix", "IPTV", "YouTube", "Spotify", "Tidal", "Deezer", "Amazon Music", "Game Pass"];
-            const servicesOptions = services.map(s => `<option value="${s}">${s}</option>`).join('');
+   // 2. FORMULARIO MODIFICADO (Con botón de ayuda y validación visual)
+window.openReportForm = (selectedType) => { 
+    localStorage.removeItem('report_evidence'); 
+    
+    const services = ["Crunchyroll", "Disney", "Max", "Netflix", "Paramount", "Prime Video", "Universal", "Vix", "IPTV", "YouTube", "Spotify", "Tidal", "Deezer", "Amazon Music", "Game Pass"];
+    const servicesOptions = services.map(s => `<option value="${s}">${s}</option>`).join('');
 
-            // Títulos dinámicos según selección
-            let title = "Reportar Fallo";
-            let subtitle = "Completa los detalles";
-            
-            if(selectedType === 'account') { title = "Fallo de Cuenta"; subtitle = "Problemas de acceso o contraseña"; }
-            if(selectedType === 'payment') { title = "Pago no Reflejado"; subtitle = "Adjunta tu comprobante"; }
-            if(selectedType === 'bug') { title = "Reportar Error"; subtitle = "Fallo del sistema"; }
+    let title = "Reportar Fallo";
+    let subtitle = "Completa los detalles";
+    
+    if(selectedType === 'account') { title = "Fallo de Cuenta"; subtitle = "Problemas de acceso o contraseña"; }
+    if(selectedType === 'payment') { title = "Pago no Reflejado"; subtitle = "Adjunta tu comprobante"; }
+    if(selectedType === 'bug') { title = "Reportar Error"; subtitle = "Fallo del sistema"; }
 
-            openModal(`
-            <div class="text-left bounce-enter bg-white rounded-3xl overflow-hidden relative">
-                
-                <div class="bg-gray-900 p-6 pb-8 text-center relative">
-                    <button onclick="openReportModal()" class="absolute top-4 left-4 text-white/50 hover:text-white transition-colors"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                    <h3 class="text-xl font-black text-white uppercase tracking-wider relative z-10">${title}</h3>
-                    <p class="text-xs text-white/60 font-medium relative z-10">${subtitle}</p>
+    openModal(`
+    <div class="text-left bounce-enter bg-white rounded-3xl overflow-hidden relative">
+        
+        <div class="bg-gray-900 p-6 pb-8 text-center relative">
+            <button onclick="openReportModal()" class="absolute top-4 left-4 text-white/50 hover:text-white transition-colors"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h3 class="text-xl font-black text-white uppercase tracking-wider relative z-10">${title}</h3>
+            <p class="text-xs text-white/60 font-medium relative z-10">${subtitle}</p>
+        </div>
+
+        <form onsubmit="submitReport(event)" class="px-6 py-6 space-y-5 -mt-4 bg-white rounded-t-3xl relative z-20">
+            
+            <div class="hidden">
+                <select id="report-type">
+                    <option value="${selectedType}" selected>${selectedType}</option>
+                </select>
+            </div>
+
+            <div id="account-failure-section" class="space-y-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 ${selectedType === 'account' ? '' : 'hidden'}">
+                <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="search" class="w-4 h-4 text-indigo-500"></i>
+                    <span class="text-xs font-black text-indigo-600 uppercase">Buscar Compra Afectada</span>
                 </div>
 
-                <form onsubmit="submitReport(event)" class="px-6 py-6 space-y-5 -mt-4 bg-white rounded-t-3xl relative z-20">
-                    
-                    <div class="hidden">
-                        <select id="report-type">
-                            <option value="${selectedType}" selected>${selectedType}</option>
+                <div class="grid grid-cols-1 gap-3">
+                    <div>
+                        <select id="report-service" onchange="searchPurchasesForReport()" class="w-full bg-white border-none rounded-xl p-3 text-xs font-bold text-gray-600 shadow-sm focus:ring-0">
+                            ${servicesOptions}
                         </select>
                     </div>
-
-                    <div id="account-failure-section" class="space-y-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 ${selectedType === 'account' ? '' : 'hidden'}">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i data-lucide="search" class="w-4 h-4 text-indigo-500"></i>
-                            <span class="text-xs font-black text-indigo-600 uppercase">Buscar Compra Afectada</span>
-                        </div>
-
-                        <div class="grid grid-cols-1 gap-3">
-                            <div>
-                                <select id="report-service" onchange="searchPurchasesForReport()" class="w-full bg-white border-none rounded-xl p-3 text-xs font-bold text-gray-600 shadow-sm focus:ring-0">
-                                    ${servicesOptions}
-                                </select>
-                            </div>
-                            
-                            <div class="relative">
-                                <input type="email" id="search-account-email" oninput="searchPurchasesForReport()" class="w-full bg-white border-none rounded-xl py-3 pl-4 pr-10 text-sm shadow-sm placeholder:text-gray-400 focus:ring-0" placeholder="Correo de la cuenta...">
-                                <div class="absolute right-3 top-3 text-indigo-200"><i data-lucide="at-sign" class="w-4 h-4"></i></div>
-                            </div>
-                        </div>
-
-                        <div id="purchase-results-container" class="space-y-2 max-h-48 overflow-y-auto scrollbar-hide empty:hidden pt-1"></div>
-                        
-                        <div>
-                            <label class="block text-[10px] font-bold text-indigo-400 uppercase mb-1 ml-1">Ticket (Datos de la Cuenta)</label>
-                            <textarea id="report-manual-ticket" class="w-full bg-white border-none rounded-xl p-3 text-sm shadow-sm placeholder:text-gray-400 focus:ring-0 resize-none h-20" placeholder="correo, contraseña, perfil, pin etc"></textarea>
-                        </div>
-
-                        <input type="hidden" id="selected-tx-id" ${selectedType === 'account' ? 'required' : ''}>
+                    
+                    <div class="relative">
+                        <input type="email" id="search-account-email" oninput="searchPurchasesForReport()" class="w-full bg-white border-none rounded-xl py-3 pl-4 pr-10 text-sm shadow-sm placeholder:text-gray-400 focus:ring-0" placeholder="Correo de la cuenta...">
+                        <div class="absolute right-3 top-3 text-indigo-200"><i data-lucide="at-sign" class="w-4 h-4"></i></div>
                     </div>
+                </div>
 
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Detalles del problema</label>
-                        <textarea id="report-desc" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-gray-400 transition-colors h-28 resize-none" placeholder="Explícanos brevemente qué paso..."></textarea>
+                <div id="purchase-results-container" class="space-y-2 max-h-48 overflow-y-auto scrollbar-hide empty:hidden pt-1"></div>
+                
+                <div>
+                    <div class="flex justify-between items-end mb-1 ml-1">
+                        <label class="block text-[10px] font-bold text-indigo-400 uppercase">Ticket <span class="text-rose-500 text-lg leading-none">*</span></label>
+                        <button type="button" onclick="openTicketHelpModal()" class="text-[9px] font-bold text-white bg-indigo-400 hover:bg-indigo-600 px-2 py-1 rounded-lg flex items-center gap-1 transition-colors shadow-sm">
+                            <i data-lucide="help-circle" class="w-3 h-3"></i> ¿Qué poner?
+                        </button>
                     </div>
+                    <textarea id="report-manual-ticket" class="w-full bg-white border border-indigo-100 rounded-xl p-3 text-xs font-mono shadow-sm placeholder:text-gray-400 focus:ring-0 focus:border-indigo-400 resize-none h-24" placeholder="Pega aquí el ticket completo de tu compra..."></textarea>
+                </div>
 
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Evidencia (Captura)</label>
-                        <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:bg-gray-50 hover:border-indigo-400 transition-all group relative overflow-hidden">
-                            <div class="flex flex-col items-center justify-center pt-5 pb-6 relative z-10" id="upload-placeholder">
-                                <i data-lucide="image-plus" class="w-6 h-6 text-gray-300 group-hover:text-indigo-500 mb-1 transition-colors"></i>
-                                <p class="text-[10px] text-gray-400 group-hover:text-gray-600">Toca para subir imagen</p>
-                            </div>
-                            <div id="file-name-display" class="hidden flex-col items-center justify-center z-20">
-                                <i data-lucide="check-circle" class="w-6 h-6 text-emerald-500 mb-1"></i>
-                                <p class="text-[10px] font-bold text-emerald-600 truncate max-w-[200px]" id="file-name-text"></p>
-                            </div>
-                            <input type="file" accept="image/*" onchange="handleImageUploadUI(this)" class="hidden">
-                        </label>
+                <input type="hidden" id="selected-tx-id" ${selectedType === 'account' ? 'required' : ''}>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Detalles del problema</label>
+                <textarea id="report-desc" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-gray-400 transition-colors h-28 resize-none" placeholder="Explícanos brevemente qué paso..."></textarea>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Evidencia (Opcional)</label>
+                <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:bg-gray-50 hover:border-indigo-400 transition-all group relative overflow-hidden">
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6 relative z-10" id="upload-placeholder">
+                        <i data-lucide="image-plus" class="w-6 h-6 text-gray-300 group-hover:text-indigo-500 mb-1 transition-colors"></i>
+                        <p class="text-[10px] text-gray-400 group-hover:text-gray-600">Toca para subir imagen</p>
                     </div>
+                    <div id="file-name-display" class="hidden flex-col items-center justify-center z-20">
+                        <i data-lucide="check-circle" class="w-6 h-6 text-emerald-500 mb-1"></i>
+                        <p class="text-[10px] font-bold text-emerald-600 truncate max-w-[200px]" id="file-name-text"></p>
+                    </div>
+                    <input type="file" accept="image/*" onchange="handleImageUploadUI(this)" class="hidden">
+                </label>
+            </div>
 
-                    <button type="submit" id="btn-submit-report" class="w-full bg-gray-900 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-gray-800 transform active:scale-95 transition-all flex items-center justify-center gap-2">
-                        <span>Enviar Reporte</span>
-                        <i data-lucide="send" class="w-4 h-4"></i>
-                    </button>
-                </form>
-            </div>`);
-            
-            // Forzar el estado inicial del botón si es cuenta
-            if(selectedType === 'account') {
-                const btn = document.getElementById('btn-submit-report');
-                btn.disabled = true;
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-            
-            lucide.createIcons();
-        };
+            <button type="submit" id="btn-submit-report" class="w-full bg-gray-900 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-gray-800 transform active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span>Enviar Reporte</span>
+                <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+        </form>
+    </div>`);
+    
+    // Validar estado inicial del botón
+    if(selectedType === 'account') {
+        const btn = document.getElementById('btn-submit-report');
+        // Lo dejamos habilitado visualmente para que el usuario pueda hacer clic y recibir la alerta si falta el ticket
+        btn.disabled = false; 
+    }
+    
+    lucide.createIcons();
+};
+
 
 
 
@@ -2419,7 +2422,7 @@
             }
         };
 
-           window.searchPurchasesForReport = () => {
+                   window.searchPurchasesForReport = () => {
             const queryEmail = document.getElementById('search-account-email').value.trim().toLowerCase();
             const selectedPlatform = document.getElementById('report-service').value.toLowerCase();
             const container = document.getElementById('purchase-results-container');
@@ -2436,15 +2439,18 @@
                 return;
             }
 
+            // Filtramos las coincidencias
             const matches = window.userTransactions.filter(t => {
                 if (t.type !== 'purchase' || !t.details || !t.details.email) return false;
                 const tEmail = t.details.email.toLowerCase();
                 const tService = (t.details.serviceName || '').toLowerCase();
+                
+                // Permitimos coincidencia parcial en el servicio o email
                 return tEmail.includes(queryEmail) && tService.includes(selectedPlatform);
             });
 
             if (matches.length === 0) {
-                container.innerHTML = `<div class="p-3 bg-white text-rose-500 text-[10px] font-bold rounded-xl text-center border border-rose-100 shadow-sm">No encontramos cuentas de <b class="uppercase">${selectedPlatform}</b> que coincidan.</div>`;
+                container.innerHTML = `<div class="p-3 bg-white text-rose-500 text-[10px] font-bold rounded-xl text-center border border-rose-100 shadow-sm">No encontramos cuentas de <b class="uppercase">${selectedPlatform}</b> que coincidan con ese correo.</div>`;
                 return;
             }
 
@@ -2452,20 +2458,37 @@
             matches.forEach(m => {
                 const service = m.details.serviceName || 'Servicio';
                 const date = m.timestamp ? m.timestamp.toDate().toLocaleDateString() : '';
+                const pName = m.details.profileName;
+
+                // --- LÓGICA DE PERFIL vs COMPLETA ---
+                let profileBadge = '';
+                
+                // Verificamos si existe nombre de perfil y no es nulo/vacío
+                if (pName && pName.trim() !== '' && pName !== 'null' && pName !== 'undefined') {
+                    // ES PERFIL: Mostramos P1, P2, Juan, etc.
+                    profileBadge = `<span class="ml-1 text-[9px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 whitespace-nowrap"><i data-lucide="user" class="w-2 h-2 inline mb-0.5"></i> ${pName}</span>`;
+                } else {
+                    // ES CUENTA COMPLETA
+                    profileBadge = `<span class="ml-1 text-[9px] font-black text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 whitespace-nowrap"><i data-lucide="star" class="w-2 h-2 inline mb-0.5"></i> Completa</span>`;
+                }
+                // ------------------------------------
 
                 html += `
-                <div onclick="selectPurchaseForReport('${m.id}', this)" class="purchase-option bg-white p-3 rounded-xl cursor-pointer border-2 border-transparent hover:border-indigo-200 shadow-sm transition-all relative group">
+                <div onclick="selectPurchaseForReport('${m.id}', this)" class="purchase-option bg-white p-3 rounded-xl cursor-pointer border-2 border-transparent hover:border-indigo-200 shadow-sm transition-all relative group mb-2">
                     <div class="flex justify-between items-center pointer-events-none">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-9 h-9 flex-shrink-0 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                                 ${service.substring(0,1)}
                             </div>
-                            <div>
-                                <p class="font-bold text-gray-800 text-xs">${service}</p>
-                                <p class="text-[10px] text-gray-400 font-mono">${m.details.email}</p>
+                            <div class="min-w-0">
+                                <div class="flex items-center flex-wrap gap-1">
+                                    <p class="font-bold text-gray-800 text-xs truncate">${service}</p>
+                                    ${profileBadge}
+                                </div>
+                                <p class="text-[10px] text-gray-400 font-mono truncate">${m.details.email}</p>
                             </div>
                         </div>
-                        <span class="text-[9px] bg-gray-100 px-2 py-1 rounded-lg text-gray-500 font-bold">${date}</span>
+                        <span class="text-[9px] bg-gray-100 px-2 py-1 rounded-lg text-gray-500 font-bold ml-2 whitespace-nowrap">${date}</span>
                     </div>
                     <div class="absolute top-1/2 right-3 -translate-y-1/2 text-indigo-600 opacity-0 check-icon transition-opacity">
                         <i data-lucide="check-circle-2" class="w-5 h-5"></i>
@@ -2567,67 +2590,72 @@
             reader.readAsDataURL(file);
         };
 
-                      // ======================================================
-        // 2. ENVIAR REPORTE (SOLO GUARDA EL TEXTO DEL TICKET)
-        // ======================================================
-        window.submitReport = async (e) => { 
-            e.preventDefault(); 
-            
-            const type = document.getElementById('report-type').value;
-            const desc = document.getElementById('report-desc').value;
-            const evidence = localStorage.getItem('report_evidence');
-            
-            let extraData = {};
+             // 2. ENVIAR REPORTE (Con validación de Ticket Obligatorio)
+window.submitReport = async (e) => { 
+    e.preventDefault(); 
+    
+    const type = document.getElementById('report-type').value;
+    const desc = document.getElementById('report-desc').value;
+    const evidence = localStorage.getItem('report_evidence');
+    const btn = document.getElementById('btn-submit-report');
+    
+    let extraData = {};
 
-            if (type === 'account') {
-                const txId = document.getElementById('selected-tx-id').value;
-                const service = document.getElementById('report-service').value;
-                const accountEmail = document.getElementById('search-account-email').value;
-                
-                // AQUÍ TOMAMOS EL TEXTO SIMPLE DEL USUARIO
-                const manualTicket = document.getElementById('report-manual-ticket').value;
+    if (type === 'account') {
+        const txId = document.getElementById('selected-tx-id').value;
+        const service = document.getElementById('report-service').value;
+        const accountEmail = document.getElementById('search-account-email').value;
+        const manualTicket = document.getElementById('report-manual-ticket').value;
 
-                if (!txId) {
-                    showToast('⚠️ Debes seleccionar una compra de la lista. Si el correo no aparece, no puedes reportarlo.', 'error');
-                    return;
-                }
+        // --- VALIDACIÓN 1: SELECCIONAR COMPRA DE LA LISTA ---
+        if (!txId) {
+            showToast('⚠️ Debes buscar y seleccionar una compra de la lista.', 'error');
+            return;
+        }
 
-                extraData = {
-                    relatedTransactionId: txId,
-                    serviceName: service,
-                    accountEmail: accountEmail,
-                    manualTicketData: manualTicket, // Guardamos el texto tal cual
-                    isAccountFailure: true
-                };
-            }
+        // --- VALIDACIÓN 2: CAMPO TICKET OBLIGATORIO ---
+        if (!manualTicket || manualTicket.trim() === '') {
+            showToast('Debe ingresar su ticket válido para continuar', 'error');
+            // Hacemos focus en el campo para ayudar al usuario
+            document.getElementById('report-manual-ticket').focus();
+            return; // Detenemos la ejecución aquí
+        }
 
-            const btn = document.getElementById('btn-submit-report');
-            if(btn) { btn.disabled = true; btn.innerText = "Enviando..."; }
+        extraData = {
+            relatedTransactionId: txId,
+            serviceName: service,
+            accountEmail: accountEmail,
+            manualTicketData: manualTicket, 
+            isAccountFailure: true
+        };
+    }
 
-            try {
-                const reportData = { 
-                    uid: currentUser.uid, 
-                    email: currentUser.email, 
-                    type, 
-                    description: desc, 
-                    evidenceImage: evidence, 
-                    timestamp: serverTimestamp(), 
-                    status: 'unread',
-                    ...extraData 
-                };
+    // Si pasa las validaciones, procedemos
+    if(btn) { btn.disabled = true; btn.innerText = "Enviando..."; }
 
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), reportData); 
-                
-                showToast('Reporte enviado correctamente', 'success'); 
-                closeModal(); 
-
-            } catch(err) {
-                console.error(err);
-                showToast('Error al enviar reporte', 'error');
-                if(btn) { btn.disabled = false; btn.innerText = "Enviar Reporte"; }
-            }
+    try {
+        const reportData = { 
+            uid: currentUser.uid, 
+            email: currentUser.email, 
+            type, 
+            description: desc, 
+            evidenceImage: evidence, 
+            timestamp: serverTimestamp(), 
+            status: 'unread',
+            ...extraData 
         };
 
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), reportData); 
+        
+        showToast('Reporte enviado correctamente', 'success'); 
+        closeModal(); 
+
+    } catch(err) {
+        console.error(err);
+        showToast('Error al enviar reporte', 'error');
+        if(btn) { btn.disabled = false; btn.innerText = "Enviar Reporte"; }
+    }
+};
 
                 // ======================================================
         // 3. VISTA ADMIN (MUESTRA EL TEXTO DEL TICKET)
@@ -7258,6 +7286,63 @@ window.showProfilesWarning = (slug, title) => {
     }
     if(closeBtn) closeBtn.classList.add('hidden');
 
+    lucide.createIcons();
+};
+
+    // --- MODAL DE AYUDA PARA EL TICKET ---
+window.openTicketHelpModal = () => {
+    // Creamos un div temporal para el overlay superior (Z-Index alto)
+    const helpOverlayId = 'ticket-help-overlay';
+    
+    // Si ya existe (por si acaso), lo borramos
+    const existing = document.getElementById(helpOverlayId);
+    if(existing) existing.remove();
+
+    const html = `
+    <div id="${helpOverlayId}" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative overflow-hidden bounce-enter">
+            
+            <div class="bg-gray-900 px-4 py-3 flex justify-between items-center">
+                <h3 class="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="info" class="w-4 h-4 text-indigo-400"></i> Ejemplo de Ticket
+                </h3>
+                <button onclick="document.getElementById('${helpOverlayId}').remove()" class="text-white/50 hover:text-white transition-colors bg-white/10 rounded-full p-1">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="p-5 max-h-[60vh] overflow-y-auto scrollbar-hide bg-gray-50">
+                <div class="bg-white border border-gray-200 rounded-xl p-4 text-[11px] text-gray-700 font-mono leading-relaxed shadow-sm select-all">
+                    <p class="font-bold text-gray-900 mb-2">Esto es un ticket:</p>
+                    
+                    <p class="mb-1">📦 *COMPRA EXITOSA - STREAM EVOLUTION*</p>
+                    <p class="mb-1">📌 *Producto:* tu compra</p>
+                    <p class="mb-1">📧 *Correo:* tu correo</p>
+                    <p class="mb-1">🔑 *Contraseña:* tu contraseña</p>
+                    <p class="mb-1">👤 *Perfil:* tu perfil</p>
+                    <p class="mb-1">🔒 *PIN:* tu pin</p>
+                    <p class="mb-1">📅 *Expira:* tu expiración</p>
+                    <p class="mb-3">⏳ *Duración:* tu duración</p>
+
+                    <p class="mb-2">📜 *Términos:* Terminos y condiciones</p>
+                    
+                    <p class="text-gray-500 italic text-[10px]">
+                        Recuerda no se debe cambiar ni correo ni contraseña, use la cantidad de dispositivos comprados (1), no manipule otros servicios diferentes al suyo, en caso que el servicio corte antes de tiempo no se da garantia por horas ya que el servicio se disfruto en mas de un 97%, Incumplir los terminos podria ocasionar perdida de la cuenta sin devolucion alguna.
+                    </p>
+                    
+                    <p class="mt-2 font-bold text-indigo-600">¡Gracias por tu preferencia!</p>
+                </div>
+                
+                <button onclick="document.getElementById('${helpOverlayId}').remove()" class="w-full mt-4 bg-gray-200 text-gray-600 font-bold py-2 rounded-lg text-xs hover:bg-gray-300 transition-colors">
+                    Entendido, Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    `;
+
+    // Inyectamos directamente en el body para que quede ENCIMA del otro modal
+    document.body.insertAdjacentHTML('beforeend', html);
     lucide.createIcons();
 };
 
