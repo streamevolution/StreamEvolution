@@ -3645,150 +3645,152 @@
              // ======================================================
         // VISTA TIENDA: SOFT MODERN + CINTA ROJA DE AGOTADO
         // ======================================================
-        window.openCategoryModule = (categorySlug, title) => {
-            
-            // 1. Estructura del Modal
-            const html = `
-            <div class="relative h-full flex flex-col bg-[#F8F9FA]">
-                
-                <div class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                            <i data-lucide="grid" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-black text-gray-800 tracking-tight leading-none">${title}</h3>
-                            <p class="text-[10px] text-gray-400 font-medium uppercase tracking-widest mt-0.5">Selecciona un producto</p>
-                        </div>
-                    </div>
-                    <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-all active:scale-95">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
+        // 1. Esta es la función "Gatekeeper" (Portero) que decide si mostrar alerta o no
+window.openCategoryModule = (categorySlug, title) => {
+    // Convertimos a minúsculas para comparar fácil
+    const slug = categorySlug.toLowerCase();
+
+    // SI LA CATEGORÍA ES "PERFILES" (O contiene la palabra perfil)
+    if (slug.includes('perfil')) {
+        // Mostramos la alerta roja primero
+        showProfilesWarning(categorySlug, title);
+    } else {
+        // Si es cualquier otra cosa (Netflix, Música, etc), abrimos directo
+        renderCategoryView(categorySlug, title);
+    }
+};
+
+// 2. FUNCIÓN CORREGIDA QUE CARGA LOS PRODUCTOS (Sin el error de carga)
+window.renderCategoryView = (categorySlug, title) => {
+    // Estructura del Modal de Productos
+    const html = `
+    <div class="relative h-full flex flex-col bg-[#F8F9FA]">
+        <div class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <i data-lucide="grid" class="w-5 h-5"></i>
                 </div>
+                <div>
+                    <h3 class="text-lg font-black text-gray-800 tracking-tight leading-none">${title}</h3>
+                    <p class="text-[10px] text-gray-400 font-medium uppercase tracking-widest mt-0.5">Selecciona un producto</p>
+                </div>
+            </div>
+            <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-all active:scale-95">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
 
-                <div class="flex-1 overflow-y-auto scrollbar-hide p-4 md:p-6">
-                    <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 pb-20">
-                        <div class="col-span-full py-24 flex flex-col items-center justify-center opacity-50 space-y-3">
-                            <span class="relative flex h-8 w-8">
-                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                              <span class="relative inline-flex rounded-full h-8 w-8 bg-indigo-500"></span>
-                            </span>
-                            <span class="text-xs font-bold text-gray-400 tracking-widest uppercase">Cargando...</span>
+        <div class="flex-1 overflow-y-auto scrollbar-hide p-4 md:p-6">
+            <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 pb-20">
+                <div class="col-span-full py-24 flex flex-col items-center justify-center opacity-50 space-y-3">
+                    <span class="relative flex h-8 w-8">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-8 w-8 bg-indigo-500"></span>
+                    </span>
+                    <span class="text-xs font-bold text-gray-400 tracking-widest uppercase">Cargando...</span>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+    document.getElementById('modal-content').innerHTML = html; 
+    
+    // Configuración del Modal
+    const m = document.getElementById('app-modal'); 
+    const mc = document.getElementById('modal-card'); 
+    m.classList.remove('items-center', 'justify-center', 'p-4'); 
+    m.classList.add('items-end', 'justify-center', 'p-0', 'md:p-4', 'md:items-center'); 
+    mc.className = "w-full max-w-5xl h-[92vh] md:h-[85vh] bg-white md:rounded-[2rem] rounded-t-[2rem] relative shadow-2xl flex flex-col overflow-hidden slide-up"; 
+    m.classList.remove('hidden'); 
+    m.classList.add('flex');
+    
+    // --- AQUÍ ESTABA EL ERROR, YA ESTÁ CORREGIDO (Usamos query, collection, etc. directos) ---
+    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), where('category', '==', categorySlug));
+    
+    onSnapshot(q, (snapshot) => {
+        const grid = document.getElementById('products-grid'); if(!grid) return; 
+        
+        if(snapshot.empty) { 
+            grid.innerHTML = `
+            <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-60">
+                <i data-lucide="package-open" class="w-12 h-12 text-gray-300 mb-2"></i>
+                <p class="text-sm font-bold text-gray-500">Sin resultados</p>
+            </div>`; 
+            lucide.createIcons(); 
+            return; 
+        }
+        
+        let products = [];
+        snapshot.forEach(doc => { products.push({ id: doc.id, ...doc.data() }); });
+        products.sort((a, b) => a.name.localeCompare(b.name));
+
+        grid.innerHTML = ''; 
+        
+        products.forEach((p, index) => { 
+            const safeDesc = encodeURIComponent(p.description || ''); 
+            
+            // Precios
+            let effectivePrice = p.priceClient || p.price; 
+            if (window.currentUserRole === 'lider' && p.priceLeader) effectivePrice = p.priceLeader;
+            else if (window.currentUserRole === 'reseller' && p.priceReseller) effectivePrice = p.priceReseller;
+            else if (window.currentUserRole === 'vip' && p.priceVip) effectivePrice = p.priceVip;
+
+            // STOCK LOGIC & BADGES
+            const stock = p.stock || 0;
+            let stockFooterHtml = '';
+            let imageOverlayHtml = '';
+
+            if (stock <= 0) {
+                imageOverlayHtml = `
+                <div class="absolute inset-0 z-20 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-white/60 backdrop-blur-[1px]"></div>
+                    <span class="relative bg-rose-600 text-white text-[10px] font-black px-3 py-1 rounded shadow-lg -rotate-6 border-2 border-white tracking-widest">AGOTADO</span>
+                </div>`;
+                stockFooterHtml = `<span class="text-[9px] font-bold text-rose-400 uppercase">Sin Stock</span>`;
+            } else if (stock <= 3) {
+                stockFooterHtml = `<span class="text-[9px] font-black text-amber-500 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 uppercase">¡Quedan ${stock}!</span>`;
+            } else {
+                stockFooterHtml = `<span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase">Stock: ${stock}</span>`;
+            }
+
+            let dwBadge = p.isForbidden ? `<i data-lucide="ban" class="w-3 h-3 text-rose-500" title="Restringido"></i>` : '';
+            const delay = index * 50; 
+            const opacityClass = stock <= 0 ? 'opacity-90 grayscale-[0.5]' : '';
+            
+            const card = document.createElement('div'); 
+            card.style.animationDelay = `${delay}ms`;
+            card.className = `${opacityClass} bg-white p-3 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-indigo-100/50 border border-gray-100 transition-all duration-300 cursor-pointer group flex flex-col justify-between animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards`;
+            
+            // CORREGIDO EL ORDEN DE LOS DATOS AL COMPRAR: id, nombre, precio
+            card.innerHTML = `
+            <div onclick="buyProduct('${p.id}', '${p.name}', ${effectivePrice}, ${stock}, '${safeDesc}', '${p.imageUrl}', '${p.category}')" class="h-full flex flex-col">
+                <div class="relative w-full aspect-[4/3] bg-gray-50 rounded-2xl overflow-hidden mb-3 border border-gray-50 group-hover:border-indigo-100 transition-colors">
+                    ${imageOverlayHtml} <img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy">
+                </div>
+                <div class="px-1 flex-1 flex flex-col">
+                    <div class="flex justify-between items-start mb-1">
+                        <h4 class="font-bold text-gray-800 text-xs leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors pr-2">${p.name}</h4>
+                        ${dwBadge}
+                    </div>
+                    <p class="text-[10px] text-gray-400 line-clamp-1 mb-3">${p.description || 'Entrega automática'}</p>
+                    <div class="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
+                        <div class="flex flex-col">
+                            ${stockFooterHtml}
+                            <span class="text-sm font-black text-gray-900 mt-0.5">$${effectivePrice}</span>
                         </div>
+                        <button class="w-8 h-8 rounded-full bg-gray-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                            <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
+                        </button>
                     </div>
                 </div>
-            </div>`;
+            </div>`; 
+            grid.appendChild(card); 
+        }); 
+        lucide.createIcons();
+    });
+};
 
-            document.getElementById('modal-content').innerHTML = html; 
-            
-            // Configuración del Modal
-            const m = document.getElementById('app-modal'); 
-            const mc = document.getElementById('modal-card'); 
-            m.classList.remove('items-center', 'justify-center', 'p-4'); 
-            m.classList.add('items-end', 'justify-center', 'p-0', 'md:p-4', 'md:items-center'); 
-            mc.className = "w-full max-w-5xl h-[92vh] md:h-[85vh] bg-white md:rounded-[2rem] rounded-t-[2rem] relative shadow-2xl flex flex-col overflow-hidden slide-up"; 
-            m.classList.remove('hidden'); 
-            m.classList.add('flex');
-            
-            // Consulta
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), where('category', '==', categorySlug));
-            
-            onSnapshot(q, (snapshot) => {
-                const grid = document.getElementById('products-grid'); if(!grid) return; 
-                
-                if(snapshot.empty) { 
-                    grid.innerHTML = `
-                    <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-60">
-                        <i data-lucide="package-open" class="w-12 h-12 text-gray-300 mb-2"></i>
-                        <p class="text-sm font-bold text-gray-500">Sin resultados</p>
-                    </div>`; 
-                    lucide.createIcons(); 
-                    return; 
-                }
-                
-                let products = [];
-                snapshot.forEach(doc => { products.push({ id: doc.id, ...doc.data() }); });
-                products.sort((a, b) => a.name.localeCompare(b.name));
 
-                grid.innerHTML = ''; 
-                
-                products.forEach((p, index) => { 
-                    const safeDesc = encodeURIComponent(p.description || ''); 
-                    
-                    // Precios
-                    let effectivePrice = p.priceClient || p.price; 
-                    if (currentUserRole === 'lider' && p.priceLeader) effectivePrice = p.priceLeader;
-                    else if (currentUserRole === 'reseller' && p.priceReseller) effectivePrice = p.priceReseller;
-                    else if (currentUserRole === 'vip' && p.priceVip) effectivePrice = p.priceVip;
-
-                    // STOCK LOGIC & BADGES
-                    const stock = p.stock || 0;
-                    let stockFooterHtml = '';
-                    let imageOverlayHtml = ''; // Variable para la "Cinta Roja" sobre la imagen
-
-                    if (stock <= 0) {
-                        // 1. CINTA ROJA SOBRE LA IMAGEN
-                        imageOverlayHtml = `
-                        <div class="absolute inset-0 z-20 flex items-center justify-center">
-                            <div class="absolute inset-0 bg-white/60 backdrop-blur-[1px]"></div>
-                            <span class="relative bg-rose-600 text-white text-[10px] font-black px-3 py-1 rounded shadow-lg -rotate-6 border-2 border-white tracking-widest">AGOTADO</span>
-                        </div>`;
-                        
-                        // 2. Texto en Footer
-                        stockFooterHtml = `<span class="text-[9px] font-bold text-rose-400 uppercase">Sin Stock</span>`;
-                        
-                    } else if (stock <= 3) {
-                        stockFooterHtml = `<span class="text-[9px] font-black text-amber-500 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 uppercase">¡Quedan ${stock}!</span>`;
-                    } else {
-                        stockFooterHtml = `<span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase">Stock: ${stock}</span>`;
-                    }
-
-                    // Deep Web Badge
-                    let dwBadge = p.isForbidden ? `<i data-lucide="ban" class="w-3 h-3 text-rose-500" title="Restringido"></i>` : '';
-
-                    const delay = index * 50; 
-
-                    // --- TARJETA ---
-                    const card = document.createElement('div'); 
-                    card.style.animationDelay = `${delay}ms`;
-                    // Si está agotado, bajamos un poco la opacidad general al hover para indicar inactividad visual, pero permitimos click
-                    const opacityClass = stock <= 0 ? 'opacity-90 grayscale-[0.5]' : '';
-                    
-                    card.className = `${opacityClass} bg-white p-3 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-indigo-100/50 border border-gray-100 transition-all duration-300 cursor-pointer group flex flex-col justify-between animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards`;
-                    
-                    card.innerHTML = `
-                    <div onclick="buyProduct('${p.id}', '${p.name}', ${effectivePrice}, ${stock}, '${safeDesc}', '${p.imageUrl}', '${p.category}')" class="h-full flex flex-col">
-                        
-                        <div class="relative w-full aspect-[4/3] bg-gray-50 rounded-2xl overflow-hidden mb-3 border border-gray-50 group-hover:border-indigo-100 transition-colors">
-                            ${imageOverlayHtml} <img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy">
-                        </div>
-
-                        <div class="px-1 flex-1 flex flex-col">
-                            <div class="flex justify-between items-start mb-1">
-                                <h4 class="font-bold text-gray-800 text-xs leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors pr-2">${p.name}</h4>
-                                ${dwBadge}
-                            </div>
-                            
-                            <p class="text-[10px] text-gray-400 line-clamp-1 mb-3">${p.description || 'Entrega automática'}</p>
-                            
-                            <div class="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
-                                <div class="flex flex-col">
-                                    ${stockFooterHtml}
-                                    <span class="text-sm font-black text-gray-900 mt-0.5">$${effectivePrice}</span>
-                                </div>
-                                
-                                <button class="w-8 h-8 rounded-full bg-gray-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                                    <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>`; 
-                    
-                    grid.appendChild(card); 
-                }); 
-                lucide.createIcons();
-            });
-        };
 
 
         // ======================================================
@@ -4878,7 +4880,39 @@
         window.switchView = (v) => { const u=document.getElementById('user-view'); const a=document.getElementById('admin-view'); if(v==='admin'){u.classList.add('hidden');a.classList.remove('hidden');}else{a.classList.add('hidden');u.classList.remove('hidden');} }
         window.showToast = (m,t='info') => {const c=document.getElementById('toast-container');const el=document.createElement('div');const col={success:'bg-success text-white',error:'bg-danger text-white',info:'bg-gray-800 text-white'};el.className=`${col[t]} px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm font-bold transform transition-all duration-300 translate-x-full pointer-events-auto border border-white/10 backdrop-blur-md`;el.innerHTML=`<span>${m}</span>`;c.appendChild(el);requestAnimationFrame(()=>el.classList.remove('translate-x-full'));setTimeout(()=>{el.classList.add('translate-x-full','opacity-0');setTimeout(()=>el.remove(),300);},3000);}
         window.closeModal = () => { const m=document.getElementById('app-modal'); m.classList.add('hidden'); m.classList.remove('flex'); };
-        window.openModal = (h) => { document.getElementById('modal-content').innerHTML=h; const m=document.getElementById('app-modal'); m.classList.remove('hidden'); m.classList.add('flex'); lucide.createIcons(); };
+        // --- FUNCIÓN CORREGIDA: OPEN MODAL (Resetea posición siempre) ---
+window.openModal = (h) => { 
+    const m = document.getElementById('app-modal'); 
+    const mc = document.getElementById('modal-card'); 
+    const content = document.getElementById('modal-content');
+
+    // 1. REINICIO TOTAL DE CLASES DEL CONTENEDOR PRINCIPAL
+    // Esto fuerza que siempre arranque centrado (items-center) y quite el (items-end) que dejan los productos
+    m.className = "fixed inset-0 z-[80] hidden items-center justify-center p-4";
+    
+    // 2. REINICIO TOTAL DE LA TARJETA BLANCA
+    // Esto asegura que tenga fondo blanco y sombra, por si la alerta roja lo dejó transparente
+    mc.className = "neumo-card w-full max-w-md p-0 relative shadow-2xl transform transition-all scale-100 opacity-100 max-h-[90vh] flex flex-col overflow-hidden bg-white";
+    
+    // 3. REINICIO DEL CONTENIDO INTERNO
+    content.className = "overflow-y-auto scrollbar-hide p-6 w-full h-full";
+
+    // 4. Restaurar botón cerrar por si se ocultó
+    const closeBtn = document.querySelector('#modal-card > button');
+    if(closeBtn) closeBtn.classList.remove('hidden');
+
+    // Inyectar y mostrar
+    content.innerHTML = h; 
+    m.classList.remove('hidden'); 
+    m.classList.add('flex'); 
+    
+    // Restaurar fondo oscuro si se había quitado
+    const backdrop = m.querySelector('div.absolute');
+    if(backdrop) backdrop.className = "absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity";
+
+    lucide.createIcons(); 
+};
+
         window.enterAdminModule = (m) => { document.getElementById('admin-dashboard-grid').classList.add('hidden'); document.getElementById('admin-modules-container').classList.remove('hidden'); document.querySelectorAll('section[id^="admin-"]').forEach(s=>s.classList.add('hidden')); document.getElementById(`admin-${m}-section`).classList.remove('hidden'); };
         window.returnToAdminDashboard = () => { document.getElementById('admin-dashboard-grid').classList.remove('hidden'); document.getElementById('admin-modules-container').classList.add('hidden'); };
         window.switchAuthView = (v) => { document.querySelectorAll('.auth-view').forEach(x=>x.classList.add('hidden')); document.getElementById(`${v==='login'?'login':v==='register'?'register':'forgot'}-form`).classList.remove('hidden'); };
@@ -7131,6 +7165,75 @@ window.filterExpirations = (mode) => {
         } else {
             console.error("Error: No se encontró el formulario con ID 'forgot-form'");
         }
+        
+       // --- FUNCIÓN ACTUALIZADA: ALERTA CON OJOS ANIMADOS (GIF) ---
+window.showProfilesWarning = (slug, title) => {
+    // NUEVA URL: GIF animado de ojos parpadeando
+    const eyesImg = "https://i.pinimg.com/originals/6e/86/28/6e8628ab32d6e1b522f2c783c1dbf71b.gif";
+    
+    // URL del icono de alerta inferior
+    const alertImg = "https://cdn-icons-png.flaticon.com/512/1055/1055644.png";
+
+    // HTML de la alerta
+    const html = `
+    <div class="w-full h-full flex items-center justify-center">
+        <div class="bg-[#FF0000] rounded-[2rem] p-6 text-center text-white shadow-2xl relative overflow-hidden border-4 border-white ring-4 ring-red-200 w-full max-w-sm mx-auto bounce-enter">
+            
+            <div class="relative w-28 h-28 mx-auto mb-1">
+                <img src="${eyesImg}" class="w-full h-full object-contain drop-shadow-md scale-125">
+            </div>
+
+            <h2 class="text-4xl font-black uppercase mb-2 drop-shadow-md tracking-tighter" style="font-family: 'Arial Black', sans-serif;">¡OJO!</h2>
+            
+            <div class="bg-black/10 rounded-xl p-4 backdrop-blur-sm border border-white/20 mb-4 text-left">
+                <p class="text-xs font-bold leading-relaxed mb-3 text-center uppercase tracking-wide">
+                    ⚠️ REGLAS ESTRICTAS DE USO ⚠️
+                </p>
+                <p class="text-[11px] font-medium leading-relaxed mb-2">
+                    El servicio de <b>PERFILES</b> es de uso exclusivo para <b class="text-yellow-300 text-sm">1 SOLO DISPOSITIVO</b>.
+                </p>
+                <p class="text-[11px] font-medium leading-relaxed">
+                    🚫 <b>ESTÁ PROHIBIDO</b> alternar sesiones (Ej: Cerrar en celular para abrir en TV). El perfil debe permanecer fijo donde se inició.
+                </p>
+            </div>
+
+            <div class="mb-5">
+                <p class="text-[10px] font-bold bg-white/20 p-2 rounded-lg leading-snug border border-white/10">
+                    Si su cliente utiliza más de 1 dispositivo, soporte lo detectará y <span class="text-yellow-300">PERDERÁ SU GARANTÍA Y EL SERVICIO</span> sin derecho a reembolso. Recuerde que somos calidad.
+                </p>
+            </div>
+
+            <div class="flex flex-col items-center justify-center mb-5">
+                <img src="${alertImg}" class="w-12 h-12 mb-1 animate-pulse">
+                <h3 class="text-2xl font-black uppercase text-yellow-400 drop-shadow-md tracking-wide">¡ALERTA!</h3>
+            </div>
+
+            <button onclick="renderCategoryView('${slug}', '${title}')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_0_rgb(30,58,138)] active:shadow-none active:translate-y-[4px] transition-all uppercase tracking-widest text-sm flex items-center justify-center gap-2">
+                <span>Confirmar y Continuar</span>
+                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+    `;
+
+    // 1. Abrimos el modal (Usando la función openModal corregida del paso anterior)
+    openModal(html);
+
+    // 2. APLICAMOS EL TRUCO VISUAL (Transparencia)
+    const mc = document.getElementById('modal-card');
+    const content = document.getElementById('modal-content');
+    const closeBtn = document.querySelector('#modal-card > button');
+
+    if(mc) {
+        mc.className = "w-full max-w-md mx-auto bg-transparent shadow-none relative flex flex-col items-center justify-center";
+    }
+    if(content) {
+        content.className = "p-0 w-full flex items-center justify-center";
+    }
+    if(closeBtn) closeBtn.classList.add('hidden');
+
+    lucide.createIcons();
+};
 
     </script>
 </body>
