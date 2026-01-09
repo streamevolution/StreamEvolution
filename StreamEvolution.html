@@ -3645,13 +3645,13 @@
              // ======================================================
         // VISTA TIENDA: SOFT MODERN + CINTA ROJA DE AGOTADO
         // ======================================================
-        // 1. Esta es la función "Gatekeeper" (Portero) que decide si mostrar alerta o no
+       // 1. Esta es la función "Gatekeeper" (Portero) que decide si mostrar alerta o no
 window.openCategoryModule = (categorySlug, title) => {
     // Convertimos a minúsculas para comparar fácil
     const slug = categorySlug.toLowerCase();
 
-    // SI LA CATEGORÍA ES "PERFILES" (O contiene la palabra perfil)
-    if (slug.includes('perfil')) {
+    // MODIFICADO: Ahora detecta "perfil" O "tv" (para que funcione en Tv Digital)
+    if (slug.includes('perfil') || slug.includes('tv')) {
         // Mostramos la alerta roja primero
         showProfilesWarning(categorySlug, title);
     } else {
@@ -3659,6 +3659,7 @@ window.openCategoryModule = (categorySlug, title) => {
         renderCategoryView(categorySlug, title);
     }
 };
+
 
 // 2. FUNCIÓN CORREGIDA QUE CARGA LOS PRODUCTOS (Sin el error de carga)
 window.renderCategoryView = (categorySlug, title) => {
