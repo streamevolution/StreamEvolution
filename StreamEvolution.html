@@ -3689,16 +3689,16 @@ window.openCategoryModule = (categorySlug, title) => {
     }
 };
 
-
 // ======================================================
-// VISTA TIENDA: LÓGICA DE PRECIOS POR JERARQUÍA CORREGIDA
+// VISTA TIENDA: PRECIOS POR JERARQUÍA (CORREGIDO)
 // ======================================================
 window.renderCategoryView = (categorySlug, title) => {
-    // 1. OBTENER ELEMENTOS DEL MODAL (Diseño y estructura)
+    // 1. CONFIGURACIÓN DEL MODAL
     const m = document.getElementById('app-modal');
     const mc = document.getElementById('modal-card'); 
     const content = document.getElementById('modal-content');
 
+    // Restaurar estilo visual del modal
     if (mc) {
         mc.className = "w-full max-w-5xl h-[90vh] md:h-[85vh] bg-white md:rounded-[2rem] rounded-t-3xl relative shadow-2xl flex flex-col overflow-hidden slide-up";
     }
@@ -3714,10 +3714,9 @@ window.renderCategoryView = (categorySlug, title) => {
                     </div>
                     <div>
                         <h3 class="text-xl font-black text-gray-800 tracking-tight leading-none">${title}</h3>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Catálogo</p>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Catálogo Oficial</p>
                     </div>
                 </div>
-                
                 <button onclick="closeModal()" class="w-10 h-10 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-all border border-gray-100 shadow-sm active:scale-95">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
@@ -3727,7 +3726,7 @@ window.renderCategoryView = (categorySlug, title) => {
                 <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 pb-24">
                     <div class="col-span-full py-24 flex flex-col items-center justify-center opacity-50 space-y-4">
                         <span class="animate-spin inline-block w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full"></span>
-                        <span class="text-xs font-bold text-gray-400 tracking-widest uppercase animate-pulse">Cargando productos...</span>
+                        <span class="text-xs font-bold text-gray-400 tracking-widest uppercase animate-pulse">Cargando precios...</span>
                     </div>
                 </div>
             </div>
@@ -3741,7 +3740,7 @@ window.renderCategoryView = (categorySlug, title) => {
     
     lucide.createIcons();
 
-    // 2. LOGICA DE DATOS (FIREBASE)
+    // 2. LOGICA DE DATOS
     const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), where('category', '==', categorySlug));
     
     onSnapshot(q, (snapshot) => {
@@ -3764,37 +3763,60 @@ window.renderCategoryView = (categorySlug, title) => {
 
         grid.innerHTML = ''; 
         
-        // --- OBTENER ROL ACTUAL ---
-        const myRole = window.currentUserRole || 'client';
+        // --- CORRECCIÓN CLAVE: LEER LA VARIABLE LOCAL CORRECTAMENTE ---
+        // Usamos 'currentUserRole' (variable del script) en lugar de window.currentUserRole
+        let myRole = (currentUserRole || 'client').toLowerCase();
+        
+        // Si es Admin, forzamos rol de líder para ver los mejores precios
+        if (typeof isAdmin !== 'undefined' && isAdmin) {
+            myRole = 'lider';
+        }
 
         products.forEach((p, index) => { 
             const safeDesc = encodeURIComponent(p.description || ''); 
             
-            // --- CÁLCULO ESTRICTO DE PRECIO POR ROL ---
-            let finalPrice = p.priceClient || p.price || 0;
-            let priceLabel = 'PRECIO';
-            let priceColor = 'text-gray-900';
-            
-            // Prioridad jerárquica: Si eres Líder, ves precio Líder. Si no existe precio líder, ves precio base.
-            if (myRole === 'lider' && p.priceLeader > 0) {
-                 finalPrice = p.priceLeader;
-                 priceLabel = 'LÍDER';
-                 priceColor = 'text-amber-600'; // Dorado/Naranja
-            } else if (myRole === 'reseller' && p.priceReseller > 0) {
-                 finalPrice = p.priceReseller;
-                 priceLabel = 'REVENDEDOR';
-                 priceColor = 'text-indigo-600'; // Azul Índigo
-            } else if (myRole === 'vip' && p.priceVip > 0) {
-                 finalPrice = p.priceVip;
-                 priceLabel = 'VIP';
-                 priceColor = 'text-purple-600'; // Morado
-            } else {
-                 // Cliente normal
-                 priceLabel = 'CLIENTE';
-                 priceColor = 'text-gray-800';
+            // 1. Obtener todos los precios posibles como números
+            const pClient = Number(p.priceClient || p.price || 0);
+            const pVip = Number(p.priceVip || 0);
+            const pReseller = Number(p.priceReseller || 0);
+            const pLeader = Number(p.priceLeader || 0);
+
+            // 2. Configuración por defecto (Cliente)
+            let finalPrice = pClient;
+            let roleLabel = 'PRECIO CLIENTE';
+            let roleBg = 'bg-gray-100 text-gray-500 border-gray-200';
+            let priceColor = 'text-gray-800';
+
+            // 3. Lógica de Cascada (Si eres Líder -> busca Líder -> si no hay, busca Revendedor -> etc.)
+            if (myRole === 'lider') {
+                roleLabel = 'PRECIO LÍDER';
+                roleBg = 'bg-amber-50 text-amber-600 border-amber-200';
+                priceColor = 'text-amber-600';
+                
+                if (pLeader > 0) finalPrice = pLeader;
+                else if (pReseller > 0) finalPrice = pReseller;
+                else if (pVip > 0) finalPrice = pVip;
+                else finalPrice = pClient;
+            } 
+            else if (myRole === 'reseller' || myRole === 'revendedor') {
+                roleLabel = 'PRECIO REVENDEDOR';
+                roleBg = 'bg-indigo-50 text-indigo-600 border-indigo-200';
+                priceColor = 'text-indigo-600';
+
+                if (pReseller > 0) finalPrice = pReseller;
+                else if (pVip > 0) finalPrice = pVip;
+                else finalPrice = pClient;
+            } 
+            else if (myRole === 'vip') {
+                roleLabel = 'PRECIO VIP';
+                roleBg = 'bg-purple-50 text-purple-600 border-purple-200';
+                priceColor = 'text-purple-600';
+
+                if (pVip > 0) finalPrice = pVip;
+                else finalPrice = pClient;
             }
 
-            // Lógica de Stock (Sin cambios, solo visual)
+            // 4. Renderizado de Stock
             const stock = p.stock || 0;
             let stockFooterHtml = '';
             let imageOverlayHtml = '';
@@ -3815,16 +3837,19 @@ window.renderCategoryView = (categorySlug, title) => {
             let dwBadge = p.isForbidden ? `<i data-lucide="ban" class="w-3 h-3 text-rose-500" title="Restringido"></i>` : '';
             const opacityClass = stock <= 0 ? 'opacity-90 grayscale-[0.5]' : '';
             
-            // --- RENDERIZADO DE LA TARJETA ---
+            // 5. Crear Tarjeta
             const card = document.createElement('div'); 
             card.style.animationDelay = `${index * 50}ms`;
             card.className = `${opacityClass} bg-white p-3 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-indigo-100/50 border border-gray-100 transition-all duration-300 cursor-pointer group flex flex-col justify-between animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards`;
             
             card.innerHTML = `
             <div onclick="buyProduct('${p.id}', '${p.name}', ${finalPrice}, ${stock}, '${safeDesc}', '${p.imageUrl}', '${p.category}')" class="h-full flex flex-col">
+                
                 <div class="relative w-full aspect-[4/3] bg-gray-50 rounded-2xl overflow-hidden mb-3 border border-gray-50 group-hover:border-indigo-100 transition-colors">
-                    ${imageOverlayHtml} <img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy">
+                    ${imageOverlayHtml} 
+                    <img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy">
                 </div>
+                
                 <div class="px-1 flex-1 flex flex-col">
                     <div class="flex justify-between items-start mb-1">
                         <h4 class="font-bold text-gray-800 text-xs leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors pr-2">${p.name}</h4>
@@ -3833,12 +3858,14 @@ window.renderCategoryView = (categorySlug, title) => {
                     <p class="text-[10px] text-gray-400 line-clamp-1 mb-3">${p.description || 'Entrega automática'}</p>
                     
                     <div class="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
-                        <div class="flex flex-col">
+                        <div class="flex flex-col items-start">
                             ${stockFooterHtml}
-                            <div class="mt-1">
-                                <p class="text-[7px] font-black uppercase ${priceColor} opacity-70 leading-none mb-0.5">${priceLabel}</p>
-                                <span class="text-lg font-black ${priceColor}">$${finalPrice}</span>
+                            
+                            <div class="mt-1.5">
+                                <span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded border ${roleBg} mb-0.5 inline-block tracking-wider">${roleLabel}</span>
+                                <div class="text-lg font-black ${priceColor}">$${finalPrice}</div>
                             </div>
+
                         </div>
                         <button class="w-10 h-10 rounded-full bg-gray-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
                             <i data-lucide="shopping-cart" class="w-4 h-4"></i>
@@ -3854,10 +3881,6 @@ window.renderCategoryView = (categorySlug, title) => {
         showToast("Error de conexión.", "error");
     });
 };
-
-
-
-
 
 
         // ======================================================
