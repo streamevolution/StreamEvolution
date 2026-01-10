@@ -1196,6 +1196,7 @@
                 { id: 'profileName', label: 'Nombre Perfil' },
                 { id: 'pin', label: 'PIN' },
                 { id: 'link', label: 'Enlace / Link' },
+                { id: 'folio', label: 'Folio' }, // <--- NUEVO CAMPO AGREGADO
                 { id: 'expiryDate', label: 'Fecha Expiración' },
                 { id: 'duration', label: 'Duración' },
                 { id: 'description', label: 'Descripción / Código' },
@@ -1613,42 +1614,47 @@
                 firstLoadRenew = false; // Desactivar bandera de primera carga
             });
 
-                        // 3. SOPORTE TÉCNICO (ORDENADO: NUEVOS ARRIBA)
+                                    // 3. SOPORTE TÉCNICO (ORDENADO: NUEVOS ARRIBA)
             let firstLoadSupport = true;
             onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), where('type', '!=', 'renewal')), (s) => {
                 
-                // --- DETECCIÓN DE SONIDO ---
                 if(!firstLoadSupport) {
                     s.docChanges().forEach((change) => {
                         if (change.type === "added") {
-                            window.playNotificationSound(); 
-                            showToast('📩 Nuevo Ticket de Soporte', 'error'); // Usamos 'error' para que salga rojo y llame la atención
+                            const d = change.doc.data();
+                            // MODIFICACIÓN: Si es 'claim', NO notificar aquí (ya lo hace el otro listener)
+                            if (d.type !== 'claim') {
+                                window.playNotificationSound(); 
+                                showToast('📩 Nuevo Ticket de Soporte', 'error');
+                            }
                         }
                     });
                 }
-                // ---------------------------
 
                 const list = document.getElementById('admin-support-list');
                 const badge = document.getElementById('support-count-badge');
                 if(!list) return;
 
                 window.adminPendingReports = []; 
-                window.adminReportsCache = []; 
+                // No limpiamos adminReportsCache aquí para no romper los detalles de otros módulos
                 
-                // 1. Recolectar todos los reportes en un array temporal
                 let allReports = [];
                 s.forEach(doc => { 
                     const r = doc.data(); 
                     r.id = doc.id; 
                     allReports.push(r);
-                    window.adminReportsCache.push(r);
+                    
+                    // Aseguramos que esté en cache para poder abrir detalles
+                    if(!window.adminReportsCache) window.adminReportsCache = [];
+                    const existingIdx = window.adminReportsCache.findIndex(x => x.id === r.id);
+                    if(existingIdx >= 0) window.adminReportsCache[existingIdx] = r;
+                    else window.adminReportsCache.push(r);
                 });
 
-                // 2. ORDENAR POR FECHA (Descendente: Nuevos primero)
                 allReports.sort((a, b) => {
                     const dateA = a.timestamp ? a.timestamp.toMillis() : 0;
                     const dateB = b.timestamp ? b.timestamp.toMillis() : 0;
-                    return dateB - dateA; // El más reciente gana
+                    return dateB - dateA;
                 });
 
                 let html = '';
@@ -1658,7 +1664,10 @@
                     html = '<div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Sin tickets de soporte.</p></div>'; 
                 } else {
                     allReports.forEach(r => { 
-                        // Contar pendientes para el badge rojo
+                        // --- FILTRO CLAVE: IGNORAR RECLAMACIONES EN ESTA LISTA ---
+                        if (r.type === 'claim') return; 
+                        // --------------------------------------------------------
+
                         if(r.status !== 'replied' && r.status !== 'resolved') {
                             window.adminPendingReports.push(r);
                             pendingCount++;
@@ -1667,7 +1676,6 @@
                         let typeIcon = r.type === 'payment' ? 'dollar-sign' : (r.type === 'bug' ? 'bug' : 'message-circle');
                         let typeColor = r.type === 'payment' ? 'text-green-500' : (r.type === 'bug' ? 'text-rose-500' : 'text-blue-500');
 
-                        // LÓGICA DEL BOTÓN DE ESTADO
                         let statusBadge = '';
                         if(r.status === 'replied') {
                              statusBadge = `<span onclick="event.stopPropagation(); viewAdminReply('${r.id}')" class="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-green-100 text-green-600 border border-green-200 cursor-pointer hover:scale-105 transition-transform shadow-sm" title="Ver mi respuesta">REPLIED</span>`;
@@ -1690,7 +1698,6 @@
                             </div>
                             <div class="mt-3 flex justify-between items-center border-t border-gray-100 pt-2">
                                 <button onclick="event.stopPropagation(); deleteReport('${r.id}')" class="text-gray-300 hover:text-rose-500 transition-colors p-1" title="Eliminar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                
                                 ${r.status !== 'replied' ? `<button onclick="event.stopPropagation(); openReplyModal('${r.id}', '${r.uid}')" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"><i data-lucide="corner-down-right" class="w-3 h-3"></i> Responder</button>` : '<span></span>'}
                             </div>
                         </div>`;
@@ -1700,10 +1707,11 @@
                 list.innerHTML = html;
                 if(badge) badge.textContent = `${pendingCount} Activos`;
                 const navBadge = document.getElementById('badge-support'); 
+                // Actualizamos el badge rojo de Soporte con el nuevo conteo filtrado
                 if(navBadge) { if(pendingCount>0){navBadge.textContent=pendingCount; navBadge.classList.remove('hidden');} else navBadge.classList.add('hidden'); }
                 lucide.createIcons();
 
-                firstLoadSupport = false; // Desactivar bandera
+                firstLoadSupport = false;
             });
 
 
@@ -1978,7 +1986,7 @@ onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports')
         // BLOQUE NUEVO: INVENTARIO DINÁMICO
         // ======================================================
 
-        // 1. Abrir Modal de Inventario
+        // 1. Abrir Modal de Inventario (ACTUALIZADO CON FOLIO)
         window.openAddInventoryModal = async () => {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'profiles')); 
             const querySnapshot = await getDocs(q);
@@ -2033,6 +2041,11 @@ onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports')
                                 <label class="block text-[10px] font-bold text-gray-400 uppercase">Link / Enlace</label>
                                 <input type="url" id="inv-link" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" placeholder="https://...">
                             </div>
+                            
+                            <div id="field-folio" class="hidden">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase">Folio / ID Interno</label>
+                                <input type="text" id="inv-folio" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" placeholder="Ej: #12345">
+                            </div>
 
                             <div id="group-dates" class="grid grid-cols-2 gap-2 hidden">
                                 <div id="field-expiryDate" class="hidden"><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm"></div>
@@ -2056,6 +2069,7 @@ onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports')
             `);
         };
 
+
         // 2. Función lógica que muestra/oculta campos según la categoría
         window.toggleInventoryFields = () => {
             const select = document.getElementById('inv-product-select');
@@ -2068,8 +2082,8 @@ onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports')
             const categoryConfig = window.categoriesCache.find(c => c.slug === categorySlug);
             const fieldsToShow = (categoryConfig && categoryConfig.fields) ? categoryConfig.fields : ['email', 'password'];
 
-            // Ocultar TODO primero
-            const allFieldIds = ['email', 'password', 'profileName', 'pin', 'link', 'expiryDate', 'duration', 'description', 'terms'];
+            // Ocultar TODO primero (AGREGADO 'folio')
+            const allFieldIds = ['email', 'password', 'profileName', 'pin', 'link', 'expiryDate', 'duration', 'description', 'terms', 'folio'];
             allFieldIds.forEach(fid => {
                 const el = document.getElementById(`field-${fid}`);
                 if(el) el.classList.add('hidden');
@@ -2113,6 +2127,7 @@ onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports')
             lucide.createIcons();
         };
 
+
         // 3. Guardar Inventario
         window.saveInventoryItem = async (e) => { 
             e.preventDefault(); 
@@ -2144,6 +2159,7 @@ onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports')
                 itemData.profileName = val('inv-profile-name');
                 itemData.pin = val('inv-pin');
                 itemData.link = val('inv-link');
+                itemData.folio = val('inv-folio'); // <--- AQUÍ GUARDAMOS EL FOLIO
                 itemData.expiryDate = val('inv-expiry');
                 itemData.duration = val('inv-duration');
                 itemData.description = val('inv-description');
@@ -2215,9 +2231,15 @@ onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports')
                         <div class="grid grid-cols-2 gap-2">
                             <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</label><input type="date" id="e-inv-expiry" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.expiryDate || ''}"></div>
                             <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Duración</label><select id="e-inv-duration" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm">${durationOptions}</select></div>
-                        </div>
-                        <div><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="e-inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none">${item.terms || ''}</textarea></div>`
+                        </div>`
                     }
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase">Folio</label>
+                        <input type="text" id="e-inv-folio" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm" value="${item.folio || ''}">
+                    </div>
+
+                    ${!isDescType ? `<div><label class="block text-[10px] font-bold text-gray-400 uppercase">Términos</label><textarea id="e-inv-terms" class="neumo-inset w-full bg-transparent border-none rounded-lg p-2 text-sm h-16 resize-none">${item.terms || ''}</textarea></div>` : ''}
                     
                     <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-2 hover:bg-indigo-700">Guardar Cambios</button>
                 </form></div>
@@ -2229,15 +2251,16 @@ onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reports')
             e.preventDefault();
             const updateData = {};
             const cat = (rawCategory || '').toLowerCase();
-            const name = (sName || '').toLowerCase(); // Recibimos el nombre también por seguridad
+            const name = (sName || '').toLowerCase();
             
+            // Capturamos siempre el folio
+            updateData.folio = document.getElementById('e-inv-folio').value;
+
             // Validamos si es tipo descripción
             if (cat === 'game pass' || cat.includes('liberacion') || cat.includes('liberación') || name.includes('liberacion') || name.includes('liberación')) {
                 const descElement = document.getElementById('e-inv-desc');
                 if(descElement) {
                     updateData.description = descElement.value;
-                } else {
-                     return showToast('Error: Campo descripción no encontrado', 'error');
                 }
             } else {
                 const val = document.getElementById('e-inv-email').value;
@@ -4126,212 +4149,234 @@ window.renderCategoryView = (categorySlug, title) => {
 
 
 
-                window.processPurchase = async (pid, name, visualPrice) => {
-            if(!currentUser) return showToast('Inicia sesión', 'error');
-            const btn = document.querySelector('button[onclick^="processPurchase"]'); btn.disabled = true; btn.innerHTML = `<span class="animate-spin">⌛</span>`;
+                        window.processPurchase = async (pid, name, visualPrice) => {
+            if(!currentUser) return showToast('Inicia sesión para comprar', 'error');
+            
+            const btn = document.querySelector('button[onclick^="processPurchase"]'); 
+            if(btn) { btn.disabled = true; btn.innerHTML = `<span class="animate-spin">⌛</span>`; }
             
             try {
-                // Buscamos un item disponible (Consulta normal fuera de transacción)
+                // 1. Buscamos un item disponible
                 const qInv = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('productId', '==', pid), where('status', '==', 'available'), limit(1));
                 const invSnap = await getDocs(qInv); 
                 
-                // Si está vacío, lanzamos error
-                if(invSnap.empty) throw new Error("Stock agotado");
+                if(invSnap.empty) throw new Error("¡Se acaban de agotar! Intenta más tarde.");
                 
                 const item = invSnap.docs[0].data(); 
                 const itemId = invSnap.docs[0].id;
 
                 await runTransaction(db, async (t) => {
-                    // --- FASE 1: LECTURAS (TODO t.get VA AQUÍ) ---
-                    
-                    // 1. Leer billetera del usuario comprador
+                    // A. Leer billetera
                     const wRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main'); 
                     const wSnap = await t.get(wRef);
                     const currentBalance = Number(wSnap.data().balance) || 0;
                     
-                    // 2. Leer datos del producto (precio actualizado)
+                    // B. Leer producto
                     const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', pid); 
                     const pSnap = await t.get(pRef);
                     const productData = pSnap.data();
                     
-                    // 3. Leer datos del usuario para ver si tiene referido
+                    // C. Calcular precio
+                    let finalPrice = productData.priceClient || productData.price;
+                    if (currentUserRole === 'lider' && productData.priceLeader) finalPrice = productData.priceLeader;
+                    else if (currentUserRole === 'reseller' && productData.priceReseller) finalPrice = productData.priceReseller;
+                    else if (currentUserRole === 'vip' && productData.priceVip) finalPrice = productData.priceVip;
+                    
+                    const cost = Number(finalPrice);
+                    if(currentBalance < cost) throw new Error("Saldo insuficiente. Por favor recarga.");
+
+                    // D. Referido
                     const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
                     const userDocSnap = await t.get(userDocRef);
                     const referrerId = userDocSnap.exists() ? userDocSnap.data().referredBy : null;
-
-                    // 4. Leer billetera del revendedor (SI EXISTE REFERIDO)
-                    // ESTO ESTABA PROVOCANDO EL ERROR AL HACERSE DESPUÉS DE UN UPDATE
-                    let resellerWalletRef = null;
-                    let resellerSnap = null;
+                    
+                    let resellerWalletRef = null, resellerSnap = null;
                     if (referrerId) {
                         resellerWalletRef = doc(db, 'artifacts', appId, 'users', referrerId, 'wallet', 'main');
                         resellerSnap = await t.get(resellerWalletRef);
                     }
 
-                    // --- CÁLCULOS ---
-                    
-                    // Determinar precio base y descuentos
-                    let finalPrice = productData.priceClient || productData.price;
-                    if (currentUserRole === 'lider' && productData.priceLeader) {
-                        finalPrice = productData.priceLeader;
-                    } else if (currentUserRole === 'reseller' && productData.priceReseller) {
-                        finalPrice = productData.priceReseller;
-                    } else if (currentUserRole === 'vip' && productData.priceVip) {
-                        finalPrice = productData.priceVip;
-                    }
-                    
-                    const cost = Number(finalPrice);
-                    
-                    if(currentBalance < cost) throw new Error("Saldo insuficiente");
+                    // --- OPERACIONES DE ESCRITURA ---
 
-                    // Crear detalles del item
+                    // 1. Cobrar
+                    t.update(wRef, { balance: (currentBalance - cost) });
+                    
+                    // 2. Marcar vendido
+                    const infiniteCategories = ['libros', 'documentos', 'herramientas', 'cursos'];
+                    if (!infiniteCategories.includes(productData.category)) {
+                        t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { 
+                            status: 'sold', 
+                            soldTo: currentUser.uid, 
+                            soldAt: serverTimestamp() 
+                        });
+                        t.update(pRef, { stock: increment(-1) });
+                    }
+
+                    // 3. Registrar Transacción (GUARDANDO FOLIO)
                     const purchaseDetails = { 
-                        serviceName: item.serviceName, 
+                        serviceName: item.serviceName,
+                        folio: item.folio || null, // <--- ESTO ES LO NUEVO
                         email: item.email || null,
-                        link: item.link || null,
-                        password: item.password, 
-                        expiryDate: item.expiryDate || null, 
-                        duration: item.duration || null, 
+                        password: item.password || null, 
                         profileName: item.profileName || null,
                         pin: item.pin || null,
+                        link: item.link || null,
                         description: item.description || null,
+                        expiryDate: item.expiryDate || null, 
+                        duration: item.duration || null, 
                         terms: item.terms || '' 
                     };
 
-                    // --- FASE 2: ESCRITURAS (t.update / t.set) ---
-                    
-                    // 1. Descontar saldo al usuario
-                    t.update(wRef, { balance: (currentBalance - cost) });
-                    
-                    // 2. Actualizar inventario y stock (si aplica)
-                    const infiniteCategories = ['libros', 'documentos', 'herramientas', 'cursos', 'liberación móvil', 'liberacion-movil', 'liberacion movil'];
+                    t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), { 
+                        type: 'purchase', 
+                        amount: cost, 
+                        description: `Compra: ${name}`, 
+                        details: purchaseDetails, 
+                        itemId: itemId, 
+                        timestamp: serverTimestamp() 
+                    });
 
-                    if (!infiniteCategories.includes(productData.category)) {
-                        // Marcar el item específico como "Vendido"
-                        t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { status: 'sold', soldTo: currentUser.uid, soldAt: serverTimestamp() });
-                        
-                        // Restar 1 al stock visible del producto
-                        t.update(pRef, { stock: (productData.stock || 0) - 1 });
-                    }
-
-                    // 3. Registrar transacción del usuario
-                    t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), { type: 'purchase', amount: cost, description: `Compra: ${name}`, details: purchaseDetails, itemId: itemId, timestamp: serverTimestamp() });
-
-                    // 4. Pagar comisión al revendedor (Usando la lectura hecha al principio)
+                    // 4. Comisión Referido
                     if (referrerId && resellerSnap && resellerSnap.exists()) {
                         const commission = cost * REFERRAL_COMMISSION_RATE; 
                         t.update(resellerWalletRef, { profit: (resellerSnap.data().profit || 0) + commission });
                     }
                 });
                 
-                showToast('¡Compra exitosa!', 'success'); 
+                showToast('¡Compra realizada con éxito!', 'success'); 
+                closeModal();
+                
+                // Llamamos al ticket pasando el nombre correcto y todo el item
                 showTicketModal({...item, serviceName: name});
                 
             } catch (e) { 
-                let m = e.message || "Error"; 
+                let m = e.message || "Error desconocido"; 
                 if(m.includes("Saldo")) openChargeModal(); 
-                showToast(m, 'error'); 
-                closeModal(); 
+                else showToast(m, 'error'); 
+                
+                if(btn) { btn.disabled = false; btn.innerHTML = "Confirmar Compra"; }
             }
         };
-
-        window.showTicketModal = (item) => {
-    const terms = item.terms || "Sin términos adicionales.";
-    const safeTerms = encodeURIComponent(terms); 
-    const safeDesc = item.description ? encodeURIComponent(item.description) : '';
-
-    // Lógica para mostrar Contenido según el tipo
-    let mainContent = '';
     
-    // CASO 1: Es Game Pass o Liberación (Tiene descripción)
-    if (item.description && item.description !== 'null') {
-        mainContent = `
-            <div class="neumo-card neumo-inset p-4 mb-2">
-                <p class="text-[10px] font-bold text-accent uppercase mb-2">Instrucciones / Código / Detalles</p>
-                <p class="font-mono text-sm text-gray-800 font-bold select-all whitespace-pre-wrap leading-relaxed">${item.description}</p>
-            </div>
-        `;
-    } 
-    // CASO 2: Es un Libro o Link
-    else if (item.link) {
-        mainContent = `
-            <div class="neumo-card neumo-inset p-3 mb-2"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Enlace de Descarga</p><a href="${item.link}" target="_blank" class="text-sm font-bold text-blue-600 underline truncate block">${item.link}</a></div>
-            <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-gray-800 font-bold select-all">${item.password}</p></div>
-        `;
-    } 
-    // CASO 3: Es Cuenta/Perfil (Netflix, Disney, etc)
-    else {
-        mainContent = `
-            <div class="grid gap-3">
-                <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Correo</p><p class="font-mono text-sm text-gray-800 font-bold select-all break-all">${item.email}</p></div>
-                <div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Contraseña</p><p class="font-mono text-sm text-gray-800 font-bold select-all">${item.password}</p></div>
-                ${item.profileName ? `<div class="grid grid-cols-2 gap-2"><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Perfil</p><p class="text-sm font-bold text-gray-800">${item.profileName}</p></div><div class="neumo-card neumo-inset p-3"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">PIN</p><p class="text-sm font-bold text-gray-800">${item.pin}</p></div></div>` : ''}
-            </div>
-            <div class="grid grid-cols-2 gap-4 pt-2">
-                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Expira</p><p class="text-sm font-bold text-gray-700">${item.expiryDate || 'N/A'}</p></div>
-                <div><p class="text-[10px] font-bold text-gray-400 uppercase">Duración</p><p class="text-sm font-bold text-gray-700">${item.duration || 'N/A'}</p></div>
-            </div>
-        `;
-    }
 
-    openModal(`
-        <div class="text-center bounce-enter pt-4">
-            <div class="w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset"><i data-lucide="check" class="w-8 h-8"></i></div>
-            <h3 class="text-xl font-bold text-gray-800 mb-2">¡Compra Exitosa!</h3>
-            <p class="text-xs text-gray-400 mb-6">Captura o copia tu ticket</p>
+                window.showTicketModal = (item) => {
+            // Datos seguros (si no existen, quedan como string vacío)
+            const srv = item.serviceName || item.name || 'Servicio';
+            const folio = item.folio || '';
+            const email = item.email || '';
+            const pass = item.password || '';
+            const profile = item.profileName || '';
+            const pin = item.pin || '';
+            const link = item.link || '';
+            const exp = item.expiryDate || '';
+            const dur = item.duration || '';
             
-            <div class="neumo-card neumo-inset p-5 text-left space-y-4 relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-1 h-full bg-success"></div>
-                <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Producto</p><p class="text-lg font-black text-gray-800">${item.serviceName}</p></div>
-                
-                ${mainContent}
-                
-                <div class="pt-3 border-t border-dashed border-gray-200"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Términos y Condiciones</p><p class="text-[10px] text-gray-500 leading-relaxed italic">${terms}</p></div>
-            </div>
+            const termsEnc = item.terms ? encodeURIComponent(item.terms) : '';
+            const descEnc = item.description ? encodeURIComponent(item.description) : '';
 
-            <div class="mt-6 space-y-3">
-                <button onclick="copyTicketData('${item.serviceName}', '${item.email||item.link||''}', '${item.password||''}', '${item.expiryDate||''}', '${item.duration || ''}', '${item.profileName || ''}', '${item.pin || ''}', '${safeTerms}', '${safeDesc}')" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar Ticket</button>
-                <button onclick="closeModal()" class="neumo-button w-full text-gray-500 font-bold text-xs py-2 hover:text-gray-800">Cerrar</button>
-            </div>
-        </div>
-    `);
-};
+            // Construir HTML fila por fila (Solo si hay datos)
+            let detailsHtml = '';
 
-        window.copyTicketData = (srv, mailOrLink, pass, exp, dur, profile, pin, encTerms, encDesc) => {
-    const terms = decodeURIComponent(encTerms);
-    // Verificamos si existe la descripción (pasada como argumento opcional)
-    const desc = encDesc ? decodeURIComponent(encDesc) : null;
+            if (folio) detailsHtml += `
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Folio / ID</span>
+                    <span class="text-sm font-bold text-indigo-600 font-mono select-all">${folio}</span>
+                </div>`;
 
-    let text = `📦 *COMPRA EXITOSA - STREAM EVOLUTION*\n\n📌 *Producto:* ${srv}\n`;
-    
-    // Si hay descripción (Game Pass / Liberación), mostramos solo eso
-    if (desc && desc !== 'null' && desc !== '') {
-        text += `📝 *Detalles/Código:* ${desc}\n`;
-    } else {
-        // Si no hay descripción, mostramos la lógica habitual (Link o Correo)
-        if(mailOrLink.includes('http')) {
-                text += `🔗 *Link:* ${mailOrLink}\n`;
-        } else {
-                text += `📧 *Correo:* ${mailOrLink}\n`;
-        }
-        
-        text += `🔑 *Contraseña:* ${pass}\n`;
+            if (email) detailsHtml += `
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Correo / Usuario</span>
+                    <span class="text-sm font-bold text-gray-800 select-all text-right break-all">${email}</span>
+                </div>`;
 
-        if(profile && profile !== 'null' && profile !== 'undefined' && profile !== '') {
-            text += `👤 *Perfil:* ${profile}\n`;
-        }
-        if(pin && pin !== 'null' && pin !== 'undefined' && pin !== '') {
-            text += `🔒 *PIN:* ${pin}\n`;
-        }
-        
-        if(exp && exp !== 'null') text += `📅 *Expira:* ${exp}\n`;
-        if(dur && dur !== 'null') text += `⏳ *Duración:* ${dur}\n`;
-    }
-    
-    text += `\n📜 *Términos:* ${terms}\n\n¡Gracias por tu preferencia!`;
-    
-    navigator.clipboard.writeText(text).then(() => showToast('¡Ticket copiado!', 'success')).catch(() => showToast('Error al copiar', 'error'));
-};
+            if (pass) detailsHtml += `
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Contraseña</span>
+                    <span class="text-sm font-bold text-gray-800 select-all font-mono">${pass}</span>
+                </div>`;
+
+            if (profile) detailsHtml += `
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Perfil</span>
+                    <span class="text-sm font-bold text-gray-800">${profile}</span>
+                </div>`;
+
+            if (pin) detailsHtml += `
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-xs font-bold text-gray-400 uppercase">PIN</span>
+                    <span class="text-sm font-bold text-gray-800 font-mono">${pin}</span>
+                </div>`;
+
+            if (link) detailsHtml += `
+                <div class="flex flex-col py-2 border-b border-gray-100 gap-1">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Enlace / Link</span>
+                    <a href="${link}" target="_blank" class="text-sm font-bold text-blue-500 truncate hover:underline">${link}</a>
+                </div>`;
+
+            if (item.description) detailsHtml += `
+                <div class="flex flex-col py-2 border-b border-gray-100 gap-1">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Instrucciones / Código</span>
+                    <div class="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                        <p class="text-xs text-gray-700 whitespace-pre-wrap font-mono select-all">${item.description}</p>
+                    </div>
+                </div>`;
+
+            openModal(`
+                <div class="text-center bounce-enter pt-4">
+                    <div class="w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-4 neumo-card neumo-inset">
+                        <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">¡Entrega Exitosa!</h3>
+                    <p class="text-xs text-gray-400 mb-6">Guarda tu comprobante</p>
+                    
+                    <div class="neumo-card neumo-inset p-5 text-left mb-6 max-h-[55vh] overflow-y-auto">
+                        <p class="text-center font-black text-lg text-gray-800 mb-4 border-b border-gray-200 pb-2">${srv}</p>
+                        
+                        ${detailsHtml}
+
+                        ${(exp || dur) ? `
+                        <div class="grid grid-cols-2 gap-4 mt-4 pt-2">
+                            <div><span class="block text-[10px] font-bold text-gray-400 uppercase">Duración</span><span class="text-xs font-bold text-gray-700">${dur || '-'}</span></div>
+                            <div class="text-right"><span class="block text-[10px] font-bold text-gray-400 uppercase">Expiración</span><span class="text-xs font-bold text-rose-500">${exp || '-'}</span></div>
+                        </div>` : ''}
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="closeModal()" class="flex-1 neumo-button bg-gray-100 text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-200 text-xs">Cerrar</button>
+                        <button onclick="copyTicketData('${srv}', '${folio}', '${email}', '${pass}', '${profile}', '${pin}', '${link}', '${exp}', '${dur}', '${termsEnc}', '${descEnc}')" class="flex-1 neumo-button bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 flex items-center justify-center gap-2 text-xs">
+                            <i data-lucide="copy" class="w-4 h-4"></i> Copiar Todo
+                        </button>
+                    </div>
+                </div>
+            `);
+            lucide.createIcons();
+        };
+
+        window.copyTicketData = (srv, folio, email, pass, profile, pin, link, exp, dur, terms, desc) => {
+            let text = `📦 *COMPRA EXITOSA - STREAM EVOLUTION*\n\n`;
+            text += `📌 *Producto:* ${srv}\n`;
+
+            if (folio && folio !== 'null' && folio !== '') text += `🆔 *Folio:* ${folio}\n`;
+            if (email && email !== 'null' && email !== '') text += `📧 *Correo/User:* ${email}\n`;
+            if (pass && pass !== 'null' && pass !== '') text += `🔑 *Contraseña:* ${pass}\n`;
+            if (profile && profile !== 'null' && profile !== '') text += `👤 *Perfil:* ${profile}\n`;
+            if (pin && pin !== 'null' && pin !== '') text += `🔒 *PIN:* ${pin}\n`;
+            if (link && link !== 'null' && link.includes('http')) text += `🔗 *Enlace:* ${link}\n`;
+            
+            if (desc && desc !== 'null' && desc !== '') text += `📝 *Detalles:* ${decodeURIComponent(desc)}\n`;
+            
+            if (exp && exp !== 'null') text += `\n📅 *Expiración:* ${exp}`;
+            if (dur && dur !== 'null') text += `\n⏳ *Duración:* ${dur}`;
+            
+            if (terms && terms !== 'null') text += `\n\n⚠️ *Términos:* ${decodeURIComponent(terms)}`;
+
+            text += `\n\n✅ *Gracias por tu preferencia*`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Ticket copiado al portapapeles', 'success');
+            });
+        };
+
 
 
                  // ==========================================
@@ -7500,8 +7545,12 @@ window.openTicketHelpModal = () => {
 // LÓGICA: RECLAMAR MEMBRESÍA
 // ======================================================
 
+// ======================================================
+// LÓGICA: RECLAMAR MEMBRESÍA (VALIDACIÓN DE FOLIO)
+// ======================================================
+
 const CLAIM_CATALOG = [
-    // GRUPO: INVITACIÓN (Solo correo)
+    // GRUPO: INVITACIÓN (Solo correo + Folio)
     { id: 'canva-1m', name: 'Canva 1M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
     { id: 'canva-2m', name: 'Canva 2M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
     { id: 'canva-6m', name: 'Canva 6M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
@@ -7511,11 +7560,11 @@ const CLAIM_CATALOG = [
     { id: 'amz-1m', name: 'Amazon Music 1M', type: 'invite', icon: 'music', color: 'text-cyan-500', bg: 'bg-cyan-50' },
     { id: 'amz-3m', name: 'Amazon Music 3M', type: 'invite', icon: 'music', color: 'text-cyan-500', bg: 'bg-cyan-50' },
 
-    // GRUPO: LOGIN (Correo + Pass)
+    // GRUPO: LOGIN (Correo + Pass + Folio)
     { id: 'yt-fam', name: 'YouTube Familiar', type: 'login', icon: 'users', color: 'text-red-600', bg: 'bg-red-100' },
     { id: 'gemini-1m', name: 'Gémini 1M', type: 'login', icon: 'sparkles', color: 'text-blue-500', bg: 'bg-blue-50' },
 
-    // GRUPO: WHATSAPP
+    // GRUPO: WHATSAPP (WhatsApp + Folio)
     { id: 'gp-1m', name: 'Game Pass 1M', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { id: 'gp-2m', name: 'Game Pass 2M', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { id: 'gp-6m', name: 'Game Pass 6M', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
@@ -7540,7 +7589,7 @@ window.openClaimModal = () => {
                 <i data-lucide="ticket-check" class="w-8 h-8"></i>
             </div>
             <h3 class="text-xl font-bold text-gray-800 mb-1">Reclamar Membresía</h3>
-            <p class="text-xs text-gray-400 mb-6">Selecciona el servicio que deseas activar</p>
+            <p class="text-xs text-gray-400 mb-6">Selecciona el servicio afectado</p>
             <div class="grid grid-cols-3 gap-3 max-h-[50vh] overflow-y-auto scrollbar-hide p-1">
                 ${optionsHtml}
             </div>
@@ -7555,7 +7604,16 @@ window.openClaimForm = (itemId) => {
     if(!item) return;
 
     let fieldsHtml = '';
-    let warningHtml = '';
+    
+    // Campo Folio (Común)
+    let folioInput = `
+        <div class="mt-3">
+            <label class="block text-xs font-bold text-gray-800 uppercase mb-1 ml-1">Folio de Compra <span class="text-rose-500">*</span></label>
+            <div class="relative">
+                <i data-lucide="hash" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+                <input type="text" id="claim-folio" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="Ingresa el folio exacto" required>
+            </div>
+        </div>`;
 
     if (item.type === 'invite') {
         fieldsHtml = `
@@ -7565,42 +7623,34 @@ window.openClaimForm = (itemId) => {
                     <i data-lucide="mail" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
                     <input type="email" id="claim-email" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="ejemplo@gmail.com" required>
                 </div>
-                <p class="text-[9px] text-gray-400 mt-1 ml-1">* Debe ser un correo válido para recibir el link.</p>
             </div>`;
     } 
     else if (item.type === 'login') {
         fieldsHtml = `
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Correo Gmail</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Correo</label>
                     <div class="relative">
                         <i data-lucide="mail" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
-                        <input type="email" id="claim-email" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="usuario@gmail.com" required>
+                        <input type="email" id="claim-email" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" required>
                     </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Contraseña</label>
                     <div class="relative">
                         <i data-lucide="lock" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
-                        <input type="text" id="claim-pass" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="Contraseña de la cuenta" required>
+                        <input type="text" id="claim-pass" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" required>
                     </div>
                 </div>
-            </div>`;
-        warningHtml = `
-            <div class="bg-amber-50 border border-amber-100 p-3 rounded-xl flex gap-2 mt-4">
-                <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500 flex-shrink-0"></i>
-                <p class="text-[10px] text-amber-700 font-medium leading-snug">
-                    Importante: El correo proporcionado <strong class="uppercase">nunca debe haber sido Premium</strong> anteriormente.
-                </p>
             </div>`;
     } 
     else if (item.type === 'whatsapp') {
         fieldsHtml = `
             <div>
-                <label class="block text-xs font-bold text-emerald-600 uppercase mb-1 ml-1">Número de WhatsApp</label>
+                <label class="block text-xs font-bold text-emerald-600 uppercase mb-1 ml-1">WhatsApp (Para entrega)</label>
                 <div class="relative">
                     <i data-lucide="message-circle" class="absolute left-3 top-3 w-4 h-4 text-emerald-500"></i>
-                    <input type="number" id="claim-whatsapp" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="Para recibir la cuenta" required>
+                    <input type="number" id="claim-whatsapp" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" required>
                 </div>
             </div>`;
     }
@@ -7611,15 +7661,16 @@ window.openClaimForm = (itemId) => {
                 <button onclick="openClaimModal()" class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
                 <div>
                     <h3 class="text-lg font-bold text-gray-800 leading-tight">${item.name}</h3>
-                    <p class="text-xs text-fuchsia-500 font-bold uppercase">Solicitud de Datos</p>
+                    <p class="text-xs text-fuchsia-500 font-bold uppercase">Solicitud de Garantía</p>
                 </div>
             </div>
             
             <form onsubmit="submitClaim(event, '${item.id}', '${item.type}', '${item.name}')">
                 ${fieldsHtml}
-                ${warningHtml}
-                <button type="submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg mt-6 flex items-center justify-center gap-2 hover:bg-black transition-transform active:scale-95">
-                    <span>Enviar Solicitud</span>
+                ${folioInput}
+
+                <button type="submit" id="btn-claim-submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg mt-8 flex items-center justify-center gap-2 hover:bg-black transition-transform active:scale-95">
+                    <span>Verificar y Reclamar</span>
                     <i data-lucide="send" class="w-4 h-4"></i>
                 </button>
             </form>
@@ -7630,38 +7681,73 @@ window.openClaimForm = (itemId) => {
 
 window.submitClaim = async (e, itemId, type, itemName) => {
     e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
+    const btn = document.getElementById('btn-claim-submit');
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Enviando...';
+    btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando...';
 
     try {
-        let details = {};
-        let descriptionText = `Solicitud de Membresía: ${itemName}\n`;
+        const folioInput = document.getElementById('claim-folio').value.trim();
+        
+        if (!folioInput) throw new Error('El Folio es obligatorio');
+
+        // --- 1. VALIDACIÓN EN BASE DE DATOS ---
+        const inventoryRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items');
+        const qFolio = query(inventoryRef, where('folio', '==', folioInput));
+        const folioSnapshot = await getDocs(qFolio);
+
+        if (folioSnapshot.empty) {
+            throw new Error('❌ El Folio ingresado NO EXISTE o no es válido.');
+        }
+
+        const itemData = folioSnapshot.docs[0].data();
+
+        // --- 2. VALIDAR EXPIRACIÓN ---
+        if (itemData.expiryDate) {
+            const today = new Date();
+            const expDate = new Date(itemData.expiryDate + 'T23:59:59'); 
+            
+            if (today > expDate) {
+                throw new Error('⛔ Este Folio ya ha EXPIRADO. La garantía ha terminado.');
+            }
+        }
+
+        // --- 3. VALIDAR SI YA SE RECLAMÓ (PENDIENTE) ---
+        const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
+        const qDupe = query(reportsRef, where('claimData.folio', '==', folioInput), where('status', '==', 'unread'));
+        const dupeSnapshot = await getDocs(qDupe);
+
+        if (!dupeSnapshot.empty) {
+            throw new Error('⚠️ Ya existe un reclamo PENDIENTE con este Folio.');
+        }
+
+        // --- 4. PREPARAR DATOS ---
+        let details = { folio: folioInput };
+        let descriptionText = `RECLAMO DE GARANTÍA\nProducto: ${itemName}\nFolio: ${folioInput}\n\n`;
 
         if (type === 'invite') {
             const email = document.getElementById('claim-email').value;
-            if (!email.includes('@') || email.length < 5) throw new Error('Correo inválido');
+            if (!email.includes('@')) throw new Error('Correo inválido');
             details.email = email;
-            descriptionText += `Correo para invitación: ${email}`;
+            descriptionText += `Correo Invitación: ${email}`;
         } 
         else if (type === 'login') {
             const email = document.getElementById('claim-email').value;
             const pass = document.getElementById('claim-pass').value;
             if (!email.includes('@')) throw new Error('Correo inválido');
-            if (!pass) throw new Error('Falta contraseña');
             details.email = email;
             details.password = pass;
-            descriptionText += `Datos de cuenta:\nCorreo: ${email}\nContraseña: ${pass}`;
+            descriptionText += `Datos Cuenta:\nCorreo: ${email}\nPass: ${pass}`;
         } 
         else if (type === 'whatsapp') {
             const wa = document.getElementById('claim-whatsapp').value;
-            if (wa.length < 7) throw new Error('Número muy corto');
+            if (wa.length < 7) throw new Error('Número WhatsApp inválido');
             details.whatsapp = wa;
-            descriptionText += `WhatsApp de contacto: ${wa}`;
+            descriptionText += `Contacto WhatsApp: ${wa}`;
         }
 
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reports'), {
+        // --- 5. ENVIAR REPORTE ---
+        await addDoc(reportsRef, {
             uid: currentUser.uid,
             email: currentUser.email,
             type: 'claim', 
@@ -7673,16 +7759,113 @@ window.submitClaim = async (e, itemId, type, itemName) => {
             timestamp: serverTimestamp()
         });
 
-        showToast('Solicitud enviada exitosamente', 'success');
+        showToast('✅ Folio Validado. Reclamo enviado.', 'success');
         closeModal();
 
     } catch (err) {
         console.error(err);
-        showToast(err.message || 'Error al enviar', 'error');
+        showToast(err.message || 'Error al procesar', 'error');
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
 };
+
+
+window.submitClaim = async (e, itemId, type, itemName) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-claim-submit');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando...';
+
+    try {
+        const folioInput = document.getElementById('claim-folio').value.trim();
+        const descInput = document.getElementById('claim-desc').value;
+        
+        if (!folioInput) throw new Error('El Folio es obligatorio');
+
+        // --- 1. VALIDACIÓN EN BASE DE DATOS ---
+        // Buscamos en 'inventory_items' que es donde guardas los items vendidos (y donde agregaste el campo Folio)
+        const inventoryRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items');
+        const qFolio = query(inventoryRef, where('folio', '==', folioInput));
+        const folioSnapshot = await getDocs(qFolio);
+
+        if (folioSnapshot.empty) {
+            throw new Error('❌ El Folio ingresado NO EXISTE o no es válido.');
+        }
+
+        const itemData = folioSnapshot.docs[0].data();
+
+        // --- 2. VALIDAR EXPIRACIÓN ---
+        if (itemData.expiryDate) {
+            const today = new Date();
+            // Asumimos formato YYYY-MM-DD del input type="date"
+            const expDate = new Date(itemData.expiryDate + 'T23:59:59'); 
+            
+            if (today > expDate) {
+                throw new Error('⛔ Este Folio ya ha EXPIRADO. La garantía ha terminado.');
+            }
+        }
+
+        // --- 3. VALIDAR SI YA SE RECLAMÓ (PENDIENTE) ---
+        const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
+        // Buscamos reportes donde el folio guardado en 'claimData' sea igual al actual
+        const qDupe = query(reportsRef, where('claimData.folio', '==', folioInput), where('status', '==', 'unread'));
+        const dupeSnapshot = await getDocs(qDupe);
+
+        if (!dupeSnapshot.empty) {
+            throw new Error('⚠️ Ya existe un reclamo PENDIENTE con este Folio.');
+        }
+
+        // --- 4. PREPARAR DATOS ---
+        let details = { folio: folioInput };
+        let descriptionText = `Producto: ${itemName}\nFolio: ${folioInput}\nProblema: ${descInput}\n\n`;
+
+        if (type === 'invite') {
+            const email = document.getElementById('claim-email').value;
+            if (!email.includes('@')) throw new Error('Correo inválido');
+            details.email = email;
+            descriptionText += `Correo Invitación: ${email}`;
+        } 
+        else if (type === 'login') {
+            const email = document.getElementById('claim-email').value;
+            const pass = document.getElementById('claim-pass').value;
+            if (!email.includes('@')) throw new Error('Correo inválido');
+            details.email = email;
+            details.password = pass;
+            descriptionText += `Datos Cuenta:\nCorreo: ${email}\nPass: ${pass}`;
+        } 
+        else if (type === 'whatsapp') {
+            const wa = document.getElementById('claim-whatsapp').value;
+            if (wa.length < 7) throw new Error('Número WhatsApp inválido');
+            details.whatsapp = wa;
+            descriptionText += `Contacto WhatsApp: ${wa}`;
+        }
+
+        // --- 5. ENVIAR REPORTE ---
+        await addDoc(reportsRef, {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            type: 'claim', 
+            serviceId: itemId,
+            serviceName: itemName,
+            claimData: details, 
+            description: descriptionText, 
+            status: 'unread',
+            timestamp: serverTimestamp()
+        });
+
+        showToast('✅ Folio Validado. Reclamo enviado.', 'success');
+        closeModal();
+
+    } catch (err) {
+        console.error(err);
+        showToast(err.message || 'Error al procesar', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+};
+
 
     </script>
 </body>
