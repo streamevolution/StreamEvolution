@@ -7551,24 +7551,24 @@ window.openTicketHelpModal = () => {
 
 const CLAIM_CATALOG = [
     // GRUPO: INVITACIÓN (Solo correo + Folio)
-    { id: 'canva-1m', name: 'Canva 1M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'canva-2m', name: 'Canva 2M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'canva-6m', name: 'Canva 6M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'canva-12m', name: 'Canva 12M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'yt-inv-1m', name: 'YouTube Invitación 1M', type: 'invite', icon: 'youtube', color: 'text-red-500', bg: 'bg-red-50' },
-    { id: 'yt-inv-3m', name: 'YouTube Invitación 3M', type: 'invite', icon: 'youtube', color: 'text-red-500', bg: 'bg-red-50' },
-    { id: 'amz-1m', name: 'Amazon Music 1M', type: 'invite', icon: 'music', color: 'text-cyan-500', bg: 'bg-cyan-50' },
-    { id: 'amz-3m', name: 'Amazon Music 3M', type: 'invite', icon: 'music', color: 'text-cyan-500', bg: 'bg-cyan-50' },
+    { id: 'canva-1m', name: 'Canva Pro 1M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
+    { id: 'canva-2m', name: 'Canva Pro 2M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
+    { id: 'canva-6m', name: 'Canva Pro 6M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
+    { id: 'canva-12m', name: 'Canva Pro 12M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
+    { id: 'yt-inv-1m', name: 'YouTube + YouTube Music 1M Invitación', type: 'invite', icon: 'youtube', color: 'text-red-500', bg: 'bg-red-50' },
+    { id: 'yt-inv-3m', name: 'YouTube + YouTube Music 3M Invitación', type: 'invite', icon: 'youtube', color: 'text-red-500', bg: 'bg-red-50' },
+    { id: 'amz-1m', name: 'Amazon Music 1M (Invitación)', type: 'invite', icon: 'music', color: 'text-cyan-500', bg: 'bg-cyan-50' },
+    { id: 'amz-3m', name: 'Amazon Music 3M (Invitación)', type: 'invite', icon: 'music', color: 'text-cyan-500', bg: 'bg-cyan-50' },
 
     // GRUPO: LOGIN (Correo + Pass + Folio)
-    { id: 'yt-fam', name: 'YouTube Familiar', type: 'login', icon: 'users', color: 'text-red-600', bg: 'bg-red-100' },
-    { id: 'gemini-1m', name: 'Gémini 1M', type: 'login', icon: 'sparkles', color: 'text-blue-500', bg: 'bg-blue-50' },
+    { id: 'yt-fam', name: 'YouTube Familiar MX', type: 'login', icon: 'users', color: 'text-red-600', bg: 'bg-red-100' },
+    { id: 'gemini-1m', name: 'Gémini AI Pro 1 Mes', type: 'login', icon: 'sparkles', color: 'text-blue-500', bg: 'bg-blue-50' },
 
     // GRUPO: WHATSAPP (WhatsApp + Folio)
-    { id: 'gp-1m', name: 'Game Pass 1M', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'gp-2m', name: 'Game Pass 2M', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'gp-6m', name: 'Game Pass 6M', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'gp-12m', name: 'Game Pass 12M', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'gp-1m', name: 'Game Pass Últimate 1 Mes', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'gp-2m', name: 'Game Pass Últimate 2 Meses', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'gp-6m', name: 'Game Pass Últimate 6 Meses', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'gp-12m', name: 'Game Pass Últimate 12 Meses', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
 ];
 
 window.openClaimModal = () => {
@@ -7679,193 +7679,137 @@ window.openClaimForm = (itemId) => {
     lucide.createIcons();
 };
 
-window.submitClaim = async (e, itemId, type, itemName) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-claim-submit');
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando...';
-
-    try {
-        const folioInput = document.getElementById('claim-folio').value.trim();
-        
-        if (!folioInput) throw new Error('El Folio es obligatorio');
-
-        // --- 1. VALIDACIÓN EN BASE DE DATOS ---
-        const inventoryRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items');
-        const qFolio = query(inventoryRef, where('folio', '==', folioInput));
-        const folioSnapshot = await getDocs(qFolio);
-
-        if (folioSnapshot.empty) {
-            throw new Error('❌ El Folio ingresado NO EXISTE o no es válido.');
-        }
-
-        const itemData = folioSnapshot.docs[0].data();
-
-        // --- 2. VALIDAR EXPIRACIÓN ---
-        if (itemData.expiryDate) {
-            const today = new Date();
-            const expDate = new Date(itemData.expiryDate + 'T23:59:59'); 
+           // ======================================================
+        // ENVIAR RECLAMO (VALIDACIÓN ESTRICTA: 1 USO POR FOLIO)
+        // ======================================================
+        window.submitClaim = async (e, itemId, type, itemName) => {
+            e.preventDefault();
             
-            if (today > expDate) {
-                throw new Error('⛔ Este Folio ya ha EXPIRADO. La garantía ha terminado.');
-            }
-        }
-
-        // --- 3. VALIDAR SI YA SE RECLAMÓ (PENDIENTE) ---
-        const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
-        const qDupe = query(reportsRef, where('claimData.folio', '==', folioInput), where('status', '==', 'unread'));
-        const dupeSnapshot = await getDocs(qDupe);
-
-        if (!dupeSnapshot.empty) {
-            throw new Error('⚠️ Ya existe un reclamo PENDIENTE con este Folio.');
-        }
-
-        // --- 4. PREPARAR DATOS ---
-        let details = { folio: folioInput };
-        let descriptionText = `RECLAMO DE GARANTÍA\nProducto: ${itemName}\nFolio: ${folioInput}\n\n`;
-
-        if (type === 'invite') {
-            const email = document.getElementById('claim-email').value;
-            if (!email.includes('@')) throw new Error('Correo inválido');
-            details.email = email;
-            descriptionText += `Correo Invitación: ${email}`;
-        } 
-        else if (type === 'login') {
-            const email = document.getElementById('claim-email').value;
-            const pass = document.getElementById('claim-pass').value;
-            if (!email.includes('@')) throw new Error('Correo inválido');
-            details.email = email;
-            details.password = pass;
-            descriptionText += `Datos Cuenta:\nCorreo: ${email}\nPass: ${pass}`;
-        } 
-        else if (type === 'whatsapp') {
-            const wa = document.getElementById('claim-whatsapp').value;
-            if (wa.length < 7) throw new Error('Número WhatsApp inválido');
-            details.whatsapp = wa;
-            descriptionText += `Contacto WhatsApp: ${wa}`;
-        }
-
-        // --- 5. ENVIAR REPORTE ---
-        await addDoc(reportsRef, {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            type: 'claim', 
-            serviceId: itemId,
-            serviceName: itemName,
-            claimData: details, 
-            description: descriptionText, 
-            status: 'unread',
-            timestamp: serverTimestamp()
-        });
-
-        showToast('✅ Folio Validado. Reclamo enviado.', 'success');
-        closeModal();
-
-    } catch (err) {
-        console.error(err);
-        showToast(err.message || 'Error al procesar', 'error');
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-    }
-};
-
-
-window.submitClaim = async (e, itemId, type, itemName) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-claim-submit');
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando...';
-
-    try {
-        const folioInput = document.getElementById('claim-folio').value.trim();
-        const descInput = document.getElementById('claim-desc').value;
-        
-        if (!folioInput) throw new Error('El Folio es obligatorio');
-
-        // --- 1. VALIDACIÓN EN BASE DE DATOS ---
-        // Buscamos en 'inventory_items' que es donde guardas los items vendidos (y donde agregaste el campo Folio)
-        const inventoryRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items');
-        const qFolio = query(inventoryRef, where('folio', '==', folioInput));
-        const folioSnapshot = await getDocs(qFolio);
-
-        if (folioSnapshot.empty) {
-            throw new Error('❌ El Folio ingresado NO EXISTE o no es válido.');
-        }
-
-        const itemData = folioSnapshot.docs[0].data();
-
-        // --- 2. VALIDAR EXPIRACIÓN ---
-        if (itemData.expiryDate) {
-            const today = new Date();
-            // Asumimos formato YYYY-MM-DD del input type="date"
-            const expDate = new Date(itemData.expiryDate + 'T23:59:59'); 
+            const btn = document.getElementById('btn-claim-submit');
+            let originalText = '';
             
-            if (today > expDate) {
-                throw new Error('⛔ Este Folio ya ha EXPIRADO. La garantía ha terminado.');
+            if(btn) {
+                originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando...';
             }
-        }
 
-        // --- 3. VALIDAR SI YA SE RECLAMÓ (PENDIENTE) ---
-        const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
-        // Buscamos reportes donde el folio guardado en 'claimData' sea igual al actual
-        const qDupe = query(reportsRef, where('claimData.folio', '==', folioInput), where('status', '==', 'unread'));
-        const dupeSnapshot = await getDocs(qDupe);
+            try {
+                // 1. Obtener Folio
+                const folioEl = document.getElementById('claim-folio');
+                if (!folioEl) throw new Error('Error interno: Falta campo Folio');
+                
+                const folioInput = folioEl.value.trim();
+                if (!folioInput) throw new Error('El Folio es obligatorio');
 
-        if (!dupeSnapshot.empty) {
-            throw new Error('⚠️ Ya existe un reclamo PENDIENTE con este Folio.');
-        }
+                // --- PASO A: BUSCAR EL FOLIO EN INVENTARIO (Para ver si existe y de qué es) ---
+                const inventoryRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items');
+                const qFolio = query(inventoryRef, where('folio', '==', folioInput));
+                const folioSnapshot = await getDocs(qFolio);
 
-        // --- 4. PREPARAR DATOS ---
-        let details = { folio: folioInput };
-        let descriptionText = `Producto: ${itemName}\nFolio: ${folioInput}\nProblema: ${descInput}\n\n`;
+                if (folioSnapshot.empty) {
+                    throw new Error('❌ El Folio ingresado NO EXISTE en el sistema.');
+                }
 
-        if (type === 'invite') {
-            const email = document.getElementById('claim-email').value;
-            if (!email.includes('@')) throw new Error('Correo inválido');
-            details.email = email;
-            descriptionText += `Correo Invitación: ${email}`;
-        } 
-        else if (type === 'login') {
-            const email = document.getElementById('claim-email').value;
-            const pass = document.getElementById('claim-pass').value;
-            if (!email.includes('@')) throw new Error('Correo inválido');
-            details.email = email;
-            details.password = pass;
-            descriptionText += `Datos Cuenta:\nCorreo: ${email}\nPass: ${pass}`;
-        } 
-        else if (type === 'whatsapp') {
-            const wa = document.getElementById('claim-whatsapp').value;
-            if (wa.length < 7) throw new Error('Número WhatsApp inválido');
-            details.whatsapp = wa;
-            descriptionText += `Contacto WhatsApp: ${wa}`;
-        }
+                const itemData = folioSnapshot.docs[0].data();
 
-        // --- 5. ENVIAR REPORTE ---
-        await addDoc(reportsRef, {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            type: 'claim', 
-            serviceId: itemId,
-            serviceName: itemName,
-            claimData: details, 
-            description: descriptionText, 
-            status: 'unread',
-            timestamp: serverTimestamp()
-        });
+                // --- PASO B: VALIDAR QUE SEA LA MISMA PLATAFORMA ---
+                // Convertimos a minúsculas para comparar (ej: "Canva 1M" == "canva 1m")
+                const inventoryName = (itemData.serviceName || '').trim().toLowerCase();
+                const claimingName = itemName.trim().toLowerCase();
 
-        showToast('✅ Folio Validado. Reclamo enviado.', 'success');
-        closeModal();
+                // Verificamos si el nombre del producto del folio coincide con lo que estás reclamando
+                if (inventoryName !== claimingName) {
+                    throw new Error(`⛔ Folio incorrecto para este servicio.\nEste folio es de: "${itemData.serviceName}"`);
+                }
 
-    } catch (err) {
-        console.error(err);
-        showToast(err.message || 'Error al procesar', 'error');
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-    }
-};
+                // --- PASO C: VALIDAR SI YA FUE USADO (CUALQUIER ESTADO) ---
+                const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
+                
+                // Buscamos si existe CUALQUIER reporte con este folio (pendiente, atendido, etc.)
+                const qUsage = query(reportsRef, where('folio', '==', folioInput));
+                const usageSnap = await getDocs(qUsage);
 
+                if (!usageSnap.empty) {
+                    // Si encontramos algo, significa que ya se usó o se está usando.
+                    // Podemos revisar el estado del primero para dar un mensaje más claro, pero bloqueamos igual.
+                    const existingReport = usageSnap.docs[0].data();
+                    const status = existingReport.status;
+
+                    if (status === 'unread' || status === 'pending') {
+                        throw new Error('⚠️ Ya enviaste una solicitud con este Folio y está en revisión.');
+                    } else {
+                        throw new Error('🚫 Este Folio YA FUE CANJEADO anteriormente. No es reutilizable.');
+                    }
+                }
+
+                // --- PASO D: VALIDAR EXPIRACIÓN (FECHA) ---
+                if (itemData.expiryDate) {
+                    const today = new Date();
+                    const expDate = new Date(itemData.expiryDate + 'T23:59:59'); 
+                    if (today > expDate) {
+                        throw new Error('⛔ Este Folio ya ha EXPIRADO. La garantía ha terminado.');
+                    }
+                }
+
+                // --- PREPARAR DATOS PARA ENVÍO ---
+                let details = { folio: folioInput };
+                let descriptionText = `SOLICITUD DE CANJE/GARANTÍA\nProducto: ${itemName}\nFolio: ${folioInput}\n\n`;
+
+                if (type === 'invite') {
+                    const emailEl = document.getElementById('claim-email');
+                    if (!emailEl) throw new Error('Falta campo email');
+                    const email = emailEl.value;
+                    if (!email.includes('@')) throw new Error('Correo inválido');
+                    details.email = email;
+                    descriptionText += `Correo Invitación: ${email}`;
+                } 
+                else if (type === 'login') {
+                    const emailEl = document.getElementById('claim-email');
+                    const passEl = document.getElementById('claim-pass');
+                    if (!emailEl || !passEl) throw new Error('Faltan campos de acceso');
+                    const email = emailEl.value;
+                    const pass = passEl.value;
+                    if (!email.includes('@')) throw new Error('Correo inválido');
+                    details.email = email;
+                    details.password = pass;
+                    descriptionText += `Datos Cuenta:\nCorreo: ${email}\nPass: ${pass}`;
+                } 
+                else if (type === 'whatsapp') {
+                    const waEl = document.getElementById('claim-whatsapp');
+                    if (!waEl) throw new Error('Falta campo WhatsApp');
+                    const wa = waEl.value;
+                    if (wa.length < 7) throw new Error('Número WhatsApp inválido');
+                    details.whatsapp = wa;
+                    descriptionText += `Contacto WhatsApp: ${wa}`;
+                }
+
+                // --- ENVIAR REPORTE ---
+                await addDoc(reportsRef, {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    type: 'claim', 
+                    serviceId: itemId,
+                    serviceName: itemName,
+                    claimData: details, 
+                    description: descriptionText, 
+                    folio: folioInput, // Guardamos el folio en la raíz para la validación futura
+                    status: 'unread',
+                    timestamp: serverTimestamp()
+                });
+
+                showToast('✅ Solicitud enviada correctamente.', 'success');
+                closeModal();
+
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || 'Error al procesar solicitud', 'error');
+                if(btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            }
+        };
 
     </script>
 </body>
