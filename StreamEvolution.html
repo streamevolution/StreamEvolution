@@ -324,6 +324,16 @@
                 </span>
                 <span class="text-[10px] font-bold text-emerald-700 tracking-wide font-mono">ONLINE</span>
             </div>
+            
+                                                <button id="btn-chat-live" onclick="openChatLiveUser()" class="hidden relative p-2.5 rounded-xl text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 transition-all active:scale-95 group mr-2 shadow-sm">
+                <div class="transition-transform origin-center group-hover:scale-110 relative">
+                    <i data-lucide="headset" class="w-6 h-6 stroke-[2.5]"></i>
+                    
+                    <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                </div>
+                
+                <span id="chat-badge" class="hidden absolute -top-2 -right-2 min-w-[20px] h-[20px] bg-rose-600 text-white text-[10px] font-black border-2 border-white rounded-full flex items-center justify-center shadow-md transform scale-100 transition-transform z-10">0</span>
+            </button>
 
             <button onclick="openNotifications()" class="relative p-2.5 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-indigo-600 transition-all active:scale-95 group">
                 <div id="bell-icon-container" class="transition-transform origin-top">
@@ -919,6 +929,7 @@
 
                 currentUser = user;
                 isAdmin = user.email === ADMIN_EMAIL;
+                                initChatSystem(); // INICIAR CHAT
 
                 // --- OBTENER DATOS DEL ROL (Icono, Color, Etiqueta) ---
                 const roleData = getRoleData(currentUserRole);
@@ -4067,6 +4078,37 @@ window.renderCategoryView = (categorySlug, title) => {
                         animation: vibrate-slow 1.5s infinite ease-in-out;
                         display: inline-block; 
                     }
+                    
+                        /* --- ESTILOS CHAT LIVE --- */
+    .chat-bubble {
+        max-width: 80%;
+        padding: 10px 14px;
+        border-radius: 16px;
+        font-size: 13px;
+        line-height: 1.4;
+        position: relative;
+        word-wrap: break-word;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .chat-user {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+    }
+    .chat-admin {
+        background: #ffffff;
+        color: #1f2937;
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+        border: 1px solid #e5e7eb;
+    }
+    .online-dot {
+        height: 8px; width: 8px; background-color: #10b981;
+        border-radius: 50%; display: inline-block;
+        box-shadow: 0 0 5px #10b981;
+    }
                 </style>
 
                 <div class="flex flex-col md:flex-row h-full w-full bg-white overflow-hidden relative">
@@ -7809,6 +7851,435 @@ window.openClaimForm = (itemId) => {
                     btn.innerHTML = originalText;
                 }
             }
+        };
+        
+              // ==========================================
+        // SISTEMA CHAT LIVE (Con Notificaciones Numéricas)
+        // ==========================================
+        let chatUnsubscribe = null;
+        let currentAdminName = "Soporte"; 
+        let isChatActiveGlobal = false;
+
+        // 1. INICIALIZAR Y CONTAR NOTIFICACIONES
+        window.initChatSystem = function() {
+            // A. Escuchar Configuración Global (ON/OFF)
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'config'), (docSnap) => {
+                isChatActiveGlobal = docSnap.exists() ? docSnap.data().isChatLiveActive : false;
+                
+                const btn = document.getElementById('btn-chat-live');
+                const adminSwitch = document.getElementById('admin-chat-toggle');
+                const statusLabel = document.getElementById('admin-chat-status-label');
+
+                if (btn) {
+                    if (isChatActiveGlobal || isAdmin) {
+                        btn.classList.remove('hidden');
+                        btn.style.opacity = (!isChatActiveGlobal && isAdmin) ? "0.5" : "1";
+                    } else {
+                        btn.classList.add('hidden');
+                    }
+                }
+
+                if (adminSwitch) {
+                    adminSwitch.checked = isChatActiveGlobal;
+                    if(statusLabel) {
+                        statusLabel.innerText = isChatActiveGlobal ? "Chat ACTIVADO" : "Chat DESACTIVADO";
+                        statusLabel.className = isChatActiveGlobal ? "text-xs font-bold text-emerald-500" : "text-xs font-bold text-gray-400";
+                    }
+                }
+            });
+
+            // B. Escuchar NOTIFICACIONES (Badge Numérico)
+            if(currentUser) {
+                const badge = document.getElementById('chat-badge');
+                
+                if (isAdmin) {
+                    // --- Lógica ADMIN: Cuenta chats con novedades ---
+                    const q = query(collection(db, 'artifacts', appId, 'chats'), where('hasUnreadAdmin', '==', true));
+                    onSnapshot(q, (snap) => {
+                        const count = snap.size; // Número de usuarios esperando
+                        updateBadgeUI(count);
+                    });
+                } else {
+                    // --- Lógica USUARIO: Cuenta mensajes individuales ---
+                    // Escuchar mensajes donde el emisor es 'admin' y NO se han leído
+                    const q = query(collection(db, 'artifacts', appId, 'chats', currentUser.uid, 'messages'), 
+                                    where('sender', '==', 'admin'), 
+                                    where('read', '==', false));
+                    
+                    onSnapshot(q, (snap) => {
+                        const count = snap.size; // Número de mensajes sin leer
+                        updateBadgeUI(count);
+                    });
+                }
+            }
+        }
+
+        // Función auxiliar para actualizar el numerito rojo
+        function updateBadgeUI(count) {
+            const badge = document.getElementById('chat-badge');
+            if(!badge) return;
+            
+            if (count > 0) {
+                badge.innerText = count > 99 ? '99+' : count;
+                badge.classList.remove('hidden');
+                badge.classList.add('animate-bounce'); // Pequeño rebote al llegar notificación
+                setTimeout(() => badge.classList.remove('animate-bounce'), 1000);
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // 2. ABRIR CHAT
+        window.openChatLiveUser = () => {
+            const isMainAdmin = currentUser && currentUser.email === "mrandroidtutorialeshd@gmail.com";
+            
+            if (isAdmin || isMainAdmin) { 
+                openAdminChatPanel(); 
+                return; 
+            }
+            
+            if (!isChatActiveGlobal) { 
+                showToast('El chat no está disponible por el momento.', 'info'); 
+                return; 
+            }
+            openChatWindowUI(currentUser.uid, 'user');
+        };
+
+        // 3. INTERFAZ DE CHAT
+        window.openChatWindowUI = (targetUid, role, adminDisplayName = 'Soporte') => {
+            const isUserView = role === 'user';
+            
+            openModal(`
+                <div class="flex flex-col h-full bg-[#f3f4f6] relative w-full">
+                    <div class="bg-[#1e1b4b] p-4 flex items-center justify-between shadow-md z-10 text-white flex-shrink-0">
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
+                                    <i data-lucide="${isUserView ? 'headset' : 'user'}" class="w-5 h-5 text-white"></i>
+                                </div>
+                                <div class="absolute bottom-0 right-0 online-dot border-2 border-[#1e1b4b]"></div>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm tracking-wide">${isUserView ? 'Soporte en Línea' : 'Chat con Usuario'}</h3>
+                                <p class="text-[10px] text-indigo-200">${isUserView ? 'Respuesta rápida' : targetUid.substring(0,15)+'...'}</p>
+                            </div>
+                        </div>
+                        <button onclick="${isUserView ? 'closeModal()' : 'openAdminChatPanel()'}" class="bg-white/10 p-2 rounded-full hover:bg-white/20">
+                            <i data-lucide="${isUserView ? 'x' : 'arrow-left'}" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+
+                    <div id="chat-msgs" class="flex-1 overflow-y-auto p-4 flex flex-col gap-1 bg-[#eef2f6]">
+                        <div class="text-center mt-10"><span class="animate-spin inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full"></span></div>
+                    </div>
+
+                    <div class="p-3 bg-white border-t flex gap-2 flex-shrink-0 items-center shadow-lg relative z-20">
+                        <input type="text" id="chat-input" class="flex-1 bg-gray-100 rounded-full px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 border-none h-10 text-gray-800" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') doSendMsg('${targetUid}', '${role}')">
+                        <button onclick="doSendMsg('${targetUid}', '${role}')" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full shadow-lg transition-transform active:scale-95 flex items-center justify-center w-10 h-10 flex-shrink-0 cursor-pointer">
+                            <i data-lucide="send" class="w-4 h-4 ml-0.5"></i>
+                        </button>
+                    </div>
+                </div>
+            `);
+            
+            const mc = document.getElementById('modal-card');
+            const content = document.getElementById('modal-content');
+            const defaultClose = document.querySelector('#modal-card > button');
+
+            if(mc) mc.className = "neumo-card w-full max-w-md relative shadow-2xl transform transition-all scale-100 opacity-100 h-[85vh] flex flex-col overflow-hidden bg-white rounded-[2rem]";
+            if(content) content.className = "w-full h-full p-0 flex flex-col"; 
+            if(defaultClose) defaultClose.classList.add('hidden'); 
+
+            lucide.createIcons();
+            loadMessages(targetUid);
+        }
+
+        // 4. CARGAR MENSAJES Y BORRAR NOTIFICACIONES
+        window.loadMessages = (uid) => {
+            const container = document.getElementById('chat-msgs');
+            if(chatUnsubscribe) chatUnsubscribe();
+            
+            const q = collection(db, 'artifacts', appId, 'chats', uid, 'messages');
+            
+            chatUnsubscribe = onSnapshot(q, (snap) => {
+                if(!document.getElementById('chat-msgs')) return;
+                
+                let messages = [];
+                let unreadMessagesIds = []; // Lista para marcar como leídos en bloque
+
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    messages.push({ id: doc.id, ...data });
+                    
+                    // --- Lógica para detectar mensajes NO leídos ---
+                    // Si soy USUARIO y el mensaje es del ADMIN y no está leído -> Lo anoto para marcarlo leído
+                    if (!isAdmin && data.sender === 'admin' && data.read === false) {
+                        unreadMessagesIds.push(doc.id);
+                    }
+                });
+
+                // Ordenar
+                messages.sort((a, b) => {
+                    const tA = a.timestamp ? a.timestamp.toMillis() : Date.now();
+                    const tB = b.timestamp ? b.timestamp.toMillis() : Date.now();
+                    return tA - tB;
+                });
+
+                // --- MARCAR COMO LEÍDOS (Limpiar notificación) ---
+                // Si soy Usuario y tengo mensajes pendientes, los marco como read=true
+                if (!isAdmin && unreadMessagesIds.length > 0) {
+                    unreadMessagesIds.forEach(msgId => {
+                        updateDoc(doc(db, 'artifacts', appId, 'chats', uid, 'messages', msgId), { read: true }).catch(err => console.log("Error update read", err));
+                    });
+                }
+                
+                // Si soy Admin, marco el chat completo como leído
+                if (isAdmin) {
+                    updateDoc(doc(db, 'artifacts', appId, 'chats', uid), { hasUnreadAdmin: false }).catch(()=>{});
+                }
+
+                // Renderizado
+                container.innerHTML = '';
+                
+                if(messages.length === 0) {
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full opacity-40 space-y-2 mt-8">
+                            <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
+                                <i data-lucide="message-square" class="w-6 h-6"></i>
+                            </div>
+                            <p class="text-xs text-gray-500 font-medium">No hay mensajes aún</p>
+                        </div>`;
+                } else {
+                    messages.forEach(m => {
+                        const isMe = (isAdmin && m.sender === 'admin') || (!isAdmin && m.sender === 'user');
+                        const alignClass = isMe ? 'justify-end' : 'justify-start';
+                        const itemsAlign = isMe ? 'items-end' : 'items-start';
+                        const bubbleClass = isMe 
+                            ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm shadow-md' 
+                            : 'bg-white text-gray-800 border border-gray-200 rounded-2xl rounded-tl-sm shadow-sm';
+
+                        let adminLabel = '';
+                        if (m.sender === 'admin' && !isMe) {
+                            adminLabel = `<span class="text-[10px] text-indigo-600 font-bold mb-1 ml-1 block">${m.adminName || 'Soporte'}</span>`;
+                        }
+
+                        const time = m.timestamp ? m.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                        const timeColor = isMe ? 'text-indigo-200' : 'text-gray-400';
+
+                        const msgHtml = `
+                        <div class="flex w-full ${alignClass} mb-2 fade-in">
+                            <div class="max-w-[80%] flex flex-col ${itemsAlign}">
+                                ${adminLabel}
+                                <div class="px-4 py-2.5 text-sm ${bubbleClass} relative break-words leading-relaxed">
+                                    ${m.text}
+                                </div>
+                                <span class="text-[9px] ${timeColor} mt-1 mx-1">${time}</span>
+                            </div>
+                        </div>`;
+
+                        container.insertAdjacentHTML('beforeend', msgHtml);
+                    });
+                }
+                
+                lucide.createIcons();
+                setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+            
+            }, (error) => {
+                console.error("Error chat:", error);
+            });
+        }
+
+        // 5. ENVIAR MENSAJE
+        window.doSendMsg = async (uid, role) => {
+            const input = document.getElementById('chat-input');
+            if (!input) return;
+            const text = input.value.trim();
+            if(!text) return;
+            
+            input.disabled = true; 
+            
+            const msg = { text, sender: role, timestamp: serverTimestamp(), read: false };
+            if(role === 'admin') msg.adminName = currentAdminName;
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'chats', uid, 'messages'), msg);
+                await setDoc(doc(db, 'artifacts', appId, 'chats', uid), {
+                    lastMessage: text,
+                    lastTimestamp: serverTimestamp(),
+                    userEmail: role === 'user' ? currentUser.email : null,
+                    hasUnreadAdmin: role === 'user',
+                    hasUnreadUser: role === 'admin'
+                }, { merge: true });
+                
+                input.value = '';
+                input.disabled = false;
+                input.focus();
+            } catch(e) {
+                console.error("Error envío:", e);
+                showToast("Error al enviar.", "error");
+                input.disabled = false;
+            }
+        };
+
+        // 6. PANEL DE ADMINISTRADOR
+        window.openAdminChatPanel = () => {
+            const isMainAdmin = currentUser.email === "mrandroidtutorialeshd@gmail.com";
+            
+            const switchHtml = isMainAdmin ? `
+                <div class="bg-gray-900 text-white p-4 rounded-xl mb-4 flex justify-between items-center shadow-lg flex-shrink-0">
+                    <div>
+                        <div class="font-bold text-sm">Estado del Chat</div>
+                        <div id="admin-chat-status-label" class="text-xs text-gray-400">Cargando...</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="admin-chat-toggle" class="sr-only peer" onchange="toggleGlobalChat(this.checked)">
+                        <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                </div>` : '';
+
+            openModal(`
+                <div class="flex flex-col h-full bg-white rounded-[2rem] bounce-enter p-4 w-full relative">
+                    <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                        <h2 class="text-xl font-black text-gray-800">Administrar Chats</h2>
+                        <button onclick="closeModal()" class="bg-gray-100 p-2 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
+                    ${switchHtml}
+                    <div id="admin-chat-list" class="flex-1 overflow-y-auto space-y-2">
+                        <div class="text-center py-10 opacity-50">Cargando conversaciones...</div>
+                    </div>
+                </div>
+            `);
+            
+            const mc = document.getElementById('modal-card');
+            if(mc) mc.className = "neumo-card w-full max-w-md p-0 relative shadow-2xl transform transition-all scale-100 opacity-100 h-[85vh] flex flex-col overflow-hidden bg-white rounded-[2rem]";
+            
+            lucide.createIcons();
+
+            if(isMainAdmin) {
+                setTimeout(() => {
+                    const sw = document.getElementById('admin-chat-toggle');
+                    const lbl = document.getElementById('admin-chat-status-label');
+                    if(sw) sw.checked = isChatActiveGlobal;
+                    if(lbl) {
+                        lbl.innerText = isChatActiveGlobal ? "Chat ACTIVADO" : "Chat DESACTIVADO";
+                        lbl.className = isChatActiveGlobal ? "text-xs font-bold text-emerald-500" : "text-xs font-bold text-gray-400";
+                    }
+                }, 100);
+            }
+
+            const q = collection(db, 'artifacts', appId, 'chats');
+            onSnapshot(q, (snap) => {
+                const list = document.getElementById('admin-chat-list');
+                if(!list) return;
+                
+                let chats = [];
+                snap.forEach(doc => chats.push({ id: doc.id, ...doc.data() }));
+                
+                chats.sort((a,b) => (b.lastTimestamp ? b.lastTimestamp.toMillis() : 0) - (a.lastTimestamp ? a.lastTimestamp.toMillis() : 0));
+
+                list.innerHTML = '';
+                if(chats.length === 0) { list.innerHTML = '<p class="text-center text-gray-400 mt-10 text-xs">No hay chats activos.</p>'; return; }
+                
+                chats.forEach(c => {
+                    const hasUnread = c.hasUnreadAdmin;
+                    list.innerHTML += `
+                        <div onclick="preOpenAdminIdentity('${c.id}', '${c.userEmail || 'Usuario'}')" class="p-3 rounded-xl border ${hasUnread ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-gray-100'} cursor-pointer hover:shadow-md flex justify-between items-center transition-all">
+                            <div class="overflow-hidden">
+                                <div class="font-bold text-sm text-gray-800 truncate w-48">${c.userEmail || 'Usuario'}</div>
+                                <div class="text-xs text-gray-500 truncate w-48">${c.lastMessage || 'Adjunto...'}</div>
+                            </div>
+                            ${hasUnread ? `<div class="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-sm">NUEVO</div>` : '<i data-lucide="chevron-right" class="w-4 h-4 text-gray-300"></i>'}
+                        </div>`;
+                });
+                lucide.createIcons();
+            });
+        };
+
+        // 7. TOGGLE GLOBAL
+        window.toggleGlobalChat = async (val) => {
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'config'), { isChatLiveActive: val }, { merge: true });
+                showToast(val ? 'Chat Habilitado' : 'Chat Deshabilitado', 'success');
+                const lbl = document.getElementById('admin-chat-status-label');
+                if(lbl) {
+                    lbl.innerText = val ? "Chat ACTIVADO" : "Chat DESACTIVADO";
+                    lbl.className = val ? "text-xs font-bold text-emerald-500" : "text-xs font-bold text-gray-400";
+                }
+            } catch(e) { console.error(e); }
+        };
+
+                // 8. PRE-APERTURA ADMIN (Selector de Identidad con Opciones)
+        window.preOpenAdminIdentity = (uid, email) => {
+            openModal(`
+                <div class="flex flex-col h-full bg-white relative p-6 w-full">
+                    <button onclick="openAdminChatPanel()" class="absolute top-4 right-4 bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    
+                    <div class="text-center mt-2 mb-6">
+                        <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-indigo-100">
+                            <i data-lucide="shield-check" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="font-black text-xl text-gray-800">Identidad del Admin</h3>
+                        <p class="text-xs text-gray-400 mt-1">Selecciona cómo te verá el usuario</p>
+                    </div>
+                    
+                    <button onclick="confirmIdentity('${uid}', '${currentAdminName}')" class="w-full bg-white border-2 border-indigo-50 hover:border-indigo-500 hover:bg-indigo-50 p-4 rounded-2xl mb-6 flex items-center justify-between group transition-all shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                <i data-lucide="user" class="w-5 h-5"></i>
+                            </div>
+                            <div class="text-left">
+                                <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Conservar nombre</span>
+                                <span class="block text-lg font-black text-gray-800 group-hover:text-indigo-700 leading-none">${currentAdminName}</span>
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover:text-white"></i>
+                        </div>
+                    </button>
+
+                    <div class="relative flex py-2 items-center mb-6">
+                        <div class="flex-grow border-t border-gray-100"></div>
+                        <span class="flex-shrink-0 mx-4 text-gray-300 text-[10px] font-bold uppercase tracking-widest">O cambiar identidad</span>
+                        <div class="flex-grow border-t border-gray-100"></div>
+                    </div>
+
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i data-lucide="edit-3" class="w-5 h-5 text-gray-300 group-focus-within:text-indigo-500 transition-colors"></i>
+                        </div>
+                        <input type="text" id="new-identity-input" placeholder="Escribe nuevo nombre aquí..." class="pl-12 pr-24 w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all text-gray-800">
+                        
+                        <button onclick="confirmNewIdentity('${uid}')" class="absolute inset-y-1.5 right-1.5 bg-gray-900 text-white px-5 rounded-xl text-xs font-bold hover:bg-black transition-transform active:scale-95 shadow-md flex items-center gap-1">
+                            Usar <i data-lucide="check" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                </div>
+            `);
+            
+            // Ajustar tamaño del modal para que se vea elegante
+            const mc = document.getElementById('modal-card');
+            if(mc) mc.className = "neumo-card w-full max-w-sm p-0 relative shadow-2xl transform transition-all scale-100 opacity-100 flex flex-col overflow-hidden bg-white rounded-[2.5rem] h-auto min-h-[480px]";
+            
+            lucide.createIcons();
+        };
+
+        // Función auxiliar para validar input nuevo
+        window.confirmNewIdentity = (uid) => {
+            const input = document.getElementById('new-identity-input');
+            const newName = input.value.trim();
+            if(!newName) {
+                input.focus();
+                input.classList.add('ring-2', 'ring-rose-500'); // Efecto rojo si está vacío
+                setTimeout(() => input.classList.remove('ring-rose-500', 'ring-2'), 1000);
+                return;
+            }
+            confirmIdentity(uid, newName);
+        };
+
+        // Función final que abre el chat
+        window.confirmIdentity = (uid, nameToUse) => {
+            if(nameToUse) currentAdminName = nameToUse;
+            openChatWindowUI(uid, 'admin');
         };
 
     </script>
