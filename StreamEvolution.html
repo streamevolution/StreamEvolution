@@ -3689,11 +3689,11 @@ window.openCategoryModule = (categorySlug, title) => {
     }
 };
 
-// ======================================================
-// SOLUCIÓN FINAL: TIENDA CON DETECCIÓN INTELIGENTE DE ROL
+// =========================================// ======================================================
+// SOLUCIÓN FINAL: RESPETAR ROL (INCLUSO ADMIN) Y PRECIOS DINÁMICOS
 // ======================================================
 window.renderCategoryView = (categorySlug, title) => {
-    // 1. CONFIGURACIÓN DEL MODAL (Diseño)
+    // 1. CONFIGURACIÓN DEL MODAL
     const m = document.getElementById('app-modal');
     const mc = document.getElementById('modal-card'); 
     const content = document.getElementById('modal-content');
@@ -3762,22 +3762,23 @@ window.renderCategoryView = (categorySlug, title) => {
 
         grid.innerHTML = ''; 
         
-        // --- 3. DETECCIÓN ROBUSTA DE ROL (CORREGIDO) ---
-        // Buscamos la variable en varios lugares posibles para no fallar
+        // --- DETECCIÓN DE ROL (CORREGIDA) ---
+        // 1. Buscamos el rol en las variables globales disponibles
         let rawRole = 'client';
         
         if (typeof currentUserRole !== 'undefined' && currentUserRole) rawRole = currentUserRole;
         else if (typeof window.currentUserRole !== 'undefined' && window.currentUserRole) rawRole = window.currentUserRole;
         else if (typeof window.userRole !== 'undefined') rawRole = window.userRole;
         
-        // Limpiamos el texto: minúsculas y SIN TILDES (ej: "Líder" -> "lider")
+        // 2. Limpiamos el texto: minúsculas y SIN TILDES (ej: "Revendedor" -> "revendedor")
         let myRole = rawRole.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
-        // Si es Admin, forzamos rol 'lider'
-        if (typeof isAdmin !== 'undefined' && isAdmin) myRole = 'lider';
+        // --- NOTA IMPORTANTE: Se eliminó el bloqueo de Admin para que puedas probar roles ---
+        // Si quisieras que el admin SIEMPRE vea precios de líder, descomenta la siguiente línea. 
+        // Pero como quieres que cambie según la membresía asignada, la dejamos comentada o borrada.
+        // if (typeof isAdmin !== 'undefined' && isAdmin) myRole = 'lider'; 
 
-        // Depuración (opcional: puedes ver esto en la consola del navegador si hay dudas)
-        console.log("Rol detectado:", myRole); 
+        console.log("Rol activo para precios:", myRole); // Para depuración
 
         products.forEach((p, index) => { 
             const safeDesc = encodeURIComponent(p.description || ''); 
@@ -3790,7 +3791,7 @@ window.renderCategoryView = (categorySlug, title) => {
 
             let finalPrice = pClient; // Por defecto
 
-            // Lógica de selección de precio según jerarquía normalizada
+            // Lógica de cascada: Busca tu precio -> Si no existe, busca el del nivel inferior
             if (myRole === 'lider') {
                 if (pLeader > 0) finalPrice = pLeader;
                 else if (pReseller > 0) finalPrice = pReseller;
@@ -3807,7 +3808,7 @@ window.renderCategoryView = (categorySlug, title) => {
                 else finalPrice = pClient;
             }
 
-            // --- B. ETIQUETA VISUAL (Basada en el ROL, no en el precio) ---
+            // --- B. ETIQUETA VISUAL (Basada estrictamente en el ROL) ---
             let labelText = 'CLIENTE';
             let labelBg = 'bg-gray-100 text-gray-500 border-gray-200';
             let priceColor = 'text-gray-800';
@@ -3887,6 +3888,8 @@ window.renderCategoryView = (categorySlug, title) => {
         showToast("Error de conexión.", "error");
     });
 };
+
+
 
 
         // ======================================================
