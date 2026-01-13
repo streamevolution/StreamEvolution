@@ -566,9 +566,9 @@
                     </div>
                 </div>
 
-                <button onclick="openChargeModal()" class="flex-none w-[70px] bg-gradient-to-tr from-indigo-600 to-violet-600 text-white rounded-[1.5rem] flex items-center justify-center shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-105 active:scale-90 transition-all group">
-                    <i data-lucide="plus" class="w-8 h-8 stroke-[3] group-hover:rotate-90 transition-transform duration-300"></i>
-                </button>
+                <button onclick="openChargeInfoModal()" class="flex-none w-[70px] bg-gradient-to-tr from-indigo-600 to-violet-600 text-white rounded-[1.5rem] flex items-center justify-center shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-105 active:scale-90 transition-all group">
+    <i data-lucide="plus" class="w-8 h-8 stroke-[3] group-hover:rotate-90 transition-transform duration-300"></i>
+</button>
 
             </section>
 
@@ -4549,6 +4549,69 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
             }
             lucide.createIcons();
         };
+        
+                // ======================================================
+        // NUEVA FUNCIÓN: MODAL INFORMATIVO DE HORARIOS
+        // ======================================================
+        window.openChargeInfoModal = () => {
+            openModal(`
+            <div class="bounce-enter relative overflow-hidden bg-white rounded-[2rem]">
+                
+                <div class="bg-gray-900 p-6 pb-10 text-center relative z-10">
+                    <div class="absolute top-0 left-0 w-full h-full opacity-20" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 10px 10px;"></div>
+                    
+                    <div class="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-3 border border-white/20 shadow-lg">
+                        <i data-lucide="clock" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-white tracking-wide">Horarios de Recarga</h3>
+                    <p class="text-[10px] text-gray-400 font-medium uppercase tracking-widest">Servicio Automático</p>
+                </div>
+
+                <div class="p-6 -mt-6 bg-white rounded-t-[2rem] relative z-20">
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-indigo-100 transition-colors">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="calendar-days" class="w-4 h-4 text-indigo-500"></i>
+                                <span class="text-xs font-bold text-gray-600">Lun - Vie</span>
+                            </div>
+                            <span class="text-xs font-black text-gray-800 bg-white px-2 py-1 rounded border border-gray-200 shadow-sm">08:00 am - 11:00 pm</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-indigo-100 transition-colors">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="calendar" class="w-4 h-4 text-indigo-500"></i>
+                                <span class="text-xs font-bold text-gray-600">Sábados</span>
+                            </div>
+                            <span class="text-xs font-black text-gray-800 bg-white px-2 py-1 rounded border border-gray-200 shadow-sm">09:00 am - 10:30 pm</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-indigo-100 transition-colors">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="sun" class="w-4 h-4 text-orange-500"></i>
+                                <span class="text-xs font-bold text-gray-600">Domingos</span>
+                            </div>
+                            <span class="text-xs font-black text-gray-800 bg-white px-2 py-1 rounded border border-gray-200 shadow-sm">09:30 am - 10:00 pm</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-100 p-4 rounded-xl flex gap-3 mb-6 relative overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-400"></div>
+                        <i data-lucide="alert-circle" class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5"></i>
+                        <p class="text-[11px] text-amber-800 leading-relaxed font-medium">
+                            Si realizas tu recarga fuera de estos horarios, tu saldo será asignado al <strong>día siguiente</strong> dentro de los horarios de servicio establecidos.
+                        </p>
+                    </div>
+
+                    <button onclick="openChargeModal()" class="w-full bg-gray-900 text-white font-bold py-4 rounded-xl shadow-lg shadow-gray-200 hover:bg-black transform active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <span>Recargar</span>
+                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+            `); 
+            lucide.createIcons();
+        };
 
 
             // ======================================================
@@ -4590,7 +4653,7 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
                         </p>
                         <p class="text-[11px] text-amber-700 font-medium leading-relaxed">
                             La recarga mínima es de <strong class="text-amber-900 bg-amber-100 px-1 rounded border border-amber-200">$50</strong>. 
-                            Si recargan menos de $50 el banco les cobrará una comisión de <strong class="text-rose-600 bg-rose-50 px-1 rounded border border-rose-100">$10</strong> el cual se descontará de su saldo.
+                            Si recargan menos de <strong class="text-amber-900 bg-amber-100 px-1 rounded border border-amber-200">$50</strong> el banco les cobrará una comisión de <strong class="text-rose-600 bg-rose-50 px-1 rounded border border-rose-100">$10</strong> el cual se descontará automáticamente de su saldo.
                         </p>
                     </div>
 
