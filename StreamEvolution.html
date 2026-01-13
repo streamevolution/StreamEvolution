@@ -2896,53 +2896,63 @@ window.submitReport = async (e) => {
         // BLOQUE NUEVO: RESPONDER CON FOTO (ADMIN)
         // ======================================================
 
-        // ======================================================
-        // RESPONDER A USUARIO + SISTEMA DE REEMBOLSOS
-        // ======================================================
-        window.openReplyModal = async (rid, uid) => { 
-            localStorage.removeItem('admin_reply_evidence');
+  // ======================================================
+// RESPONDER A USUARIO + GESTIÓN COMPLETA (REEMBOLSOS Y REEMPLAZOS)
+// ======================================================
+window.openReplyModal = async (rid, uid) => { 
+    localStorage.removeItem('admin_reply_evidence');
+    
+    // Buscamos el reporte en caché
+    const r = window.adminReportsCache.find(x => x.id === rid);
+    let actionButtonsHTML = '';
+
+    // Solo mostramos botones de acción si el reporte tiene una compra vinculada
+    if (r && r.relatedTransactionId) {
+        actionButtonsHTML = `
+        <div class="mt-4 pt-4 border-t border-gray-100">
+            <p class="text-[10px] font-bold text-gray-400 uppercase mb-3">Acciones Rápidas de Compra</p>
             
-            // Buscamos el reporte en caché para ver si tiene una transacción asociada
-            const r = window.adminReportsCache.find(x => x.id === rid);
-            let refundButtonsHTML = '';
-
-            // Solo mostramos botones de reembolso si el reporte tiene una compra vinculada
-            if (r && r.relatedTransactionId) {
-                refundButtonsHTML = `
-                <div class="mt-4 pt-4 border-t border-gray-100">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Opciones de Reembolso</p>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="checkRefundOptions('${rid}', 'full')" class="neumo-button bg-rose-50 text-rose-600 border border-rose-100 py-2 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1">
-                            <i data-lucide="refresh-ccw" class="w-3 h-3"></i> Reembolso Total
-                        </button>
-                        <button onclick="checkRefundOptions('${rid}', 'partial')" class="neumo-button bg-amber-50 text-amber-600 border border-amber-100 py-2 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors flex items-center justify-center gap-1">
-                            <i data-lucide="pie-chart" class="w-3 h-3"></i> Reembolso Parcial
-                        </button>
-                    </div>
-                </div>`;
-            }
-            
-            openModal(`
-            <div class="bounce-enter text-left">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 neumo-card neumo-inset"><i data-lucide="reply" class="w-6 h-6"></i></div>
-                <h3 class="font-bold text-gray-800 text-center text-lg mb-1">Responder al Usuario</h3>
-                <p class="text-xs text-gray-400 text-center mb-4">Ticket ID: ${rid.substring(0,6)}</p>
-                
-                <textarea id="rep-text" class="neumo-inset w-full border-none bg-transparent rounded-xl p-3 h-24 resize-none text-sm mb-3 focus:ring-0" placeholder="Escribe tu respuesta aquí..."></textarea>
-                
-                <div class="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2 ml-1">Adjuntar Evidencia (Opcional)</label>
-                    <input type="file" accept="image/*" onchange="handleAdminReplyImage(this)" class="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition-colors">
-                </div>
-
-                ${refundButtonsHTML}
-
-                <button onclick="sendAdminReply('${rid}','${uid}')" class="neumo-button w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-blue-700 mt-4">
-                    <i data-lucide="send" class="w-4 h-4"></i> Enviar Respuesta
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <button onclick="checkRefundOptions('${rid}', 'full')" class="neumo-button bg-rose-50 text-rose-600 border border-rose-100 py-2 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1">
+                    <i data-lucide="refresh-ccw" class="w-3 h-3"></i> Reembolso Total
                 </button>
-            </div>`);
-            lucide.createIcons();
-        };
+                <button onclick="checkRefundOptions('${rid}', 'partial')" class="neumo-button bg-amber-50 text-amber-600 border border-amber-100 py-2 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors flex items-center justify-center gap-1">
+                    <i data-lucide="pie-chart" class="w-3 h-3"></i> Reembolso Parcial
+                </button>
+            </div>
+
+            <button onclick="showReplacementForm('${rid}', '${uid}')" class="w-full neumo-button bg-indigo-50 text-indigo-600 border border-indigo-100 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2">
+                <i data-lucide="repeat" class="w-4 h-4"></i> 🔄 Remplazar Cuenta
+            </button>
+        </div>`;
+    }
+    
+    openModal(`
+    <div class="bounce-enter text-left">
+        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 neumo-card neumo-inset"><i data-lucide="reply" class="w-6 h-6"></i></div>
+        <h3 class="font-bold text-gray-800 text-center text-lg mb-1">Gestionar Ticket</h3>
+        <p class="text-xs text-gray-400 text-center mb-4">Ticket ID: ${rid.substring(0,6)}</p>
+        
+        <div id="normal-reply-area">
+            <textarea id="rep-text" class="neumo-inset w-full border-none bg-transparent rounded-xl p-3 h-24 resize-none text-sm mb-3 focus:ring-0" placeholder="Escribe tu respuesta aquí..."></textarea>
+            
+            <div class="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2 ml-1">Adjuntar Evidencia (Opcional)</label>
+                <input type="file" accept="image/*" onchange="handleAdminReplyImage(this)" class="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition-colors">
+            </div>
+
+            <button onclick="sendAdminReply('${rid}','${uid}')" class="neumo-button w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-blue-700 mt-2">
+                <i data-lucide="send" class="w-4 h-4"></i> Enviar Respuesta
+            </button>
+
+            ${actionButtonsHTML}
+        </div>
+
+        <div id="replacement-form-container" class="hidden animate-in slide-in-from-bottom-4 fade-in duration-300"></div>
+    </div>`);
+    lucide.createIcons();
+};
+
 
         window.handleAdminReplyImage = (input) => { 
             if (input.files[0]) { 
@@ -2952,41 +2962,53 @@ window.submitReport = async (e) => {
             } 
         };
 
-        window.sendAdminReply = async (rid, uid) => { 
-            const msg = document.getElementById('rep-text').value; 
-            const img = localStorage.getItem('admin_reply_evidence'); // Recuperamos la imagen
+        // ==========================================
+// ENVIAR RESPUESTA ADMIN (ACTUALIZADO)
+// ==========================================
+window.sendAdminReply = async (rid, uid) => { 
+    const msg = document.getElementById('rep-text').value; 
+    const img = localStorage.getItem('admin_reply_evidence'); 
 
-            if(!msg && !img) return showToast('Escribe algo o adjunta una foto', 'error');
+    if(!msg && !img) return showToast('Escribe algo o adjunta una foto', 'error');
 
-            const btn = document.querySelector('button[onclick^="sendAdminReply"]');
-            btn.disabled = true; btn.innerHTML = "Enviando...";
+    const btn = document.querySelector('button[onclick^="sendAdminReply"]');
+    btn.disabled = true; btn.innerHTML = "Enviando...";
 
-            try {
-                // 1. Actualizamos el reporte (Para que el admin vea lo que envió en su historial)
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', rid), { 
-                    status: 'replied', 
-                    adminReply: msg,
-                    adminEvidence: img // Guardamos la foto aquí
-                }); 
-                
-                // 2. Enviamos la notificación al usuario (Para que el usuario reciba la foto)
-                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'), { 
-                    type: 'support_reply', 
-                    amount: 0, 
-                    description: 'Respuesta Soporte', 
-                    message: msg, 
-                    evidenceImage: img, // Guardamos la foto aquí también
-                    timestamp: serverTimestamp() 
-                }); 
-                
-                showToast('Respuesta enviada', 'success'); 
-                closeModal(); 
-            } catch(e) {
-                console.error(e);
-                showToast('Error al enviar', 'error');
-                btn.disabled = false; btn.innerText = "Reintentar";
-            }
-        };
+    try {
+        // 1. Obtener datos del reporte para saber qué servicio es (Netflix, etc.)
+        const reportRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', rid);
+        const reportSnap = await getDoc(reportRef);
+        const reportData = reportSnap.exists() ? reportSnap.data() : {};
+        const serviceName = reportData.serviceName || 'Soporte General';
+
+        // 2. Actualizar el reporte
+        await updateDoc(reportRef, { 
+            status: 'replied', 
+            adminReply: msg,
+            adminEvidence: img 
+        }); 
+        
+        // 3. Enviar notificación al usuario (INCLUYENDO EL NOMBRE DEL SERVICIO)
+        await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'), { 
+            type: 'support_reply', 
+            amount: 0, 
+            description: 'Respuesta Soporte', 
+            message: msg, 
+            evidenceImage: img,
+            timestamp: serverTimestamp(),
+            // --- DATOS NUEVOS PARA IDENTIFICAR EL REPORTE ---
+            reportServiceName: serviceName, 
+            relatedReportId: rid
+        }); 
+        
+        showToast('Respuesta enviada', 'success'); 
+        closeModal(); 
+    } catch(e) {
+        console.error(e);
+        showToast('Error al enviar', 'error');
+        btn.disabled = false; btn.innerText = "Reintentar";
+    }
+};
 
 
         // Gestión Usuarios
@@ -3217,11 +3239,22 @@ window.submitReport = async (e) => {
                     <button onclick="openUserHistory('${uid}', '${email}')" class="neumo-button mt-4 w-full bg-gray-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver al Expediente</button>
                 </div>`;
 
-            // CASO 2: COMPRAS
+                        // CASO 2: COMPRAS
             } else if (t.type === 'purchase' && t.details) {
                 const item = t.details;
                 let infoProducto = '';
                 
+                // --- DETECTAR SI ES REPOSICIÓN ---
+                let replacementBadge = '';
+                if (item.isReplacement === true) {
+                    replacementBadge = `
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-2 mb-3 flex items-center gap-2 animate-pulse">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 text-indigo-600"></i>
+                        <span class="text-[10px] font-black text-indigo-600 uppercase">Cuenta Repuesta / Actualizada</span>
+                    </div>`;
+                }
+                // ---------------------------------
+
                 // Verificar descripción (GamePass/Liberaciones)
                 if (item.description && item.description !== 'null') {
                      infoProducto = `<div class="neumo-card neumo-inset p-3 mb-2"><p class="text-[10px] font-bold text-accent uppercase mb-1">Detalles/Código</p><p class="text-sm font-bold text-gray-800 whitespace-pre-wrap">${item.description}</p></div>`;
@@ -3230,7 +3263,7 @@ window.submitReport = async (e) => {
                 else if (item.link) {
                     infoProducto = `<div class="neumo-card neumo-inset p-3 mb-2"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Enlace</p><a href="${item.link}" target="_blank" class="text-sm font-bold text-blue-600 underline truncate block">${item.link}</a></div>`;
                 } 
-                // Cuenta Normal
+                // Cuenta Normal (CORREO, PASS, ETC)
                 else {
                     infoProducto = `
                     <div class="grid gap-3">
@@ -3252,7 +3285,8 @@ window.submitReport = async (e) => {
 
                     <div class="neumo-card neumo-inset p-5 text-left space-y-4 relative overflow-hidden mb-4">
                         <div class="absolute top-0 left-0 w-1 h-full bg-success"></div>
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Producto</p><p class="text-lg font-black text-gray-800">${item.serviceName || t.description}</p></div>
+                        
+                        ${replacementBadge} <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Producto</p><p class="text-lg font-black text-gray-800">${item.serviceName || t.description}</p></div>
                         <div class="flex justify-between items-center border-b border-gray-200 pb-2">
                             <span class="text-xs font-bold text-gray-400 uppercase">Costo</span>
                             <span class="font-bold text-gray-800 text-lg">$${t.amount.toLocaleString()}</span>
@@ -3261,6 +3295,7 @@ window.submitReport = async (e) => {
                     </div>
                     <button onclick="openUserHistory('${uid}', '${email}')" class="neumo-button w-full bg-gray-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Volver al Expediente</button>
                 </div>`;
+
 
             // CASO 3: RESPUESTA DE SOPORTE (ESTA ES LA PARTE NUEVA QUE SOLICITASTE)
             } else if (t.type === 'support_reply') {
@@ -4447,11 +4482,16 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
                         icon='alert-octagon'; iconColor='text-rose-600'; iconBg='bg-rose-100'; 
                         amountDisplay = `<span class="text-sm font-bold text-rose-600">-$${Math.abs(t.amount).toLocaleString()}</span>`;
                     
-                    // D. SOPORTE / RESPUESTAS
-                    } else if(t.type === 'support_reply'){ 
-                        icon='message-circle'; iconColor='text-blue-600'; iconBg='bg-blue-100'; 
-                        title = 'Respuesta de Soporte';
-                        amountDisplay = `<span class="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded">LEER</span>`;
+                                // D. SOPORTE / RESPUESTAS
+            } else if(t.type === 'support_reply'){
+                icon='message-circle';
+                iconColor='text-blue-600';
+                iconBg='bg-blue-100';
+                
+                // AQUÍ ESTÁ EL CAMBIO: Si hay nombre de servicio, lo usamos en el título
+                title = t.reportServiceName ? `Respuesta: ${t.reportServiceName}` : 'Respuesta Soporte';
+                
+                amountDisplay = `<span class="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded">LEER</span>`;
                     
                     // E. RENOVACIONES
                     } else if(t.type === 'renewal'){ 
@@ -4898,77 +4938,69 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
             }
         };
 
-            // ======================================================
-        // BANDEJA DE RESPUESTAS (DISEÑO PREMIUM UNIFICADO)
-        // ======================================================
-        window.openSupportReplies = () => {
-            // 1. Obtener y ordenar respuestas (más recientes primero)
-            const replies = window.userTransactions.filter(t => t.type === 'support_reply');
-            replies.sort((a,b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+     // ======================================================
+// BANDEJA DE RESPUESTAS (CON NOMBRE DE REPORTE)
+// ======================================================
+window.openSupportReplies = () => {
+    // 1. Obtener respuestas
+    const replies = window.userTransactions.filter(t => t.type === 'support_reply');
+    replies.sort((a,b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+    
+    let listHtml = '';
 
-            let listHtml = '';
+    if (replies.length === 0) {
+        listHtml = `
+        <div class="flex flex-col items-center justify-center py-16 opacity-50">
+            <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-3 neumo-inset"><i data-lucide="message-circle-off" class="w-8 h-8 text-gray-400"></i></div>
+            <p class="text-sm text-gray-400 font-bold">Sin respuestas nuevas</p>
+        </div>`;
+    } else {
+        listHtml = `<div class="space-y-3 pb-4">`;
+        replies.forEach(r => {
+            const time = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente';
+            
+            // LOGICA VISUAL: Mostrar el nombre del servicio (Ej: Netflix)
+            const serviceTag = r.reportServiceName 
+                ? `<span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border border-indigo-100">${r.reportServiceName}</span>` 
+                : `<span class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[9px] font-bold uppercase">General</span>`;
 
-            // 2. Construir lista o mensaje vacío
-            if (replies.length === 0) {
-                listHtml = `
-                    <div class="flex flex-col items-center justify-center py-16 opacity-50">
-                        <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-3 neumo-inset">
-                            <i data-lucide="message-circle-off" class="w-8 h-8 text-gray-400"></i>
-                        </div>
-                        <p class="text-sm text-gray-400 font-bold">Sin respuestas nuevas</p>
-                        <p class="text-[10px] text-gray-400">Tus consultas resueltas aparecerán aquí.</p>
-                    </div>`;
-            } else {
-                listHtml = `<div class="space-y-3 pb-4">`;
-                replies.forEach(r => {
-                    const time = r.timestamp ? r.timestamp.toDate().toLocaleString() : 'Reciente';
-                    
-                    listHtml += `
-                        <div onclick="openSupportReplyDetail('${r.id}')" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group relative">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="text-[10px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 flex items-center gap-1">
-                                    <i data-lucide="mail-open" class="w-3 h-3"></i> Respuesta Admin
-                                </span>
-                                <span class="text-[9px] text-gray-400 font-medium">${time}</span>
-                            </div>
-                            <p class="text-xs text-gray-600 line-clamp-2 font-medium leading-relaxed">${r.message}</p>
-                            
-                            <div class="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <i data-lucide="chevron-right" class="w-4 h-4 text-blue-400"></i>
-                            </div>
-                        </div>
-                    `;
-                });
-                listHtml += `</div>`;
-            }
-
-            // 3. Renderizar Modal con Diseño Estandarizado (Header Azul/Cyan)
-            openModal(`
-                <div class="bg-gray-50 rounded-[2rem] overflow-hidden relative bounce-enter flex flex-col max-h-[85vh]">
-                    
-                    <div class="bg-gradient-to-r from-blue-500 to-cyan-500 p-6 pb-12 text-center relative flex-shrink-0 shadow-lg z-10">
-                        <div class="absolute top-0 left-0 w-full h-full opacity-10" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 10px 10px;"></div>
-                        
-                        <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-2 text-white shadow-lg border border-white/30">
-                            <i data-lucide="message-circle-question" class="w-6 h-6"></i>
-                        </div>
-                        <h3 class="text-xl font-black text-white uppercase tracking-tight relative z-10">Bandeja Soporte</h3>
-                        <p class="text-[10px] text-blue-100 font-medium uppercase tracking-widest relative z-10">Tus tickets resueltos</p>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto scrollbar-hide px-4 pt-6 relative z-20 -mt-6">
-                        ${listHtml}
-                    </div>
-
-                    <div class="p-4 bg-white border-t border-gray-200 z-30">
-                        <button onclick="closeModal()" class="neumo-button w-full bg-gray-100 text-gray-500 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-colors">
-                            Cerrar Bandeja
-                        </button>
-                    </div>
+            listHtml += `
+            <div onclick="openSupportReplyDetail('${r.id}')" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group relative">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="mail-open" class="w-4 h-4 text-blue-500"></i>
+                        ${serviceTag} </div>
+                    <span class="text-[9px] text-gray-400 font-medium">${time}</span>
                 </div>
-            `);
-            lucide.createIcons();
-        };
+                <p class="text-xs text-gray-600 line-clamp-2 font-medium leading-relaxed pl-1">${r.message}</p>
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-blue-400"></i>
+                </div>
+            </div>`;
+        });
+        listHtml += `</div>`;
+    }
+
+    openModal(`
+        <div class="bg-gray-50 rounded-[2rem] overflow-hidden relative bounce-enter flex flex-col max-h-[85vh]">
+            <div class="bg-gradient-to-r from-blue-500 to-cyan-500 p-6 pb-12 text-center relative flex-shrink-0 shadow-lg z-10">
+                <div class="absolute top-0 left-0 w-full h-full opacity-10" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 10px 10px;"></div>
+                <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-2 text-white shadow-lg border border-white/30">
+                    <i data-lucide="inbox" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-xl font-black text-white uppercase tracking-tight relative z-10">Bandeja Soporte</h3>
+                <p class="text-[10px] text-blue-100 font-medium uppercase tracking-widest relative z-10">Tus tickets resueltos</p>
+            </div>
+            <div class="flex-1 overflow-y-auto scrollbar-hide px-4 pt-6 relative z-20 -mt-6">
+                ${listHtml}
+            </div>
+            <div class="p-4 bg-white border-t border-gray-200 z-30">
+                <button onclick="closeModal()" class="neumo-button w-full bg-gray-100 text-gray-500 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-colors">Cerrar Bandeja</button>
+            </div>
+        </div>
+    `);
+    lucide.createIcons();
+};
 
               // ======================================================
         // DETALLE SOPORTE (Paso 4: Marca como leído al ver respuesta)
@@ -8285,6 +8317,126 @@ window.openClaimForm = (itemId) => {
             if(nameToUse) currentAdminName = nameToUse;
             openChatWindowUI(uid, 'admin');
         };
+        
+        // --- MOSTRAR FORMULARIO DE REEMPLAZO ---
+window.showReplacementForm = (rid, uid) => {
+    const container = document.getElementById('replacement-form-container');
+    const normalArea = document.getElementById('normal-reply-area');
+    
+    // Ocultamos el área normal de respuesta para enfocar en el reemplazo
+    normalArea.classList.add('hidden');
+    container.classList.remove('hidden');
+
+    container.innerHTML = `
+        <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 mb-4">
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="font-black text-indigo-700 text-sm flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Datos de Reposición</h4>
+                <button onclick="openReplyModal('${rid}', '${uid}')" class="text-xs text-gray-400 font-bold hover:text-gray-600">Cancelar</button>
+            </div>
+            
+            <p class="text-[10px] text-indigo-400 mb-3 leading-tight">Esto actualizará la compra original. El usuario deberá usar estos nuevos datos.</p>
+
+            <div class="space-y-3">
+                <input type="text" id="rep-new-email" class="neumo-inset w-full bg-white border-none rounded-xl p-2 text-xs font-bold text-gray-700" placeholder="Nuevo Correo">
+                <input type="text" id="rep-new-pass" class="neumo-inset w-full bg-white border-none rounded-xl p-2 text-xs font-bold text-gray-700" placeholder="Nueva Contraseña">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="rep-new-profile" class="neumo-inset w-full bg-white border-none rounded-xl p-2 text-xs font-bold text-gray-700" placeholder="Nuevo Perfil (Opcional)">
+                    <input type="text" id="rep-new-pin" class="neumo-inset w-full bg-white border-none rounded-xl p-2 text-xs font-bold text-gray-700" placeholder="Nuevo PIN (Opcional)">
+                </div>
+            </div>
+
+            <button onclick="executeAccountReplacement('${rid}', '${uid}')" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg mt-4 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i> Confirmar Remplazo
+            </button>
+        </div>
+    `;
+    lucide.createIcons();
+};
+
+// ==========================================
+// EJECUTAR REEMPLAZO (FINAL: FORMATO ORDENADO)
+// ==========================================
+window.executeAccountReplacement = async (reportId, uid) => {
+    const newEmail = document.getElementById('rep-new-email').value.trim();
+    const newPass = document.getElementById('rep-new-pass').value.trim();
+    const newProfile = document.getElementById('rep-new-profile').value.trim();
+    const newPin = document.getElementById('rep-new-pin').value.trim();
+
+    if (!newEmail || !newPass) return showToast('Correo y Contraseña son obligatorios', 'error');
+
+    const btn = document.querySelector('button[onclick^="executeAccountReplacement"]');
+    btn.disabled = true; btn.innerHTML = "Procesando...";
+
+    try {
+        const report = window.adminReportsCache.find(x => x.id === reportId);
+        if (!report || !report.relatedTransactionId) throw new Error("No se encontró la compra vinculada.");
+
+        // 1. Referencia a la transacción original
+        const txRef = doc(db, 'artifacts', appId, 'users', uid, 'transactions', report.relatedTransactionId);
+        const txSnap = await getDoc(txRef);
+        if(!txSnap.exists()) throw new Error("Transacción no existe.");
+        
+        const currentDetails = txSnap.data().details || {};
+        const serviceName = currentDetails.serviceName || 'Cuenta';
+        
+        // --- CAPTURAMOS DATOS ANTIGUOS (FORMATO LISTA VERTICAL) ---
+        // Usamos \n para que cada dato quede en una línea nueva
+        const oldAccountString = 
+`Plataforma: ${serviceName}
+Correo: ${currentDetails.email || 'N/A'}
+Contraseña: ${currentDetails.password || 'N/A'}
+Perfil: ${currentDetails.profileName || 'N/A'}
+Pin: ${currentDetails.pin || 'N/A'}`;
+
+        // 2. Preparar los nuevos datos
+        const updatedDetails = {
+            ...currentDetails,
+            email: newEmail,
+            password: newPass,
+            profileName: newProfile || currentDetails.profileName,
+            pin: newPin || currentDetails.pin,
+            isReplacement: true,
+            replacementDate: serverTimestamp()
+        };
+
+        // --- PASO A: ACTUALIZAR LA COMPRA ---
+        await updateDoc(txRef, {
+            details: updatedDetails,
+            description: txSnap.data().description + ' (Reposición)'
+        });
+
+        // --- PASO B: ACTUALIZAR EL REPORTE (CHAT) ---
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reports', reportId), {
+            status: 'resolved',
+            // Ajustamos el mensaje para que se vea limpio con los saltos de línea
+            adminReply: `✅ REEMPLAZO EXITOSO (${serviceName}).\n\n🔻 CUENTA REEMPLAZADA:\n${oldAccountString}\n\n✨ DATOS NUEVOS:\nCorreo: ${newEmail}\nPass: ${newPass}\nPerfil: ${newProfile || 'N/A'}\nPIN: ${newPin || 'N/A'}\n\nRevisa tu ticket original.`,
+            resolvedAt: serverTimestamp(),
+            wasReplaced: true
+        });
+
+        // --- PASO C: NOTIFICACIÓN (BANDEJA/CAMPANA) ---
+        await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'transactions'), {
+            type: 'support_reply',
+            amount: 0,
+            description: 'Cuenta Reemplazada',
+            // Mismo formato limpio aquí
+            message: `Hola, tu reporte sobre **${serviceName}** ha sido resuelto mediante un REEMPLAZO.\n\n🔻 CUENTA REEMPLAZADA:\n${oldAccountString}\n\n✨ DATOS NUEVOS:\nCorreo: ${newEmail}\nContraseña: ${newPass}\nPerfil: ${newProfile || 'N/A'}\nPIN: ${newPin || 'N/A'}`,
+            timestamp: serverTimestamp(),
+            relatedReportId: reportId,
+            reportServiceName: serviceName 
+        });
+
+        showToast('Remplazo exitoso', 'success');
+        closeModal();
+        if(window.loadAdminReports) window.loadAdminReports();
+
+    } catch (e) {
+        console.error(e);
+        showToast('Error: ' + e.message, 'error');
+        btn.disabled = false; btn.innerText = "Reintentar";
+    }
+};
+
         
     </script>
 </body>
