@@ -6111,166 +6111,174 @@ window.filterExpirations = (mode) => {
     }
 };
 
-            // ======================================================
-        // MIS REFERIDOS: DISEÑO PREMIUM (PANEL DE SOCIOS)
-        // ======================================================
-        window.renderReferralsView = async () => {
-            // 1. Loader de inicio (Más bonito)
+       // ======================================================
+// MIS REFERIDOS: DISEÑO PREMIUM (CON AUTOGENERACIÓN)
+// ======================================================
+window.renderReferralsView = async () => {
+    // 1. Loader de inicio
+    openModal(`
+        <div class="flex flex-col items-center justify-center h-[50vh] bounce-enter">
+            <div class="relative w-16 h-16 mb-4">
+                <div class="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                <i data-lucide="users" class="absolute inset-0 m-auto w-6 h-6 text-indigo-600"></i>
+            </div>
+            <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest animate-pulse">Cargando tu red...</p>
+        </div>
+    `);
+
+    try {
+        const uid = auth.currentUser.uid;
+        const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid);
+        
+        // --- PASO A: VERIFICAR Y GENERAR CÓDIGO SI FALTA ---
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.data();
+        let myCode = userData.myReferralCode;
+
+        if (!myCode) {
+            // Generamos código único: REF + 4 caracteres aleatorios
+            myCode = 'REF-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+            await updateDoc(userRef, { myReferralCode: myCode }, { merge: true });
+        }
+        // --------------------------------------------------
+
+        // --- PASO B: BUSCAR REFERIDOS (DOBLE BÚSQUEDA: UID Y CÓDIGO) ---
+        // Esto asegura que aparezcan tanto los viejos (por UID) como los nuevos (por Código)
+        const usersCollection = collection(db, 'artifacts', appId, 'public', 'data', 'all_users');
+        
+        // Consulta 1: Por UID (Sistema Antiguo/Actual)
+        const q1 = query(usersCollection, where('referredBy', '==', uid));
+        const snap1 = await getDocs(q1);
+        
+        // Consulta 2: Por Código (Sistema Nuevo/Futuro)
+        const q2 = query(usersCollection, where('referredBy', '==', myCode));
+        const snap2 = await getDocs(q2);
+
+        // Unificar resultados sin duplicados
+        const referralsMap = new Map();
+        snap1.forEach(doc => referralsMap.set(doc.id, doc.data()));
+        snap2.forEach(doc => referralsMap.set(doc.id, doc.data()));
+
+        // --- CASO C: NO TIENES REFERIDOS ---
+        if (referralsMap.size === 0) {
             openModal(`
-                <div class="flex flex-col items-center justify-center h-[50vh] bounce-enter">
-                    <div class="relative w-16 h-16 mb-4">
-                        <div class="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
-                        <div class="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
-                        <i data-lucide="users" class="absolute inset-0 m-auto w-6 h-6 text-indigo-600"></i>
+            <div class="bg-white rounded-[2rem] overflow-hidden relative bounce-enter flex flex-col max-h-[85vh]">
+                <div class="bg-gradient-to-br from-gray-100 to-gray-200 p-8 text-center relative">
+                    <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg neumo-inset">
+                        <i data-lucide="user-plus" class="w-8 h-8 text-gray-400"></i>
                     </div>
-                    <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest animate-pulse">Cargando tu red...</p>
+                    <h3 class="text-xl font-black text-gray-700 tracking-tight">¡Empieza a Ganar!</h3>
+                    <p class="text-xs text-gray-500 mt-1 max-w-[200px] mx-auto">Aún no tienes socios. Tu código es: <span class="font-bold text-indigo-600">${myCode}</span></p>
                 </div>
-            `);
+                <div class="p-6 bg-white space-y-4">
+                    <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-start gap-3">
+                        <div class="bg-white p-2 rounded-lg text-indigo-600 shadow-sm"><i data-lucide="gift" class="w-5 h-5"></i></div>
+                        <div>
+                            <p class="font-bold text-indigo-700 text-sm">Beneficio Exclusivo</p>
+                            <p class="text-[10px] text-indigo-500 mt-0.5">Gana saldo por cada recarga o compra que hagan tus referidos.</p>
+                        </div>
+                    </div>
+                    <button onclick="openInviteModal()" class="neumo-button w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-xl hover:bg-indigo-700 hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="share-2" class="w-5 h-5"></i> <span>Invitar Amigos Ahora</span>
+                    </button>
+                    <button onclick="closeModal()" class="w-full py-3 text-xs font-bold text-gray-400 hover:text-gray-600">Cerrar</button>
+                </div>
+            </div>`);
+            lucide.createIcons();
+            return;
+        }
+
+        // --- CASO D: SÍ TIENES REFERIDOS (Construir Lista) ---
+        const userPromises = Array.from(referralsMap.values()).map(async (uData) => {
+            let balanceTxt = '$--';
+            let balanceClass = 'text-gray-400';
+            let joinDate = 'Reciente';
 
             try {
-                // 2. Buscamos usuarios que tú hayas invitado (Lógica Original)
-                const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'all_users');
-                const q = query(usersRef, where('referredBy', '==', currentUser.uid));
-                const querySnapshot = await getDocs(q);
-
-                // --- CASO A: NO TIENES REFERIDOS ---
-                if (querySnapshot.empty) {
-                    openModal(`
-                        <div class="bg-white rounded-[2rem] overflow-hidden relative bounce-enter flex flex-col max-h-[85vh]">
-                            <div class="bg-gradient-to-br from-gray-100 to-gray-200 p-8 text-center relative">
-                                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg neumo-inset">
-                                    <i data-lucide="user-plus" class="w-8 h-8 text-gray-400"></i>
-                                </div>
-                                <h3 class="text-xl font-black text-gray-700 tracking-tight">¡Empieza a Ganar!</h3>
-                                <p class="text-xs text-gray-500 mt-1 max-w-[200px] mx-auto">Aún no tienes socios en tu red. Invita amigos y gana comisiones.</p>
-                            </div>
-
-                            <div class="p-6 bg-white space-y-4">
-                                <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-start gap-3">
-                                    <div class="bg-white p-2 rounded-lg text-indigo-600 shadow-sm"><i data-lucide="gift" class="w-5 h-5"></i></div>
-                                    <div>
-                                        <p class="font-bold text-indigo-700 text-sm">Beneficio Exclusivo</p>
-                                        <p class="text-[10px] text-indigo-500 mt-0.5">Gana saldo por cada recarga o compra que hagan tus referidos.</p>
-                                    </div>
-                                </div>
-
-                                <button onclick="openInviteModal()" class="neumo-button w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-xl hover:bg-indigo-700 hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
-                                    <i data-lucide="share-2" class="w-5 h-5"></i>
-                                    <span>Invitar Amigos Ahora</span>
-                                </button>
-                                
-                                <button onclick="closeModal()" class="w-full py-3 text-xs font-bold text-gray-400 hover:text-gray-600">Cerrar</button>
-                            </div>
-                        </div>
-                    `);
-                    lucide.createIcons();
-                    return;
+                // Obtener saldo de cada referido para mostrarlo (Solo si eres admin o líder, opcional)
+                const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uData.uid, 'wallet', 'main'));
+                if(walletSnap.exists()) {
+                    const bal = walletSnap.data().balance || 0;
+                    balanceTxt = '$' + bal.toLocaleString();
+                    balanceClass = bal > 0 ? 'text-emerald-600' : 'text-gray-400';
+                    if(uData.createdAt) joinDate = uData.createdAt.toDate().toLocaleDateString();
+                } else {
+                    balanceTxt = '$0';
                 }
+            } catch(err) { balanceTxt = 'Privado'; }
 
-                // --- CASO B: SÍ TIENES REFERIDOS (Construimos la lista) ---
-                
-                // Recorremos cada usuario para obtener su saldo real (Promesas en paralelo)
-                const userPromises = querySnapshot.docs.map(async (userDoc) => {
-                    const userData = userDoc.data();
-                    let balanceTxt = '$--';
-                    let balanceClass = 'text-gray-400';
-                    let joinDate = 'Reciente';
-
-                    try {
-                        const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', userData.uid, 'wallet', 'main'));
-                        if(walletSnap.exists()) {
-                            const bal = walletSnap.data().balance || 0;
-                            balanceTxt = '$' + bal.toLocaleString();
-                            balanceClass = bal > 0 ? 'text-emerald-600' : 'text-gray-400';
-                            
-                            if(walletSnap.data().createdAt) {
-                                joinDate = walletSnap.data().createdAt.toDate().toLocaleDateString();
-                            }
-                        } else {
-                            balanceTxt = '$0';
-                        }
-                    } catch(err) {
-                        balanceTxt = 'Privado'; 
-                    }
-
-                    // Avatar con iniciales
-                    const initials = (userData.email || 'U').substring(0,2).toUpperCase();
-
-                    return `
-                        <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-indigo-200 transition-colors animate-in slide-in-from-bottom-2 duration-500 mb-2">
-                            <div class="flex items-center gap-3 overflow-hidden">
-                                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-sm border border-indigo-100 shadow-sm flex-shrink-0">
-                                    ${initials}
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="font-bold text-sm text-gray-800 truncate">${userData.fullName || 'Usuario'}</p>
-                                    <p class="text-[10px] text-gray-400 truncate font-mono">${userData.email}</p>
-                                    <div class="flex items-center gap-1 mt-0.5">
-                                        <i data-lucide="calendar-days" class="w-3 h-3 text-gray-300"></i>
-                                        <span class="text-[9px] text-gray-400 font-medium">Unido: ${joinDate}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="text-right pl-2">
-                                <p class="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Saldo</p>
-                                <p class="font-black text-sm ${balanceClass}">${balanceTxt}</p>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                const itemsHtmlArray = await Promise.all(userPromises);
-                const listHtml = itemsHtmlArray.join('');
-
-                // Renderizamos el Modal Final
-                openModal(`
-                    <div class="bg-gray-50 rounded-[2rem] overflow-hidden relative bounce-enter flex flex-col max-h-[85vh]">
-                        
-                        <div class="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 pb-12 text-center relative flex-shrink-0 shadow-lg z-10">
-                            <div class="absolute top-0 left-0 w-full h-full opacity-10" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 10px 10px;"></div>
-                            
-                            <div class="flex justify-between items-start mb-2">
-                                <div>
-                                    <h3 class="text-xl font-black text-white tracking-tight text-left">Mis Referidos</h3>
-                                    <p class="text-[10px] text-indigo-200 font-medium text-left uppercase tracking-widest">Tu red de crecimiento</p>
-                                </div>
-                                <div class="bg-white/20 backdrop-blur-md rounded-xl px-3 py-1.5 flex items-center gap-2 border border-white/20">
-                                    <i data-lucide="users" class="w-4 h-4 text-white"></i>
-                                    <span class="text-lg font-bold text-white">${querySnapshot.size}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex-1 overflow-y-auto scrollbar-hide px-4 -mt-6 relative z-20 pb-4">
-                            <div class="bg-white p-1 rounded-2xl shadow-md mb-4 flex items-center justify-between pl-4 pr-1 py-1 border border-indigo-100">
-                                <span class="text-xs font-bold text-indigo-900">¿Quieres más ganancias?</span>
-                                <button onclick="openInviteModal()" class="bg-indigo-600 text-white text-[10px] font-bold px-3 py-2 rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-1 shadow-md">
-                                    <i data-lucide="plus" class="w-3 h-3"></i> Invitar
-                                </button>
-                            </div>
-
-                            <div class="space-y-1">
-                                ${listHtml}
-                            </div>
-                        </div>
-
-                        <div class="p-4 bg-white border-t border-gray-200 z-30">
-                            <button onclick="closeModal()" class="neumo-button w-full bg-gray-100 text-gray-500 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-colors">
-                                Cerrar Panel
-                            </button>
+            const initials = (uData.email || 'U').substring(0,2).toUpperCase();
+            
+            return `
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-indigo-200 transition-colors animate-in slide-in-from-bottom-2 duration-500 mb-2">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-sm border border-indigo-100 shadow-sm flex-shrink-0">
+                        ${initials}
+                    </div>
+                    <div class="min-w-0">
+                        <p class="font-bold text-sm text-gray-800 truncate">${uData.fullName || 'Usuario'}</p>
+                        <p class="text-[10px] text-gray-400 truncate font-mono">${uData.email}</p>
+                        <div class="flex items-center gap-1 mt-0.5">
+                            <i data-lucide="calendar-days" class="w-3 h-3 text-gray-300"></i>
+                            <span class="text-[9px] text-gray-400 font-medium">Unido: ${joinDate}</span>
                         </div>
                     </div>
-                `);
-                
-                lucide.createIcons();
+                </div>
+                <div class="text-right pl-2">
+                    <p class="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Saldo</p>
+                    <p class="font-black text-sm ${balanceClass}">${balanceTxt}</p>
+                </div>
+            </div>`;
+        });
 
-            } catch (error) {
-                console.error(error);
-                showToast("Error al cargar referidos", "error");
-                closeModal();
-            }
-        };
+        const itemsHtmlArray = await Promise.all(userPromises);
+        const listHtml = itemsHtmlArray.join('');
+
+        // Renderizar Modal Final
+        openModal(`
+        <div class="bg-gray-50 rounded-[2rem] overflow-hidden relative bounce-enter flex flex-col max-h-[85vh]">
+            <div class="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 pb-12 text-center relative flex-shrink-0 shadow-lg z-10">
+                <div class="absolute top-0 left-0 w-full h-full opacity-10" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 10px 10px;"></div>
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 class="text-xl font-black text-white tracking-tight text-left">Mis Referidos</h3>
+                        <p class="text-[10px] text-indigo-200 font-medium text-left uppercase tracking-widest">Código: ${myCode}</p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-md rounded-xl px-3 py-1.5 flex items-center gap-2 border border-white/20">
+                        <i data-lucide="users" class="w-4 h-4 text-white"></i>
+                        <span class="text-lg font-bold text-white">${referralsMap.size}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto scrollbar-hide px-4 -mt-6 relative z-20 pb-4">
+                <div class="bg-white p-1 rounded-2xl shadow-md mb-4 flex items-center justify-between pl-4 pr-1 py-1 border border-indigo-100">
+                    <span class="text-xs font-bold text-indigo-900">¿Quieres más ganancias?</span>
+                    <button onclick="openInviteModal()" class="bg-indigo-600 text-white text-[10px] font-bold px-3 py-2 rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-1 shadow-md">
+                        <i data-lucide="plus" class="w-3 h-3"></i> Invitar
+                    </button>
+                </div>
+                <div class="space-y-1">
+                    ${listHtml}
+                </div>
+            </div>
+            
+            <div class="p-4 bg-white border-t border-gray-200 z-30">
+                <button onclick="closeModal()" class="neumo-button w-full bg-gray-100 text-gray-500 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-colors">
+                    Cerrar Panel
+                </button>
+            </div>
+        </div>`);
+        lucide.createIcons();
+
+    } catch (error) {
+        console.error(error);
+        showToast("Error al cargar referidos: " + error.message, "error");
+        closeModal();
+    }
+};
+
         
                 // --- FUNCIONES ADMIN: ELIMINAR Y EDITAR SALDO EXACTO ---
 
