@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Evolution</title>
+    <title>Stream Evolution Tienda 24/7</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -285,6 +285,25 @@
                 <div id="modal-content" class="overflow-y-auto scrollbar-hide p-6 w-full h-full"></div>
             </div>
         </div>
+        
+        <div id="startup-modal" class="fixed inset-0 z-[150] hidden items-center justify-center p-6 animate-in fade-in duration-500">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity" onclick="closeStartupModal()"></div>
+    
+    <div class="relative w-full max-w-sm h-[75vh] md:h-[80vh] rounded-[2.5rem] overflow-hidden shadow-2xl transform transition-all scale-100 bg-gray-900 border border-white/10 ring-4 ring-black/20">
+
+        
+        <button onclick="closeStartupModal()" class="absolute top-4 right-4 z-50 bg-black/40 hover:bg-white/20 backdrop-blur-md text-white p-2 rounded-full transition-all border border-white/10 group">
+            <i data-lucide="x" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+        </button>
+
+        <div id="startup-track" class="flex h-full transition-transform duration-500 ease-out will-change-transform">
+            </div>
+
+        <div id="startup-indicators" class="absolute bottom-5 left-0 right-0 flex justify-center gap-2 z-40"></div>
+        
+        <div class="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-30"></div>
+    </div>
+</div>
 
         <header id="main-header" class="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-xl border-b border-white/40 px-4 py-3 transition-all duration-500 shadow-sm supports-[backdrop-filter]:bg-white/60">
     <div class="max-w-5xl mx-auto flex items-center justify-between">
@@ -621,6 +640,15 @@
     </div>
     <div id="badge-claims" class="absolute top-3 right-3 bg-rose-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-md hidden animate-bounce">0</div>
 </div>
+
+<div onclick="enterAdminModule('spotlight')" class="bg-white p-5 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 cursor-pointer group transition-all duration-300 hover:-translate-y-1 relative">
+    <div class="flex flex-col items-center justify-center text-center h-full gap-2">
+        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center shadow-sm group-hover:bg-rose-600 group-hover:text-white transition-colors duration-300">
+            <i data-lucide="megaphone" class="w-6 h-6"></i>
+        </div>
+        <span class="font-bold text-gray-700 text-sm">Anuncios Inicio</span>
+    </div>
+</div>
                     
                     <div onclick="enterAdminModule('banners')" class="col-span-2 bg-white p-5 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 cursor-pointer group transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
                         <div class="absolute right-0 top-0 w-32 h-32 bg-blue-50 rounded-full blur-2xl -mr-10 -mt-10 transition-colors group-hover:bg-blue-100"></div>
@@ -819,6 +847,20 @@
                     </div>
                     <div id="admin-banners-list" class="space-y-3 pb-10"></div>
                 </section>
+                <section id="admin-spotlight-section" class="hidden bounce-enter">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h3 class="font-bold text-gray-800 text-xl">Anuncios Pop-up</h3>
+            <p class="text-xs text-gray-400">Aparecen al abrir la App</p>
+        </div>
+        <button onclick="openAddSpotlightModal()" class="neumo-button bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg hover:bg-rose-700">
+            <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Anuncio
+        </button>
+    </div>
+    
+    <div id="admin-spotlight-list" class="grid grid-cols-2 gap-3 pb-10">
+        </div>
+</section>
                     <section id="admin-expirations-section" class="hidden bounce-enter">
         <div class="flex justify-between items-center mb-6">
             <div>
@@ -976,6 +1018,11 @@
                 // --- INICIALIZACIÓN DE DATOS ---
                 await initCategories();
                 initBanners();
+                
+                // --- INICIALIZACIÓN DE DATOS ---
+await initCategories();
+initBanners();
+window.initSpotlight(); // <--- AGREGA ESTA LÍNEA AQUÍ
 
                 if (isAdmin) {
                     document.getElementById('user-menu-items').classList.add('hidden');
@@ -8004,54 +8051,60 @@ window.openClaimForm = (itemId) => {
             openChatWindowUI(currentUser.uid, 'user');
         };
 
-        // 3. INTERFAZ DE CHAT
-        window.openChatWindowUI = (targetUid, role, adminDisplayName = 'Soporte') => {
-            const isUserView = role === 'user';
-            
-            openModal(`
-                <div class="flex flex-col h-full bg-[#f3f4f6] relative w-full">
-                    <div class="bg-[#1e1b4b] p-4 flex items-center justify-between shadow-md z-10 text-white flex-shrink-0">
-                        <div class="flex items-center gap-3">
-                            <div class="relative">
-                                <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
-                                    <i data-lucide="${isUserView ? 'headset' : 'user'}" class="w-5 h-5 text-white"></i>
-                                </div>
-                                <div class="absolute bottom-0 right-0 online-dot border-2 border-[#1e1b4b]"></div>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-sm tracking-wide">${isUserView ? 'Soporte en Línea' : 'Chat con Usuario'}</h3>
-                                <p class="text-[10px] text-indigo-200">${isUserView ? 'Respuesta rápida' : targetUid.substring(0,15)+'...'}</p>
-                            </div>
+        // 3. INTERFAZ DE CHAT (ACTUALIZADA: Muestra Correo en Título Admin)
+window.openChatWindowUI = (targetUid, role, adminDisplayName = 'Soporte', chatUserEmail = null) => {
+    const isUserView = role === 'user';
+    
+    // Si soy admin, el título es el Email. Si no hay email, pone "Chat con Usuario".
+    // Si soy usuario, el título es "Soporte en Línea".
+    const chatTitle = isUserView ? 'Soporte en Línea' : (chatUserEmail || 'Chat con Usuario');
+    const chatSubtitle = isUserView ? 'Respuesta rápida' : (chatUserEmail ? 'Usuario Atendido' : targetUid.substring(0,15)+'...');
+
+    openModal(`
+        <div class="flex flex-col h-full bg-[#f3f4f6] relative w-full">
+            <div class="bg-[#1e1b4b] p-4 flex items-center justify-between shadow-md z-10 text-white flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
+                            <i data-lucide="${isUserView ? 'headset' : 'user'}" class="w-5 h-5 text-white"></i>
                         </div>
-                        <button onclick="${isUserView ? 'closeModal()' : 'openAdminChatPanel()'}" class="bg-white/10 p-2 rounded-full hover:bg-white/20">
-                            <i data-lucide="${isUserView ? 'x' : 'arrow-left'}" class="w-5 h-5"></i>
-                        </button>
+                        <div class="absolute bottom-0 right-0 online-dot border-2 border-[#1e1b4b]"></div>
                     </div>
-
-                    <div id="chat-msgs" class="flex-1 overflow-y-auto p-4 flex flex-col gap-1 bg-[#eef2f6]">
-                        <div class="text-center mt-10"><span class="animate-spin inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full"></span></div>
-                    </div>
-
-                    <div class="p-3 bg-white border-t flex gap-2 flex-shrink-0 items-center shadow-lg relative z-20">
-                        <input type="text" id="chat-input" class="flex-1 bg-gray-100 rounded-full px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 border-none h-10 text-gray-800" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') doSendMsg('${targetUid}', '${role}')">
-                        <button onclick="doSendMsg('${targetUid}', '${role}')" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full shadow-lg transition-transform active:scale-95 flex items-center justify-center w-10 h-10 flex-shrink-0 cursor-pointer">
-                            <i data-lucide="send" class="w-4 h-4 ml-0.5"></i>
-                        </button>
+                    <div>
+                        <h3 class="font-bold text-sm tracking-wide">${chatTitle}</h3>
+                        <p class="text-[10px] text-indigo-200">${chatSubtitle}</p>
                     </div>
                 </div>
-            `);
-            
-            const mc = document.getElementById('modal-card');
-            const content = document.getElementById('modal-content');
-            const defaultClose = document.querySelector('#modal-card > button');
+                <button onclick="${isUserView ? 'closeModal()' : 'openAdminChatPanel()'}" class="bg-white/10 p-2 rounded-full hover:bg-white/20">
+                    <i data-lucide="${isUserView ? 'x' : 'arrow-left'}" class="w-5 h-5"></i>
+                </button>
+            </div>
 
-            if(mc) mc.className = "neumo-card w-full max-w-md relative shadow-2xl transform transition-all scale-100 opacity-100 h-[85vh] flex flex-col overflow-hidden bg-white rounded-[2rem]";
-            if(content) content.className = "w-full h-full p-0 flex flex-col"; 
-            if(defaultClose) defaultClose.classList.add('hidden'); 
+            <div id="chat-msgs" class="flex-1 overflow-y-auto p-4 flex flex-col gap-1 bg-[#eef2f6]">
+                <div class="text-center mt-10"><span class="animate-spin inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full"></span></div>
+            </div>
 
-            lucide.createIcons();
-            loadMessages(targetUid);
-        }
+            <div class="p-3 bg-white border-t flex gap-2 flex-shrink-0 items-center shadow-lg relative z-20">
+                <input type="text" id="chat-input" class="flex-1 bg-gray-100 rounded-full px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 border-none h-10 text-gray-800" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') doSendMsg('${targetUid}', '${role}')">
+                <button onclick="doSendMsg('${targetUid}', '${role}')" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full shadow-lg transition-transform active:scale-95 flex items-center justify-center w-10 h-10 flex-shrink-0 cursor-pointer">
+                    <i data-lucide="send" class="w-4 h-4 ml-0.5"></i>
+                </button>
+            </div>
+        </div>
+    `);
+    
+    const mc = document.getElementById('modal-card');
+    const content = document.getElementById('modal-content');
+    const defaultClose = document.querySelector('#modal-card > button');
+    
+    if(mc) mc.className = "neumo-card w-full max-w-md relative shadow-2xl transform transition-all scale-100 opacity-100 h-[85vh] flex flex-col overflow-hidden bg-white rounded-[2rem]";
+    if(content) content.className = "w-full h-full p-0 flex flex-col";
+    if(defaultClose) defaultClose.classList.add('hidden');
+    
+    lucide.createIcons();
+    loadMessages(targetUid);
+};
+
 
         // 4. CARGAR MENSAJES Y BORRAR NOTIFICACIONES
         window.loadMessages = (uid) => {
@@ -8268,78 +8321,73 @@ window.openClaimForm = (itemId) => {
         };
 
                 // 8. PRE-APERTURA ADMIN (Selector de Identidad con Opciones)
-        window.preOpenAdminIdentity = (uid, email) => {
-            openModal(`
-                <div class="flex flex-col h-full bg-white relative p-6 w-full">
-                    <button onclick="openAdminChatPanel()" class="absolute top-4 right-4 bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
-                    
-                    <div class="text-center mt-2 mb-6">
-                        <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-indigo-100">
-                            <i data-lucide="shield-check" class="w-8 h-8"></i>
-                        </div>
-                        <h3 class="font-black text-xl text-gray-800">Identidad del Admin</h3>
-                        <p class="text-xs text-gray-400 mt-1">Selecciona cómo te verá el usuario</p>
-                    </div>
-                    
-                    <button onclick="confirmIdentity('${uid}', '${currentAdminName}')" class="w-full bg-white border-2 border-indigo-50 hover:border-indigo-500 hover:bg-indigo-50 p-4 rounded-2xl mb-6 flex items-center justify-between group transition-all shadow-sm">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                <i data-lucide="user" class="w-5 h-5"></i>
-                            </div>
-                            <div class="text-left">
-                                <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Conservar nombre</span>
-                                <span class="block text-lg font-black text-gray-800 group-hover:text-indigo-700 leading-none">${currentAdminName}</span>
-                            </div>
-                        </div>
-                        <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover:text-white"></i>
-                        </div>
-                    </button>
+window.preOpenAdminIdentity = (uid, email) => {
+    openModal(`
+        <div class="flex flex-col h-full bg-white relative p-6 w-full">
+            <button onclick="openAdminChatPanel()" class="absolute top-4 right-4 bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+            
+            <div class="text-center mt-2 mb-6">
+                <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-indigo-100">
+                    <i data-lucide="shield-check" class="w-8 h-8"></i>
+                </div>
+                <h3 class="font-black text-xl text-gray-800">Identidad del Admin</h3>
+                <p class="text-xs text-gray-400 mt-1">Atendiendo a: <span class="font-bold text-indigo-600">${email || 'Usuario'}</span></p>
+            </div>
 
-                    <div class="relative flex py-2 items-center mb-6">
-                        <div class="flex-grow border-t border-gray-100"></div>
-                        <span class="flex-shrink-0 mx-4 text-gray-300 text-[10px] font-bold uppercase tracking-widest">O cambiar identidad</span>
-                        <div class="flex-grow border-t border-gray-100"></div>
+            <button onclick="confirmIdentity('${uid}', '${currentAdminName}', '${email}')" class="w-full bg-white border-2 border-indigo-50 hover:border-indigo-500 hover:bg-indigo-50 p-4 rounded-2xl mb-6 flex items-center justify-between group transition-all shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        <i data-lucide="user" class="w-5 h-5"></i>
                     </div>
-
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i data-lucide="edit-3" class="w-5 h-5 text-gray-300 group-focus-within:text-indigo-500 transition-colors"></i>
-                        </div>
-                        <input type="text" id="new-identity-input" placeholder="Escribe nuevo nombre aquí..." class="pl-12 pr-24 w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all text-gray-800">
-                        
-                        <button onclick="confirmNewIdentity('${uid}')" class="absolute inset-y-1.5 right-1.5 bg-gray-900 text-white px-5 rounded-xl text-xs font-bold hover:bg-black transition-transform active:scale-95 shadow-md flex items-center gap-1">
-                            Usar <i data-lucide="check" class="w-3 h-3"></i>
-                        </button>
+                    <div class="text-left">
+                        <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Conservar nombre</span>
+                        <span class="block text-lg font-black text-gray-800 group-hover:text-indigo-700 leading-none">${currentAdminName}</span>
                     </div>
                 </div>
-            `);
-            
-            // Ajustar tamaño del modal para que se vea elegante
-            const mc = document.getElementById('modal-card');
-            if(mc) mc.className = "neumo-card w-full max-w-sm p-0 relative shadow-2xl transform transition-all scale-100 opacity-100 flex flex-col overflow-hidden bg-white rounded-[2.5rem] h-auto min-h-[480px]";
-            
-            lucide.createIcons();
-        };
+                <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 group-hover:text-white"></i>
+                </div>
+            </button>
 
-        // Función auxiliar para validar input nuevo
-        window.confirmNewIdentity = (uid) => {
-            const input = document.getElementById('new-identity-input');
-            const newName = input.value.trim();
-            if(!newName) {
-                input.focus();
-                input.classList.add('ring-2', 'ring-rose-500'); // Efecto rojo si está vacío
-                setTimeout(() => input.classList.remove('ring-rose-500', 'ring-2'), 1000);
-                return;
-            }
-            confirmIdentity(uid, newName);
-        };
+            <div class="relative flex py-2 items-center mb-6">
+                <div class="flex-grow border-t border-gray-100"></div>
+                <span class="flex-shrink-0 mx-4 text-gray-300 text-[10px] font-bold uppercase tracking-widest">O cambiar identidad</span>
+                <div class="flex-grow border-t border-gray-100"></div>
+            </div>
 
-        // Función final que abre el chat
-        window.confirmIdentity = (uid, nameToUse) => {
-            if(nameToUse) currentAdminName = nameToUse;
-            openChatWindowUI(uid, 'admin');
-        };
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i data-lucide="edit-3" class="w-5 h-5 text-gray-300 group-focus-within:text-indigo-500 transition-colors"></i>
+                </div>
+                <input type="text" id="new-identity-input" placeholder="Escribe nuevo nombre aquí..." class="pl-12 pr-24 w-full bg-gray-50 border border-gray-200 rounded-2xl py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all text-gray-800">
+                <button onclick="confirmNewIdentity('${uid}', '${email}')" class="absolute inset-y-1.5 right-1.5 bg-gray-900 text-white px-5 rounded-xl text-xs font-bold hover:bg-black transition-transform active:scale-95 shadow-md flex items-center gap-1">
+                    Usar <i data-lucide="check" class="w-3 h-3"></i>
+                </button>
+            </div>
+        </div>
+    `);
+    const mc = document.getElementById('modal-card');
+    if(mc) mc.className = "neumo-card w-full max-w-sm p-0 relative shadow-2xl transform transition-all scale-100 opacity-100 flex flex-col overflow-hidden bg-white rounded-[2.5rem] h-auto min-h-[480px]";
+    lucide.createIcons();
+};
+
+window.confirmNewIdentity = (uid, userEmail) => {
+    const input = document.getElementById('new-identity-input');
+    const newName = input.value.trim();
+    if(!newName) {
+        input.focus();
+        input.classList.add('ring-2', 'ring-rose-500');
+        setTimeout(() => input.classList.remove('ring-rose-500', 'ring-2'), 1000);
+        return;
+    }
+    confirmIdentity(uid, newName, userEmail);
+};
+
+window.confirmIdentity = (uid, nameToUse, userEmail) => {
+    if(nameToUse) currentAdminName = nameToUse;
+    openChatWindowUI(uid, 'admin', nameToUse, userEmail); 
+};
+
         
         // --- MOSTRAR FORMULARIO DE REEMPLAZO ---
 window.showReplacementForm = (rid, uid) => {
@@ -8460,6 +8508,231 @@ Pin: ${currentDetails.pin || 'N/A'}`;
     }
 };
 
+    // ======================================================
+    // SISTEMA SPOTLIGHT ADS (POP-UP INICIO) - PRO
+    // ======================================================
+    
+    let spotlightData = [];
+    let spotlightInterval;
+    let currentSpotlightIndex = 0;
+    let slTouchStart = 0;
+    let slTouchEnd = 0;
+
+    // 1. Inicializar (Llamar esto en onAuthStateChanged)
+    window.initSpotlight = () => {
+        const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'spotlight_ads'), orderBy('createdAt', 'desc'));
+        onSnapshot(q, (snapshot) => {
+            spotlightData = [];
+            snapshot.forEach(doc => spotlightData.push({ id: doc.id, ...doc.data() }));
+            
+            // Renderizar vista usuario si hay datos
+            if(spotlightData.length > 0) {
+                renderSpotlightPopup();
+            }
+            
+            // Si estamos en admin, actualizar lista admin
+            if(isAdmin && document.getElementById('admin-spotlight-list')) {
+                renderAdminSpotlightList();
+            }
+        });
+    };
+
+    // 2. Renderizar Pop-up Usuario
+    function renderSpotlightPopup() {
+        const modal = document.getElementById('startup-modal');
+        const track = document.getElementById('startup-track');
+        const indicators = document.getElementById('startup-indicators');
+        
+        if(!modal || !track) return;
+
+        // Mostrar modal (Quitamos hidden)
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        // Construir HTML Carrusel
+        let html = '';
+        let dots = '';
+        
+        spotlightData.forEach((ad, index) => {
+            // Imagen full cover
+            html += `
+            <div class="min-w-full h-full relative flex-shrink-0">
+                <img src="${ad.imageUrl}" class="w-full h-full object-cover" draggable="false">
+                ${ad.link ? `<a href="${ad.link}" target="_blank" class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/90 text-gray-900 px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest shadow-xl hover:scale-105 transition-transform flex items-center gap-2">Ver Más <i data-lucide="arrow-right" class="w-3 h-3"></i></a>` : ''}
+            </div>`;
+            
+            dots += `<div id="sl-dot-${index}" class="w-2 h-2 rounded-full bg-white/50 transition-all duration-300"></div>`;
+        });
+
+        // Clonar el primero al final para efecto infinito (si hay más de 1)
+        if(spotlightData.length > 1) {
+            html += `
+            <div class="min-w-full h-full relative flex-shrink-0">
+                <img src="${spotlightData[0].imageUrl}" class="w-full h-full object-cover">
+            </div>`;
+        }
+
+        track.innerHTML = html;
+        if(indicators) indicators.innerHTML = dots;
+        
+        // Reiniciar variables
+        currentSpotlightIndex = 0;
+        updateSpotlightSlider();
+        startSpotlightAuto();
+        
+        // Eventos Táctiles (Swipe)
+        track.addEventListener('touchstart', (e) => {
+            slTouchStart = e.changedTouches[0].screenX;
+            clearInterval(spotlightInterval);
+        }, {passive: true});
+        
+        track.addEventListener('touchend', (e) => {
+            slTouchEnd = e.changedTouches[0].screenX;
+            handleSpotlightSwipe();
+            startSpotlightAuto();
+        }, {passive: true});
+
+        lucide.createIcons();
+    }
+
+    // 3. Lógica del Slider
+    function updateSpotlightSlider() {
+        const track = document.getElementById('startup-track');
+        if(!track) return;
+        
+        track.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+        track.style.transform = `translateX(-${currentSpotlightIndex * 100}%)`;
+
+        // Actualizar puntos
+        const totalReal = spotlightData.length;
+        for(let i=0; i<totalReal; i++) {
+            const dot = document.getElementById(`sl-dot-${i}`);
+            if(dot) {
+                // El punto activo corresponde al índice actual (ajustando el clon)
+                const isActive = (currentSpotlightIndex % totalReal) === i;
+                dot.className = isActive ? "w-6 h-2 rounded-full bg-white shadow-md transition-all" : "w-2 h-2 rounded-full bg-white/40 transition-all";
+            }
+        }
+    }
+
+    function nextSpotlight() {
+        if(spotlightData.length < 2) return;
+        const track = document.getElementById('startup-track');
+        currentSpotlightIndex++;
+        updateSpotlightSlider();
+
+        // Si llegamos al clon
+        if(currentSpotlightIndex === spotlightData.length) {
+            setTimeout(() => {
+                track.style.transition = 'none';
+                currentSpotlightIndex = 0;
+                track.style.transform = `translateX(0%)`;
+            }, 500);
+        }
+    }
+
+    function prevSpotlight() {
+        if(spotlightData.length < 2) return;
+        const track = document.getElementById('startup-track');
+        if(currentSpotlightIndex === 0) {
+            currentSpotlightIndex = spotlightData.length - 1;
+        } else {
+            currentSpotlightIndex--;
+        }
+        updateSpotlightSlider();
+    }
+
+    function startSpotlightAuto() {
+        clearInterval(spotlightInterval);
+        spotlightInterval = setInterval(nextSpotlight, 3000); // 3 Segundos
+    }
+
+    function handleSpotlightSwipe() {
+        if (slTouchStart - slTouchEnd > 50) nextSpotlight();
+        if (slTouchEnd - slTouchStart > 50) prevSpotlight();
+    }
+
+    window.closeStartupModal = () => {
+        clearInterval(spotlightInterval);
+        const m = document.getElementById('startup-modal');
+        m.classList.remove('flex');
+        m.classList.add('hidden');
+    };
+
+    // --- FUNCIONES ADMINISTRADOR ---
+
+    window.renderAdminSpotlightList = () => {
+        const list = document.getElementById('admin-spotlight-list');
+        if(!list) return;
+        
+        let html = '';
+        if(spotlightData.length === 0) {
+            html = '<div class="col-span-2 text-center py-10 opacity-50"><i data-lucide="image-off" class="w-10 h-10 mx-auto text-gray-300 mb-2"></i><p class="text-xs text-gray-400">No hay anuncios activos</p></div>';
+        } else {
+            spotlightData.forEach(ad => {
+                html += `
+                <div class="relative group rounded-2xl overflow-hidden aspect-[3/4] shadow-md border border-gray-100">
+                    <img src="${ad.imageUrl}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                    <button onclick="deleteSpotlight('${ad.id}')" class="absolute top-2 right-2 bg-white text-rose-500 p-1.5 rounded-full shadow-lg scale-0 group-hover:scale-100 transition-transform">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                    ${ad.link ? '<div class="absolute bottom-2 left-2 bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 rounded-lg shadow-sm">LINK ACTIVO</div>' : ''}
+                </div>`;
+            });
+        }
+        list.innerHTML = html;
+        lucide.createIcons();
+    };
+
+    window.openAddSpotlightModal = () => {
+        openModal(`
+        <div class="text-left bounce-enter">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mb-4 neumo-inset">
+                <i data-lucide="megaphone" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Nuevo Anuncio Pop-up</h3>
+            <p class="text-xs text-gray-400 mb-4">Esta imagen aparecerá al abrir la app.</p>
+            
+            <form onsubmit="saveSpotlight(event)" class="space-y-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">URL de la Imagen (Vertical recomendada)</label>
+                    <input type="url" id="sl-img" class="neumo-inset w-full rounded-xl p-3 text-sm border-none bg-transparent" placeholder="https://..." required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-indigo-400 uppercase mb-1">Enlace de Acción (Opcional)</label>
+                    <input type="url" id="sl-link" class="neumo-inset w-full rounded-xl p-3 text-sm border-none bg-transparent" placeholder="https://tu-web.com">
+                </div>
+                <button type="submit" class="neumo-button w-full bg-rose-600 text-white font-bold py-3 rounded-xl shadow-lg mt-2 hover:bg-rose-700">Publicar Ahora</button>
+            </form>
+        </div>`);
+        lucide.createIcons();
+    };
+
+    window.saveSpotlight = async (e) => {
+        e.preventDefault();
+        const img = document.getElementById('sl-img').value;
+        const link = document.getElementById('sl-link').value;
+        
+        try {
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'spotlight_ads'), {
+                imageUrl: img,
+                link: link || null,
+                createdAt: serverTimestamp()
+            });
+            showToast('Anuncio publicado con éxito', 'success');
+            closeModal();
+        } catch(err) {
+            showToast('Error: ' + err.message, 'error');
+        }
+    };
+
+    window.deleteSpotlight = async (id) => {
+        if(confirm("¿Eliminar este anuncio?")) {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'spotlight_ads', id));
+            showToast('Anuncio eliminado', 'success');
+        }
+    };
         
     </script>
 </body>
