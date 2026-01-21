@@ -673,28 +673,30 @@
                         <div id="badge-requests" class="absolute top-3 right-3 bg-rose-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-md hidden animate-bounce">0</div>
                     </div>
                     
-                        <div onclick="openDocumentsPanel()" class="bg-white p-5 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 cursor-pointer group transition-all duration-300 hover:-translate-y-1 relative">
+                        <div onclick="openDocumentsPanel()" class="relative bg-white p-5 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 cursor-pointer group transition-all duration-300 hover:-translate-y-1">
     <div class="flex flex-col items-center justify-center text-center h-full gap-2">
-        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300 relative">
             <i data-lucide="file-text" class="w-6 h-6"></i>
         </div>
         <span class="font-bold text-gray-700 text-sm">Documentos</span>
     </div>
     
-    <div id="badge-documents" class="absolute top-3 right-3 bg-rose-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-md hidden animate-bounce">0</div>
+    <div id="badge-docs-admin" class="hidden absolute top-2 right-2 bg-red-600 text-white text-[10px] font-bold w-6 h-6 flex items-center justify-center rounded-full shadow-lg border-2 border-white z-20 animate-bounce">
+        0
+    </div>
 </div>
 
 
 
-                    <div onclick="enterAdminModule('renewal')" class="bg-white p-5 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 cursor-pointer group transition-all duration-300 hover:-translate-y-1 relative">
-                        <div class="flex flex-col items-center justify-center text-center h-full gap-2">
-                            <div class="w-12 h-12 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center shadow-sm group-hover:bg-violet-600 group-hover:text-white transition-colors duration-300">
-                                <i data-lucide="refresh-cw" class="w-6 h-6"></i>
-                            </div>
-                            <span class="font-bold text-gray-700 text-sm">Renovar</span>
-                        </div>
-                        <div id="badge-renewal" class="absolute top-3 right-3 bg-rose-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-md hidden animate-bounce">0</div>
-                    </div>
+                    <div onclick="openRenewalsPanel()" class="bg-white p-5 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 cursor-pointer group transition-all duration-300 hover:-translate-y-1 relative">
+    <div class="flex flex-col items-center justify-center text-center h-full gap-2">
+        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center shadow-sm group-hover:bg-amber-600 group-hover:text-white transition-colors duration-300 relative">
+            <i data-lucide="refresh-cw" class="w-6 h-6"></i>
+        </div>
+        <span class="font-bold text-gray-700 text-sm">Renovaciones</span>
+    </div>
+    <div id="badge-renewals-smart" class="hidden absolute top-2 right-2 bg-red-600 text-white text-[10px] font-bold w-6 h-6 flex items-center justify-center rounded-full shadow-lg border-2 border-white animate-bounce">0</div>
+</div>
 
                     <div onclick="enterAdminModule('support')" class="bg-white p-5 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 cursor-pointer group transition-all duration-300 hover:-translate-y-1 relative">
                         <div class="flex flex-col items-center justify-center text-center h-full gap-2">
@@ -966,8 +968,8 @@
         window.inventoryCache = [];
 
                 // --- SONIDO HD TIPO RED SOCIAL ---
-        // Usamos un sonido "Pop" corto y agradable
-        const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3");
+// Audio actualizado One Piece para todas las notificaciones
+const alertSound = new Audio("DenDenMushi-OnePiece.mp3");
         
         window.playNotificationSound = () => { 
             try { 
@@ -9294,62 +9296,338 @@ window.closeDocumentsPanel = () => {
 };
 
 // ======================================================
-// NOTIFICACIONES AUTOMÁTICAS DE DOCUMENTOS
+// NOTIFICACIONES ROBUSTAS PARA ADMIN (SOLUCIÓN FINAL)
 // ======================================================
-let isFirstDocsCheck = true; // Para no sonar al recargar página
+let docsListenerRef = null;
+let audioNotification = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); 
 
-function startDocumentNotifications() {
-    // Escuchamos solo las solicitudes que están 'pending' (pendientes)
+function initAdminNotifications() {
+    // 1. Conectamos a la colección de solicitudes
+    // Usamos limit(100) para no sobrecargar, ordenamos por creación si es posible
+    // Si no tienes el campo timestamp, esto simplemente traerá 100 documentos cualesquiera
     const q = query(
         collection(db, 'artifacts', appId, 'public', 'data', 'document_requests'), 
-        where('status', '==', 'pending')
+        limit(100) 
     );
 
-    onSnapshot(q, (snapshot) => {
-        const count = snapshot.size; // Cantidad de pendientes
-        const badge = document.getElementById('badge-documents');
+    docsListenerRef = onSnapshot(q, (snapshot) => {
+        // 2. FILTRADO MANUAL (Más seguro)
+        // Contamos cuántos documentos NO tienen status "completed"
+        // Esto detecta 'pending', 'revision', o si no tienen status siquiera.
+        const pendingDocs = snapshot.docs.filter(doc => {
+            const data = doc.data();
+            return data.status !== 'completed'; 
+        });
 
-        // 1. ACTUALIZAR EL CÍRCULO ROJO
+        const count = pendingDocs.length;
+        const badge = document.getElementById('badge-docs-admin');
+
+        // 3. ACTUALIZAR EL GLOBO ROJO
         if(badge) {
-            badge.innerText = count;
+            badge.innerText = count; // Poner el número
+            
             if(count > 0) {
-                badge.classList.remove('hidden'); // Mostrar si hay pendientes
-                badge.style.display = 'flex';     // Asegurar que se vea
+                // Mostrar si hay pendientes
+                badge.classList.remove('hidden');
+                badge.style.display = 'flex'; 
             } else {
-                badge.classList.add('hidden');    // Ocultar si es 0
+                // Ocultar si todo está limpio
+                badge.classList.add('hidden');
                 badge.style.display = 'none';
             }
         }
 
-        // 2. MOSTRAR AVISO FLOTANTE (Solo si llega uno nuevo mientras estás conectado)
+        // 4. SONIDO Y AVISO (Detectar cambios)
         snapshot.docChanges().forEach((change) => {
-            if (change.type === "added" && !isFirstDocsCheck) {
-                // Sonido de notificación
-                try {
-                    new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play();
-                } catch(e) {}
-                
-                // Mensaje en pantalla
-                showToast('📄 ¡Nueva solicitud de documento!', 'info');
+            if (change.type === "added") {
+                const data = change.doc.data();
+                // Solo avisar si el documento agregado NO está completado
+                if(data.status !== 'completed') {
+                    // Evitamos que suene al cargar la página por primera vez (opcional)
+                    // Si prefieres que suene siempre, deja esto así:
+                    try { 
+                        audioNotification.play().catch(e => console.log("Audio bloqueado por navegador")); 
+                        showToast(`📄 Nueva solicitud pendiente`, 'info');
+                    } catch(e) {}
+                }
             }
         });
-
-        isFirstDocsCheck = false; // Ya revisamos la carga inicial
+    }, (error) => {
+        console.error("Error en notificaciones:", error);
     });
 }
 
 // ======================================================
-// ACTIVAR EL VIGILANTE AL INICIAR SESIÓN
+// INICIADOR AUTOMÁTICO
 // ======================================================
-// Esto asegura que el código arranque solo si eres admin
-auth.onAuthStateChanged(user => {
+// Esto verifica si el usuario tiene permiso y arranca el sistema
+auth.onAuthStateChanged(async (user) => {
     if (user) {
-        getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', user.uid)).then(snap => {
+        try {
+            const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', user.uid));
             if(snap.exists()) {
                 const role = snap.data().role;
-                // Si es admin, dueño o CEO -> Iniciamos las notificaciones
+                // Si es Admin, Owner o CEO -> ENCENDER NOTIFICACIONES
                 if(['admin', 'owner', 'ceo'].includes(role)) {
-                    startDocumentNotifications();
+                    console.log("✅ Iniciando sistema de notificaciones...");
+                    initAdminNotifications();
+                }
+            }
+        } catch(e) {
+            console.error("Error verificando rol:", e);
+        }
+    }
+});
+
+// ======================================================
+// 1. ABRIR PANEL RENOVACIONES (VERSIÓN SIN BLOQUEOS)
+// ======================================================
+window.openRenewalsPanel = () => {
+    // A. Dibujamos la ventana con el "Cargando..."
+    openModal(`
+        <div class="flex flex-col h-[85vh] bg-white rounded-[2rem] overflow-hidden bounce-enter relative">
+            <div class="bg-amber-500 p-6 flex-shrink-0 shadow-lg z-10 text-white flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-black tracking-tight text-white">Renovaciones</h3>
+                    <p class="text-[10px] text-amber-100 font-medium uppercase tracking-widest">Aprobar descuenta saldo</p>
+                </div>
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <i data-lucide="refresh-cw" class="w-5 h-5 text-white"></i>
+                </div>
+            </div>
+
+            <div id="smart-renewals-list" class="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-3 bg-gray-50 relative">
+                <div class="flex flex-col items-center justify-center h-full">
+                    <span class="animate-spin inline-block w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full mb-3"></span>
+                    <p class="text-xs font-bold text-gray-400 uppercase">Cargando lista...</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white border-t border-gray-200 z-20">
+                <button onclick="closeSmartRenewals()" class="w-full py-3.5 rounded-xl text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Cerrar Panel</button>
+            </div>
+        </div>
+    `);
+    lucide.createIcons();
+
+    // B. CONSULTA SEGURA (Sin filtros complejos que traben la carga)
+    // Traemos las últimas 50 solicitudes sin importar su estado
+    const q = query(
+        collection(db, 'artifacts', appId, 'public', 'data', 'renewal_requests'), 
+        orderBy('createdAt', 'desc'),
+        limit(50)
+    );
+
+    const container = document.getElementById('smart-renewals-list');
+    
+    renewalsSmartListener = onSnapshot(q, (snapshot) => {
+        // Verificar si el panel sigue abierto
+        if(!document.getElementById('smart-renewals-list')) return;
+
+        // C. FILTRADO MANUAL (Aquí decidimos qué mostrar)
+        // Guardamos solo las que NO estén completadas ni rechazadas
+        const pendingDocs = [];
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            // Si el estado es distinto a 'completed' y 'rejected', lo consideramos pendiente
+            if(d.status !== 'completed' && d.status !== 'rejected') {
+                pendingDocs.push({ id: doc.id, ...d });
+            }
+        });
+
+        // Actualizamos el globito rojo del botón
+        const badge = document.getElementById('badge-renewals-smart');
+        if(badge) {
+            badge.innerText = pendingDocs.length;
+            if(pendingDocs.length > 0) {
+                badge.classList.remove('hidden');
+                badge.style.display = 'flex';
+            } else {
+                badge.classList.add('hidden');
+                badge.style.display = 'none';
+            }
+        }
+
+        // D. MOSTRAR RESULTADOS
+        if (pendingDocs.length === 0) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-20 opacity-50 h-full">
+                    <i data-lucide="check-circle" class="w-16 h-16 text-gray-300 mb-3"></i>
+                    <p class="text-sm text-gray-400 font-bold">No hay renovaciones pendientes</p>
+                </div>`;
+            lucide.createIcons();
+            return;
+        }
+
+        let html = '';
+        pendingDocs.forEach(data => {
+            const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : 'Reciente';
+            
+            html += `
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 relative group hover:shadow-md transition-all">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Renovar Servicio</p>
+                        <h4 class="text-sm font-black text-gray-800">${data.serviceName || 'Servicio'}</h4>
+                        <p class="text-xs text-amber-600 font-bold mt-1">${data.userEmail || 'Usuario'}</p>
+                    </div>
+                    <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[9px] font-black uppercase tracking-wide border border-amber-200">PENDIENTE</span>
+                </div>
+
+                <div class="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-200 text-center">
+                    <p class="text-[10px] text-gray-400 uppercase">Nota</p>
+                    <p class="text-xs font-bold text-gray-600 italic">"${data.notes || 'Solicito renovación'}"</p>
+                </div>
+                
+                <div class="flex items-center gap-2 mt-2">
+                    <button onclick="approveSmartRenewal('${data.id}', '${data.userId}', '${data.serviceName}', '${data.userEmail}')" 
+                        class="flex-1 py-3 rounded-xl bg-gray-900 text-white text-xs font-bold shadow-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                        Aprobar y Cobrar
+                    </button>
+                    
+                    <button onclick="rejectSmartRenewal('${data.id}')" class="p-3 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 border border-red-100 transition-colors tooltip" title="Rechazar">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <p class="text-[9px] text-gray-300 text-center mt-2 font-mono">${date}</p>
+            </div>`;
+        });
+        container.innerHTML = html;
+        lucide.createIcons();
+
+    }, (error) => {
+        console.error("Error renovaciones:", error);
+        // Si hay error, mostramos mensaje en lugar de carga infinita
+        container.innerHTML = `
+            <div class="text-center py-10">
+                <p class="text-red-500 font-bold text-xs">Error de conexión: ${error.message}</p>
+            </div>`;
+    });
+};
+
+
+window.closeSmartRenewals = () => {
+    // No desconectamos el listener para que el globo rojo siga funcionando
+    closeModal();
+};
+
+// 2. LÓGICA DE COBRO AUTOMÁTICO
+window.approveSmartRenewal = async (requestId, userId, serviceName, userEmail) => {
+    if(!confirm(`¿Deseas renovar "${serviceName}" para ${userEmail}?\n\n⚠️ SE DESCONTARÁ EL SALDO AL USUARIO.`)) return;
+
+    openModal(`
+        <div class="text-center py-12">
+            <span class="animate-spin inline-block w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full mb-3"></span>
+            <p class="text-xs font-bold text-amber-600 uppercase animate-pulse">Procesando cobro...</p>
+        </div>
+    `);
+
+    try {
+        // A. Buscar usuario para ver su ROL y SALDO
+        const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', userId);
+        const walletRef = doc(db, 'artifacts', appId, 'users', userId, 'wallet', 'main');
+        
+        const [userSnap, walletSnap] = await Promise.all([getDoc(userRef), getDoc(walletRef)]);
+        
+        if (!userSnap.exists()) throw new Error("Usuario no encontrado en la base de datos.");
+        
+        const userData = userSnap.data();
+        const balance = walletSnap.exists() ? (Number(walletSnap.data().balance) || 0) : 0;
+        const role = userData.role || 'client'; // client, vip, reseller, lider
+
+        // B. Buscar el precio del servicio según el ROL
+        const productsSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'));
+        let price = 0;
+        let found = false;
+
+        productsSnap.forEach(doc => {
+            const prod = doc.data();
+            // Comparamos nombres ignorando mayúsculas/minúsculas
+            if (prod.name && serviceName && prod.name.trim().toLowerCase() === serviceName.trim().toLowerCase()) {
+                
+                // Seleccionamos el precio correcto
+                if(role === 'lider' && prod.priceLeader) price = Number(prod.priceLeader);
+                else if(role === 'reseller' && prod.priceReseller) price = Number(prod.priceReseller);
+                else if(role === 'vip' && prod.priceVip) price = Number(prod.priceVip);
+                else price = Number(prod.priceClient || prod.price || 0);
+                
+                found = true;
+            }
+        });
+
+        if (!found) {
+            // Si no encuentra el producto exacto, pregunta el precio manual o usa 0
+            // Para seguridad, lanzamos error si no lo encuentra
+            console.warn("Producto no encontrado en catálogo, precio será 0");
+        }
+
+        // C. VERIFICAR SALDO
+        if (balance < price) {
+            throw new Error(`❌ SALDO INSUFICIENTE.\nEl usuario tiene $${balance} y la renovación cuesta $${price}.`);
+        }
+
+        // D. EJECUTAR COBRO Y ACTUALIZACIÓN
+        await runTransaction(db, async (t) => {
+            // 1. Descontar saldo
+            t.update(walletRef, { balance: balance - price });
+
+            // 2. Marcar solicitud como completada
+            const reqRef = doc(db, 'artifacts', appId, 'public', 'data', 'renewal_requests', requestId);
+            t.update(reqRef, { 
+                status: 'completed', 
+                renewedAt: serverTimestamp(),
+                priceDeducted: price
+            });
+
+            // 3. Crear registro en historial
+            const txRef = doc(collection(db, 'artifacts', appId, 'users', userId, 'transactions'));
+            t.set(txRef, {
+                type: 'renewal',
+                amount: price,
+                description: `Renovación: ${serviceName}`,
+                timestamp: serverTimestamp(),
+                status: 'approved'
+            });
+        });
+
+        showToast(`✅ Renovado con éxito. Se cobraron $${price}`, 'success');
+        window.openRenewalsPanel(); // Recargar la lista
+
+    } catch (e) {
+        closeModal();
+        alert("⛔ ERROR:\n" + e.message);
+    }
+};
+
+window.rejectSmartRenewal = async (id) => {
+    if(confirm("¿Rechazar esta solicitud permanentemente?")) {
+        try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'renewal_requests', id));
+            showToast('Solicitud rechazada', 'success');
+        } catch(e) {
+            showToast('Error al rechazar', 'error');
+        }
+    }
+};
+
+// Iniciar escuchas si es admin
+auth.onAuthStateChanged(user => {
+    if(user) {
+        getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', user.uid)).then(s => {
+            if(s.exists() && ['admin','owner','ceo'].includes(s.data().role)) {
+                // Forzar inicio de escucha para el globo rojo
+                if(window.renewalsSmartListener === null) {
+                    // Llamamos a la función "invisiblemente" para activar el listener
+                    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'renewal_requests'), where('status', '==', 'pending'));
+                    onSnapshot(q, (snap) => {
+                        const badge = document.getElementById('badge-renewals-smart');
+                        if(badge) {
+                            badge.innerText = snap.size;
+                            badge.classList.toggle('hidden', snap.size === 0);
+                            if(snap.size > 0) badge.style.display = 'flex';
+                        }
+                    });
                 }
             }
         });
