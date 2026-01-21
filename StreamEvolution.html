@@ -967,9 +967,33 @@
         window.adminPendingRenewals = [];
         window.inventoryCache = [];
 
-                // --- SONIDO HD TIPO RED SOCIAL ---
-// Audio actualizado One Piece para todas las notificaciones
-const alertSound = new Audio("DenDenMushi-OnePiece.mp3");
+                        // --- SONIDO INTELIGENTE POR ROL ---
+        // 1. Sonido para usuarios normales (El Pop original)
+        const soundNormal = new Audio("https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3");
+        
+        // 2. Sonido exclusivo para el Administrador (One Piece)
+        const soundAdmin = new Audio("DenDenMushi-OnePiece.mp3");
+
+        window.playNotificationSound = () => { 
+            try { 
+                // Verificamos si el usuario actual es el Admin
+                const isAdminUser = currentUser && currentUser.email === "mrandroidtutorialeshd@gmail.com";
+
+                if (isAdminUser) {
+                    // --- LÓGICA PARA ADMIN ---
+                    soundAdmin.currentTime = 0; 
+                    soundAdmin.volume = 0.6; 
+                    soundAdmin.play().catch(e => console.log("Audio Admin bloqueado hasta interacción"));
+                } else {
+                    // --- LÓGICA PARA EL RESTO (CLIENTES / REVENDEDORES) ---
+                    soundNormal.currentTime = 0; 
+                    soundNormal.volume = 0.6; 
+                    soundNormal.play().catch(e => console.log("Audio Normal bloqueado hasta interacción"));
+                }
+            } catch(e) {
+                console.error("Error al reproducir sonido:", e);
+            } 
+        };
         
         window.playNotificationSound = () => { 
             try { 
