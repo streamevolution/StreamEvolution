@@ -967,11 +967,11 @@
         window.adminPendingRenewals = [];
         window.inventoryCache = [];
 
-                        // --- SONIDO INTELIGENTE POR ROL ---
-        // 1. Sonido para usuarios normales (El Pop original)
+                        // --- SONIDO INTELIGENTE POR ROL (VERSIÓN FINAL) ---
+        // 1. Sonido para usuarios normales (Clientes, VIP, Revendedores)
         const soundNormal = new Audio("NotificacionUser.mp3");
         
-        // 2. Sonido exclusivo para el Administrador (One Piece)
+        // 2. Sonido exclusivo para el Administrador
         const soundAdmin = new Audio("DenDenMushi-OnePiece.mp3");
 
         window.playNotificationSound = () => { 
@@ -985,7 +985,7 @@
                     soundAdmin.volume = 0.6; 
                     soundAdmin.play().catch(e => console.log("Audio Admin bloqueado hasta interacción"));
                 } else {
-                    // --- LÓGICA PARA EL RESTO (CLIENTES / REVENDEDORES) ---
+                    // --- LÓGICA PARA EL RESTO DE USUARIOS ---
                     soundNormal.currentTime = 0; 
                     soundNormal.volume = 0.6; 
                     soundNormal.play().catch(e => console.log("Audio Normal bloqueado hasta interacción"));
@@ -994,17 +994,7 @@
                 console.error("Error al reproducir sonido:", e);
             } 
         };
-        
-        window.playNotificationSound = () => { 
-            try { 
-                alertSound.currentTime = 0; 
-                alertSound.volume = 0.6; // Volumen al 60% para no aturdir
-                alertSound.play().catch(e => {
-                    // Los navegadores bloquean el audio si el usuario no ha interactuado primero con la página.
-                    console.log("Audio bloqueado hasta interacción del usuario");
-                }); 
-            } catch(e){} 
-        };
+
 
             // --- AUTH OBSERVER (ACTUALIZADO CON ICONOS DE ROL) ---
         onAuthStateChanged(auth, async (user) => {
