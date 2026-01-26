@@ -1071,7 +1071,7 @@
                 // --- INICIALIZACIÓN DE DATOS ---
 await initCategories();
 initBanners();
-window.initSpotlight(); // <--- AGREGA ESTA LÍNEA AQUÍ
+window.initSpotlight(); // <--- ESTA LÍNEA ES LA QUE HACE QUE TODOS VEAN EL ANUNCIO
 
                 if (isAdmin) {
                     document.getElementById('user-menu-items').classList.add('hidden');
@@ -4466,20 +4466,16 @@ window.renderCategoryView = (categorySlug, title) => {
                     timestamp: serverTimestamp()
                 });
 
-                // === NUEVO: ENVIAR SOLICITUD AL ADMIN SI HAY CURP ===
+                                // === NUEVO: ENVIAR SOLICITUD AL ADMIN SI HAY CURP ===
                 if (curpData) {
                     const reqRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'document_requests'));
-                    t.set(reqRef, {
-                        uid: currentUser.uid,
-                        buyerEmail: currentUser.email,
-                        serviceName: name,
-                        curp: curpData,
-                        pricePaid: cost,
-                        status: 'pending', 
-                        timestamp: serverTimestamp()
-                    });
+                    t.set(reqRef, { uid: currentUser.uid, buyerEmail: currentUser.email, serviceName: name, curp: curpData, pricePaid: cost, status: 'pending', timestamp: serverTimestamp() });
                 }
             });
+
+            // --- NUEVO: Enviar comisión al patrocinador (Paso 2) ---
+            await processReferralCommission(currentUser.uid, cost);
+            // -------------------------------------------------------
 
             showToast('¡Compra realizada con éxito!', 'success');
             closeModal();
@@ -4911,8 +4907,8 @@ window.renderCategoryView = (categorySlug, title) => {
                             <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i> Nota Importante
                         </p>
                         <p class="text-[11px] text-amber-700 font-medium leading-relaxed">
-                            La recarga mínima es de <strong class="text-amber-900 bg-amber-100 px-1 rounded border border-amber-200">$50</strong>. 
-                            Si recargan menos de <strong class="text-amber-900 bg-amber-100 px-1 rounded border border-amber-200">$50</strong> el banco les cobrará una comisión de <strong class="text-rose-600 bg-rose-50 px-1 rounded border border-rose-100">$10</strong> el cual se descontará automáticamente de su saldo.
+                            La recarga mínima es de <strong class="text-amber-900 bg-amber-100 px-1 rounded border border-amber-200">$100</strong>. 
+                            Si recargan menos de <strong class="text-amber-900 bg-amber-100 px-1 rounded border border-amber-200">$100</strong> el banco les cobrará una comisión de <strong class="text-rose-600 bg-rose-50 px-1 rounded border border-rose-100">$20</strong> el cual se descontará automáticamente de su saldo.
                         </p>
                     </div>
 
@@ -5052,7 +5048,7 @@ window.renderCategoryView = (categorySlug, title) => {
                             <div>
                                 <p class="text-xs text-amber-800 font-bold mb-1">Instrucciones</p>
                                 <p class="text-[10px] text-amber-700 leading-snug">
-                                    Realiza la transferencia por el monto <strong>EXACTO</strong>. Una vez hecha, presiona el botón negro de abajo. Si el tiempo expira, esta solicitud se cancelará.
+                                    Realiza la transferencia con el monto <strong>EXACTO</strong>. Tu pago debe llevar <strong>NOMBRE</strong> Y <strong>CONCEPTO</strong> que aparece, Una vez hecha, presiona el botón negro de abajo "Ya Realice el pago". Si el tiempo expira, esta solicitud se cancelará y su pago podría no verse reflejado.
                                 </p>
                                 ${strikeWarning}
                             </div>
@@ -8677,22 +8673,24 @@ Pin: ${currentDetails.pin || 'N/A'}`;
 
     // 1. Inicializar (Llamar esto en onAuthStateChanged)
     window.initSpotlight = () => {
-        const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'spotlight_ads'), orderBy('createdAt', 'desc'));
-        onSnapshot(q, (snapshot) => {
-            spotlightData = [];
-            snapshot.forEach(doc => spotlightData.push({ id: doc.id, ...doc.data() }));
-            
-            // Renderizar vista usuario si hay datos
-            if(spotlightData.length > 0) {
-                renderSpotlightPopup();
-            }
-            
-            // Si estamos en admin, actualizar lista admin
-            if(isAdmin && document.getElementById('admin-spotlight-list')) {
-                renderAdminSpotlightList();
-            }
-        });
-    };
+    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'spotlight_ads'), orderBy('createdAt', 'desc'));
+    
+    onSnapshot(q, (snapshot) => {
+        spotlightData = [];
+        snapshot.forEach(doc => spotlightData.push({ id: doc.id, ...doc.data() }));
+
+        // 1. ESTO MUESTRA EL ANUNCIO A TODOS (Clientes, VIP, etc.)
+        if(spotlightData.length > 0) {
+            renderSpotlightPopup();
+        }
+
+        // 2. ESTO ACTUALIZA EL PANEL DE CONTROL (Solo si eres Admin y estás en tu panel)
+        if(isAdmin && document.getElementById('admin-spotlight-list')) {
+            renderAdminSpotlightList();
+        }
+    });
+};
+
 
     // 2. Renderizar Pop-up Usuario
     function renderSpotlightPopup() {
@@ -9647,6 +9645,186 @@ auth.onAuthStateChanged(user => {
         });
     }
 });
+
+        // ======================================================
+        // SISTEMA DE VALIDACIÓN DE RECARGA (CON ALERTA < $100)
+        // ======================================================
+
+        // 1. Ventana Emergente Amigable (Comisión)
+        window.openCommissionAlert = (amount) => {
+            openModal(`
+                <div class="text-center bounce-enter pt-4 px-2">
+                    <div class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-xl animate-pulse">
+                        <i data-lucide="piggy-bank" class="w-10 h-10 text-amber-500"></i>
+                    </div>
+                    
+                    <h3 class="text-xl font-black text-gray-800 mb-2">¡Un pequeño aviso! 🌟</h3>
+                    
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-left space-y-3 mb-6">
+                        <p class="text-sm text-gray-600 leading-relaxed font-medium">
+                            Hola 👋. Te recordamos que la recarga mínima ya es de <b class="text-emerald-600">$100 pesos</b> para que sea totalmente <b>GRATIS</b>.
+                        </p>
+                        
+                        <div class="bg-rose-50 p-3 rounded-xl border border-rose-100 flex gap-3 items-start">
+                            <i data-lucide="info" class="w-5 h-5 text-rose-500 mt-0.5 flex-shrink-0"></i>
+                            <p class="text-xs text-rose-600 font-bold leading-snug">
+                                Al recargar <span class="text-rose-800 underline">$${amount}</span>, el banco cobrará una comisión operativa de $20 pesos.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-3">
+                        <button onclick="executeRecharge(${amount})" class="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-black transition-transform active:scale-95 flex items-center justify-center gap-2">
+                            <span>Aceptar y Continuar</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                        
+                        <button onclick="openChargeModal()" class="w-full bg-white text-indigo-600 font-bold py-3 rounded-xl border border-indigo-100 hover:bg-indigo-50 transition-colors">
+                            Cambiar Monto (Ahorrar comisión)
+                        </button>
+                    </div>
+                </div>
+            `);
+            lucide.createIcons();
+        };
+
+        // 2. Nueva Lógica Principal (Validación)
+        // Esta función reemplaza a la que tenías conectada al botón "Generar Solicitud"
+        window.processRecharge = (val) => {
+            const amount = Number(val);
+            
+            if (!amount || amount <= 0) {
+                showToast('Por favor ingresa un monto válido', 'error');
+                return;
+            }
+
+            // --- REGLA: Si es menor a 100, mostrar alerta amable ---
+            if (amount < 100) {
+                openCommissionAlert(amount); // Muestra la alerta, no procesa aún
+            } else {
+                executeRecharge(amount); // Pasa directo si es >= 100
+            }
+        };
+
+        // 3. Ejecución Real de la Recarga (Tu lógica original movida aquí)
+        // Esta función contiene TODA tu lógica de Firebase, Strikes y Timer original.
+        window.executeRecharge = async (amt) => {
+            // Recuperamos el botón del modal anterior (si existe) o simulamos carga
+            let btn = document.getElementById('confirm-btn');
+            
+            // Si estamos en el modal de alerta, el botón 'confirm-btn' no existe, 
+            // así que buscamos el botón de la alerta actual para ponerle spinner
+            if (!btn) {
+                btn = document.querySelector('button[onclick^="executeRecharge"]');
+            }
+
+            if(btn) {
+                const originalText = btn.innerText;
+                btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Procesando...';
+                btn.disabled = true;
+            }
+
+            try {
+                // 1. Verificar sanciones previas (Lógica original)
+                const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', currentUser.uid);
+                const userSnap = await getDoc(userDocRef);
+                let strikes = userSnap.data().rechargeStrikes || 0;
+                let lastStrike = userSnap.data().lastStrikeDate ? userSnap.data().lastStrikeDate.toDate() : new Date();
+
+                // Resetear strikes si es un día nuevo
+                const today = new Date();
+                if(lastStrike.getDate() !== today.getDate() || lastStrike.getMonth() !== today.getMonth()) {
+                    strikes = 0;
+                    await updateDoc(userDocRef, { rechargeStrikes: 0 });
+                }
+
+                // 2. Crear la solicitud en Firebase
+                const txRef = await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), {
+                    type: 'deposit',
+                    amount: Number(amt),
+                    description: 'Recarga Pendiente (En proceso)',
+                    timestamp: serverTimestamp(),
+                    status: 'Pending'
+                });
+
+                const reqRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    amount: Number(amt),
+                    status: 'pending',
+                    timestamp: serverTimestamp(),
+                    userTxId: txRef.id,
+                    expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutos validez
+                });
+
+                showToast('Solicitud iniciada. Tienes 10 minutos.', 'info');
+
+                // 3. Abrir Modal con Timer (Tu función original de la App)
+                showPaymentModalWithTimer(reqRef.id, txRef.id, Number(amt), strikes);
+
+            } catch (e) {
+                console.error("Error en recarga:", e);
+                showToast('Error al procesar solicitud', 'error');
+                if(btn) {
+                    btn.disabled = false;
+                    btn.innerText = "Reintentar";
+                }
+            }
+        };
+        
+                // ======================================================
+        // SISTEMA DE COMISIONES (REFERIDOS 10%)
+        // ======================================================
+        window.processReferralCommission = async (buyerUid, purchaseAmount) => {
+            try {
+                // 1. Obtener datos del comprador para ver quien lo invitó
+                const buyerRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', buyerUid);
+                const buyerSnap = await getDoc(buyerRef);
+                
+                if (!buyerSnap.exists()) return;
+                
+                const buyerData = buyerSnap.data();
+                const referrerId = buyerData.referredBy; // El UID del que lo invitó
+
+                // Si NO tiene referido, terminamos aquí.
+                if (!referrerId) return;
+
+                // 2. Calcular el 10%
+                const commission = purchaseAmount * 0.10;
+                
+                // Evitar comisiones de $0 o errores
+                if (commission <= 0) return;
+
+                console.log(`Procesando comisión de $${commission} para el usuario: ${referrerId}`);
+
+                // 3. Buscar al Patrocinador (Referrer)
+                const referrerRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', referrerId);
+                const referrerSnap = await getDoc(referrerRef);
+
+                if (referrerSnap.exists()) {
+                    const currentBalance = referrerSnap.data().balance || 0;
+                    const newBalance = currentBalance + commission;
+
+                    // A. Darle el dinero al patrocinador
+                    await updateDoc(referrerRef, {
+                        balance: newBalance
+                    });
+
+                    // B. Registrar la transacción en su historial para que sepa de dónde vino el dinero
+                    await addDoc(collection(db, 'artifacts', appId, 'users', referrerId, 'transactions'), {
+                        type: 'referral_bonus', // Tipo especial para identificar ganancias
+                        amount: commission,
+                        description: `Comisión (10%) por compra de tu referido`,
+                        timestamp: serverTimestamp(),
+                        status: 'completed'
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error al procesar comisión de referido:", error);
+                // No mostramos error al usuario final para no interrumpir su experiencia de compra
+            }
+        };
         
     </script>
 </body>
