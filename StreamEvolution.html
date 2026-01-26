@@ -4469,13 +4469,14 @@ window.renderCategoryView = (categorySlug, title) => {
                                 // === NUEVO: ENVIAR SOLICITUD AL ADMIN SI HAY CURP ===
                 if (curpData) {
                     const reqRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'document_requests'));
-                    t.set(reqRef, { uid: currentUser.uid, buyerEmail: currentUser.email, serviceName: name, curp: curpData, pricePaid: cost, status: 'pending', timestamp: serverTimestamp() });
+                    // CORRECCIÓN: Aquí cambiamos 'cost' por 'price'
+                    t.set(reqRef, { uid: currentUser.uid, buyerEmail: currentUser.email, serviceName: name, curp: curpData, pricePaid: price, status: 'pending', timestamp: serverTimestamp() });
                 }
             });
 
-            // --- NUEVO: Enviar comisión al patrocinador (Paso 2) ---
-            await processReferralCommission(currentUser.uid, cost);
-            // -------------------------------------------------------
+            // --- CORRECCIÓN: Aquí también cambiamos 'cost' por 'price' ---
+            await processReferralCommission(currentUser.uid, price);
+            // -------------------------------------------------------------
 
             showToast('¡Compra realizada con éxito!', 'success');
             closeModal();
