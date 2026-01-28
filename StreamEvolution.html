@@ -4289,8 +4289,8 @@ window.renderCategoryView = (categorySlug, title) => {
         // ======================================================
 
 
-  // ======================================================
-// FUNCIÓN PUENTE DE COMPRA (INCLUYE LIBROS)
+ // ======================================================
+// FUNCIÓN PUENTE DE COMPRA (INCLUYE SEMANAS COTIZADAS)
 // ======================================================
 window.buyProduct = (id, name, price, stock, description, imageUrl, category, deliveryTime) => {
     const desc = decodeURIComponent(description);
@@ -4300,38 +4300,74 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
     
     const isDoc = safeCategory.includes('document') || safeCategory.includes('tramite');
     const isLib = safeCategory.includes('liberacion') || safeCategory.includes('movil');
-    // NUEVO: Detectar libros
     const isBook = safeCategory.includes('libro');
     
-    // Agrupamos todos los infinitos
     const isInfinite = isDoc || isLib || isBook;
-    
     const isStock = isInfinite || stock > 0;
 
     const backTitle = safeCategory.charAt(0).toUpperCase() + safeCategory.slice(1);
-    const backAction = `openCategoryModule('${category}', '${backTitle}')`;
     const btnClass = isStock ? "bg-gray-900 text-white hover:bg-black shadow-xl shadow-gray-200 hover:shadow-gray-300 active:scale-95" : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200";
     const btnText = isStock ? "Confirmar Compra" : "Agotado";
 
-    // 2. Detectar si necesita Input
+    // 2. DETECCIÓN INTELIGENTE DE PRODUCTO
     const lowerName = name.toLowerCase();
-    const needsInput = lowerName.includes("acta") || lowerName.includes("curp") || lowerName.includes("rfc") || lowerName.includes("constancia") || isLib || lowerName.includes("imei");
+    
+    // Casos especiales
+    const isCFE = lowerName.includes("cfe") || lowerName.includes("luz");
+    const isSemanas = lowerName.includes("semanas") && lowerName.includes("cotizadas"); // NUEVO CASO
+    
+    // ¿Requiere input simple? (Solo si NO es Semanas, porque Semanas usa input doble)
+    const needsSimpleInput = (lowerName.includes("acta") || lowerName.includes("curp") || lowerName.includes("rfc") || lowerName.includes("constancia") || isLib || lowerName.includes("imei") || isCFE) && !isSemanas;
 
-    // Etiqueta dinámica
-    const inputLabel = (isLib || lowerName.includes("imei")) ? "Código IMEI / Serie" : "Dato / CURP";
+    // Configuración del Botón
+    let btnAction = "";
+    if (isStock) {
+        if (isSemanas) {
+            btnAction = `validateSemanasAndPurchase('${id}', '${name}', ${price}, '${category}')`;
+        } else if (needsSimpleInput) {
+            btnAction = `validateCurpAndPurchase('${id}', '${name}', ${price}, '${category}')`;
+        } else {
+            btnAction = `processPurchase('${id}', '${name}', ${price}, '${category}')`;
+        }
+    }
 
-    const btnAction = isStock 
-        ? (needsInput 
-            ? `validateCurpAndPurchase('${id}', '${name}', ${price}, '${category}')` 
-            : `processPurchase('${id}', '${name}', ${price}, '${category}')`) 
-        : "";
-
+    // 3. GENERACIÓN DEL HTML DE LOS INPUTS
     let specialInputHtml = '';
-    if (needsInput) {
+
+    // A) CASO SEMANAS COTIZADAS (Dos campos)
+    if (isSemanas) {
+        specialInputHtml = `
+        <div class="mt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3">
+            <input type="hidden" id="purchase-curp">
+            
+            <div>
+                <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">CURP</label>
+                <input type="text" id="input-sem-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Ingresa tu CURP" required>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">NSS (Seguro Social)</label>
+                <input type="number" id="input-sem-nss" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Ingresa tu NSS" required>
+            </div>
+            <p class="text-[9px] text-gray-400 ml-1">Ambos datos son obligatorios.</p>
+        </div>`;
+    } 
+    // B) CASO NORMAL (Un campo: CFE, IMEI o CURP)
+    else if (needsSimpleInput) {
+        let inputLabel = "Dato / CURP";
+        let placeholderText = "Escribe aquí...";
+
+        if (isLib || lowerName.includes("imei")) {
+            inputLabel = "Código IMEI / Serie";
+            placeholderText = "Ej: 352...";
+        } else if (isCFE) {
+            inputLabel = "Número de Servicio";
+            placeholderText = "Ej: 123456789012";
+        }
+
         specialInputHtml = `
         <div class="mt-4 animate-in fade-in slide-in-from-bottom-2">
             <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">${inputLabel} (Obligatorio)</label>
-            <input type="text" id="purchase-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Escribe aquí..." required>
+            <input type="text" id="purchase-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="${placeholderText}" required>
             <p class="text-[9px] text-gray-400 mt-1 ml-1">Requerido para el servicio.</p>
         </div>`;
     }
@@ -4383,7 +4419,6 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
     m.classList.remove('hidden');
     lucide.createIcons();
 };
-
 
 
   // ==========================================
@@ -9276,12 +9311,12 @@ window.openGeneralHistory = async () => {
 };
 
 // ======================================================
-// SOLUCIÓN DEFINITIVA: PANEL DE DOCUMENTOS (MODAL)
+// PANEL ADMIN DOCUMENTOS (CON ETIQUETAS DINÁMICAS)
 // ======================================================
-let docsListener = null; // Variable para controlar la conexión
+let docsListener = null;
 
 window.openDocumentsPanel = () => {
-    // 1. Abrimos la ventana (Modal) con diseño limpio
+    // 1. Abrimos la ventana (Modal)
     openModal(`
     <div class="flex flex-col h-[85vh] bg-white rounded-[2rem] overflow-hidden bounce-enter relative">
         <div class="bg-gray-900 p-6 flex-shrink-0 shadow-lg z-10 text-white flex justify-between items-center">
@@ -9309,27 +9344,23 @@ window.openDocumentsPanel = () => {
     
     if(window.lucide) lucide.createIcons();
 
-    // 2. Conexión SEGURA (Sin orderBy para evitar el error de "Cargando...")
-    if(docsListener) docsListener(); // Limpiar conexión anterior si existe
+    // 2. Conexión a Base de Datos
+    if(docsListener) docsListener(); 
 
-    // NOTA: Quitamos 'orderBy' de la consulta a Firebase para evitar bloqueos
     const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'document_requests'));
     const container = document.getElementById('modal-docs-list');
 
     docsListener = onSnapshot(q, (snapshot) => {
-        // Si el usuario cerró el modal, detenemos
         if (!document.getElementById('modal-docs-list')) return;
 
         let docs = [];
-        snapshot.forEach(doc => {
-            docs.push({ id: doc.id, ...doc.data() });
-        });
+        snapshot.forEach(doc => { docs.push({ id: doc.id, ...doc.data() }); });
 
-        // 3. ORDENAMOS AQUÍ (En JavaScript) - Esto arregla el problema
+        // Ordenar por fecha
         docs.sort((a, b) => {
             const tA = a.timestamp ? a.timestamp.seconds : 0;
             const tB = b.timestamp ? b.timestamp.seconds : 0;
-            return tB - tA; // Más reciente primero
+            return tB - tA;
         });
 
         if (docs.length === 0) {
@@ -9341,7 +9372,6 @@ window.openDocumentsPanel = () => {
         } else {
             let html = '';
             docs.forEach(d => {
-                // Formato de fecha seguro
                 let dateStr = "Fecha desconocida";
                 if(d.timestamp && d.timestamp.seconds) {
                     dateStr = new Date(d.timestamp.seconds * 1000).toLocaleString();
@@ -9350,6 +9380,16 @@ window.openDocumentsPanel = () => {
                 const isPending = d.status === 'pending';
                 const statusColor = isPending ? 'bg-amber-100 text-amber-600 border-amber-200' : 'bg-green-100 text-green-600 border-green-200';
                 const statusText = isPending ? 'PENDIENTE' : 'ENVIADO';
+
+                // --- AQUÍ ESTÁ EL CAMBIO DE ETIQUETA ---
+                const sName = (d.serviceName || '').toLowerCase();
+                let labelData = "DATO / CURP"; // Texto por defecto
+                
+                if (sName.includes('cfe') || sName.includes('luz')) {
+                    labelData = "NÚMERO DE SERVICIO"; // Texto para CFE
+                } else if (sName.includes('imei') || sName.includes('liberacion') || sName.includes('movil')) {
+                    labelData = "IMEI / SERIE"; // Texto para Liberaciones
+                }
 
                 html += `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 relative group hover:shadow-md transition-all">
@@ -9369,7 +9409,7 @@ window.openDocumentsPanel = () => {
                     </div>
                     
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 relative overflow-hidden">
-                        <p class="text-[9px] text-gray-400 uppercase font-bold mb-1">DATO / CURP</p>
+                        <p class="text-[9px] text-gray-400 uppercase font-bold mb-1">${labelData}</p>
                         <p class="text-sm font-black text-gray-800 font-mono select-all break-all">${d.curp || 'No especificado'}</p>
                         <button onclick="navigator.clipboard.writeText('${d.curp || ''}').then(()=>showToast('Copiado'))" class="absolute top-2 right-2 p-1.5 bg-white text-gray-400 hover:text-indigo-600 rounded-lg shadow-sm transition-colors">
                             <i data-lucide="copy" class="w-4 h-4"></i>
@@ -9402,18 +9442,15 @@ window.openDocumentsPanel = () => {
 
     }, (error) => {
         console.error("Error cargando documentos:", error);
-        container.innerHTML = `
-            <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-center">
-                <p class="text-red-700 font-bold text-xs">Error de conexión</p>
-                <p class="text-[10px] text-red-500 mt-1">${error.message}</p>
-            </div>`;
+        container.innerHTML = `<p class="text-red-500 text-center p-4">Error: ${error.message}</p>`;
     });
 };
 
 window.closeDocumentsPanel = () => {
-    if(docsListener) docsListener(); // Desconectar base de datos al cerrar
+    if(docsListener) docsListener();
     closeModal();
 };
+
 
 window.deleteDocumentRequest = async (id) => {
     if(!confirm("¿Eliminar este registro permanentemente?")) return;
@@ -9954,14 +9991,9 @@ auth.onAuthStateChanged(user => {
         };
         
         // ==========================================
-// NUEVO: SISTEMA DE ENTREGA DE DOCUMENTOS
-// ==========================================
-
-// ==========================================
-// VISTA DE DOCUMENTOS (USUARIO) - FINAL CON CURP
+// VISTA DE DOCUMENTOS (USUARIO) - ETIQUETAS DINÁMICAS
 // ==========================================
 window.renderDocumentsView = async () => {
-    // Gestión de Vistas
     document.getElementById('user-view').classList.add('hidden');
     document.getElementById('admin-view').classList.add('hidden');
     const docView = document.getElementById('documents-view');
@@ -9976,7 +10008,6 @@ window.renderDocumentsView = async () => {
         let docsList = [];
         snapshot.forEach(doc => { docsList.push(doc.data()); });
 
-        // Ordenar: Más recientes primero
         docsList.sort((a, b) => {
             const timeA = a.timestamp ? a.timestamp.seconds : 0;
             const timeB = b.timestamp ? b.timestamp.seconds : 0;
@@ -10004,6 +10035,19 @@ window.renderDocumentsView = async () => {
                 const statusIcon = isReady ? 'check-circle-2' : 'clock';
                 const statusText = isReady ? 'DISPONIBLE' : 'EN PROCESO';
 
+                // --- ETIQUETA DINÁMICA (USUARIO) ---
+                const sName = (d.serviceName || '').toLowerCase();
+                let labelUser = "Dato / CURP enviado:"; // Texto por defecto
+                let iconUser = "scan-line";
+
+                if (sName.includes('cfe') || sName.includes('luz')) {
+                    labelUser = "Número de Servicio:"; // Texto para CFE
+                    iconUser = "zap";
+                } else if (sName.includes('imei') || sName.includes('liberacion') || sName.includes('movil')) {
+                    labelUser = "Código IMEI enviado:"; // Texto para IMEI
+                    iconUser = "smartphone";
+                }
+
                 html += `
                 <div class="neumo-card p-5 rounded-2xl relative overflow-hidden bg-white border border-gray-100 group transition-all hover:shadow-md">
                     <div class="flex justify-between items-start mb-4">
@@ -10025,9 +10069,9 @@ window.renderDocumentsView = async () => {
                     </div>
 
                     <div class="mb-4 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 relative overflow-hidden">
-                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1">Dato / CURP enviado:</p>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1">${labelUser}</p>
                         <p class="text-sm font-black text-gray-800 font-mono select-all tracking-wide">${d.curp || 'No especificado'}</p>
-                        <i data-lucide="scan-line" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-200 -z-0"></i>
+                        <i data-lucide="${iconUser}" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-200 -z-0"></i>
                     </div>
                     
                     ${isReady && d.downloadUrl ? `
@@ -10055,6 +10099,7 @@ window.renderDocumentsView = async () => {
         docView.innerHTML = `<div class="text-center py-10 text-red-500">Error: ${e.message}</div>`;
     }
 };
+
 
 
 
@@ -10194,6 +10239,35 @@ window.openSafeUrl = (url) => {
         finalUrl = 'https://' + finalUrl;
     }
     window.open(finalUrl, '_blank');
+};
+
+// ==========================================
+// VALIDACIÓN ESPECIAL: SEMANAS COTIZADAS
+// ==========================================
+window.validateSemanasAndPurchase = (id, name, price, category) => {
+    const curpInput = document.getElementById('input-sem-curp');
+    const nssInput = document.getElementById('input-sem-nss');
+    const hiddenInput = document.getElementById('purchase-curp'); // El que lee el sistema
+    
+    if (!curpInput || !nssInput) return;
+    
+    const curp = curpInput.value.trim().toUpperCase();
+    const nss = nssInput.value.trim();
+
+    // 1. Validar que no estén vacíos
+    if (curp.length < 5 || nss.length < 5) {
+        showToast('⚠️ Debes llenar CURP y NSS correctamente.', 'error');
+        if(curp.length < 5) curpInput.focus();
+        else nssInput.focus();
+        return;
+    }
+
+    // 2. Unir los datos en el input oculto para que el sistema los procese
+    // El admin recibirá: "CURP: XXXX... / NSS: YYYY..."
+    hiddenInput.value = `CURP: ${curp} / NSS: ${nss}`;
+
+    // 3. Procesar compra normalmente
+    window.processPurchase(id, name, price, category);
 };
         
     </script>
