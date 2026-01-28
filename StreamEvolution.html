@@ -4117,10 +4117,8 @@ window.openCategoryModule = (categorySlug, title) => {
     }
 };
 
-// =========================================// ======================================================
-// SOLUCIÓN FINAL: RESPETAR ROL (INCLUSO ADMIN) Y PRECIOS DINÁMICOS
-// =========================================// ======================================================
-// VISTA TIENDA: CORREGIDO (Ocultar Promociones Agotadas)
+// ======================================================
+// VISTA TIENDA: STOCK INFINITO PARA DOCUMENTOS
 // ======================================================
 window.renderCategoryView = (categorySlug, title) => {
     const m = document.getElementById('app-modal');
@@ -4128,10 +4126,8 @@ window.renderCategoryView = (categorySlug, title) => {
     const content = document.getElementById('modal-content');
 
     // 1. Configuración Visual
-    if (mc) {
-        mc.className = "w-full max-w-5xl h-[90vh] md:h-[85vh] bg-white md:rounded-[2rem] rounded-t-3xl relative shadow-2xl flex flex-col overflow-hidden slide-up";
-    }
-
+    if (mc) { mc.className = "w-full max-w-5xl h-[90vh] md:h-[85vh] bg-white md:rounded-[2rem] rounded-t-3xl relative shadow-2xl flex flex-col overflow-hidden slide-up"; }
+    
     if (content) {
         content.className = "w-full h-full p-0 overflow-hidden flex flex-col";
         content.innerHTML = `
@@ -4163,7 +4159,7 @@ window.renderCategoryView = (categorySlug, title) => {
     }
 
     m.classList.remove('hidden');
-    m.classList.add('flex');
+    m.classList.add('flex'); 
     m.classList.remove('items-center', 'justify-center', 'p-4');
     m.classList.add('items-end', 'justify-center', 'p-0', 'md:p-4', 'md:items-center');
     lucide.createIcons();
@@ -4173,48 +4169,30 @@ window.renderCategoryView = (categorySlug, title) => {
     
     onSnapshot(q, (snapshot) => {
         const grid = document.getElementById('products-grid');
-        if(!grid) return;
+        if (!grid) return;
 
-        let products = [];
-        snapshot.forEach(doc => { products.push({ id: doc.id, ...doc.data() }); });
+        const products = [];
+        snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
         products.sort((a, b) => a.name.localeCompare(b.name));
-        
-        // --- FUNCIÓN DE LIMPIEZA DE TEXTO (NUEVA) ---
-        // Elimina acentos y pone todo en minúsculas para comparar seguro
+
         const cleanText = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
         const cleanSlug = cleanText(categorySlug);
-        const cleanTitle = cleanText(title);
         
-        // Verificamos si estamos en una categoría de "Promociones"
-        // Buscamos 'promo' para que detecte "Promoción", "Promociones", "Promos", etc.
-        const isPromoSection = cleanSlug.includes('promo') || cleanTitle.includes('promo');
+        // ¿Es categoría de documentos?
+        const isDocumentsCat = cleanSlug.includes('document') || cleanSlug.includes('tramite');
 
         grid.innerHTML = '';
-
-        // Detección de Rol
         let rawRole = 'client';
         if (typeof currentUserRole !== 'undefined' && currentUserRole) rawRole = currentUserRole;
         let myRole = rawRole.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-        // Contador para saber si mostramos algo o todo se ocultó
-        let visibleCount = 0;
-
-        // 3. Renderizado
         products.forEach((p, index) => {
             const stock = p.stock || 0;
-
-            // --- LÓGICA CORREGIDA ---
-            // 1. Si estamos en la sección de Promociones (detectado arriba sin tildes)
-            // 2. Y el stock es 0 o menor
-            // 3. RETURN (No renderizar nada, saltar al siguiente)
-            if (isPromoSection && stock <= 0) {
-                return; 
-            }
-            
-            // Si pasa el filtro, sumamos al contador
-            visibleCount++;
-
             const safeDesc = encodeURIComponent(p.description || '');
+            
+            // LÓGICA DE STOCK INFINITO: Si es documento, ignoramos stock 0
+            const hasStock = isDocumentsCat || stock > 0;
+
             const pClient = Number(p.priceClient || p.price || 0);
             const pVip = Number(p.priceVip || 0);
             const pReseller = Number(p.priceReseller || 0);
@@ -4222,122 +4200,69 @@ window.renderCategoryView = (categorySlug, title) => {
 
             // Cálculo de Precio
             let finalPrice = pClient;
-            if (myRole === 'lider') {
-                if (pLeader > 0) finalPrice = pLeader;
-                else if (pReseller > 0) finalPrice = pReseller;
-                else if (pVip > 0) finalPrice = pVip;
-                else finalPrice = pClient;
-            } else if (myRole === 'reseller' || myRole === 'revendedor') {
-                if (pReseller > 0) finalPrice = pReseller;
-                else if (pVip > 0) finalPrice = pVip;
-                else finalPrice = pClient;
-            } else if (myRole === 'vip') {
-                if (pVip > 0) finalPrice = pVip;
-                else finalPrice = pClient;
-            }
+            if (myRole === 'lider') { finalPrice = pLeader > 0 ? pLeader : (pReseller > 0 ? pReseller : (pVip > 0 ? pVip : pClient)); }
+            else if (myRole === 'reseller') { finalPrice = pReseller > 0 ? pReseller : (pVip > 0 ? pVip : pClient); }
+            else if (myRole === 'vip') { finalPrice = pVip > 0 ? pVip : pClient; }
 
-            // UI Etiquetas
-            let labelText = 'CLIENTE';
-            let labelBg = 'bg-gray-100 text-gray-500 border-gray-200';
-            let priceColor = 'text-gray-800';
+            // Etiquetas de Rol
+            let labelText = 'CLIENTE', labelBg = 'bg-gray-100 text-gray-500 border-gray-200', priceColor = 'text-gray-800';
+            if (myRole === 'lider') { labelText = 'PRECIO LÍDER'; labelBg = 'bg-amber-100 text-amber-700 border-amber-200'; priceColor = 'text-amber-600'; }
+            else if (myRole === 'reseller') { labelText = 'PRECIO REVENDEDOR'; labelBg = 'bg-indigo-100 text-indigo-700 border-indigo-200'; priceColor = 'text-indigo-600'; }
+            else if (myRole === 'vip') { labelText = 'PRECIO VIP'; labelBg = 'bg-purple-100 text-purple-700 border-purple-200'; priceColor = 'text-purple-600'; }
 
-            if (myRole === 'lider') {
-                labelText = 'PRECIO LÍDER';
-                labelBg = 'bg-amber-100 text-amber-700 border-amber-200';
-                priceColor = 'text-amber-600';
-            } else if (myRole === 'reseller' || myRole === 'revendedor') {
-                labelText = 'PRECIO REVENDEDOR';
-                labelBg = 'bg-indigo-100 text-indigo-700 border-indigo-200';
-                priceColor = 'text-indigo-600';
-            } else if (myRole === 'vip') {
-                labelText = 'PRECIO VIP';
-                labelBg = 'bg-purple-100 text-purple-700 border-purple-200';
-                priceColor = 'text-purple-600';
-            }
-
-            // UI Stock y Overlay
+            // UI Stock
             let stockFooterHtml = '';
             let imageOverlayHtml = '';
 
-            if (stock <= 0) {
-                // Solo llega aquí si NO es promoción (porque las promociones agotadas ya hicieron return arriba)
+            if (isDocumentsCat) {
+                // Si es documento, mostramos "Ilimitado" siempre
+                stockFooterHtml = `<span class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 uppercase">∞ Ilimitado</span>`;
+            } else if (!hasStock) {
                 imageOverlayHtml = `<div class="absolute inset-0 z-20 flex items-center justify-center"><div class="absolute inset-0 bg-white/60 backdrop-blur-[1px]"></div><span class="relative bg-rose-600 text-white text-[10px] font-black px-3 py-1 rounded shadow-lg -rotate-6 border-2 border-white tracking-widest">AGOTADO</span></div>`;
                 stockFooterHtml = `<span class="text-[9px] font-bold text-rose-400 uppercase">Sin Stock</span>`;
-            } else if (stock <= 3) {
-                stockFooterHtml = `<span class="text-[9px] font-black text-amber-500 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 uppercase">¡Quedan ${stock}!</span>`;
             } else {
                 stockFooterHtml = `<span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase">Stock: ${stock}</span>`;
             }
 
-            // Entrega
-            let deliveryHtml = '';
-            if (p.deliveryTime && (cleanSlug.includes('document') || cleanText(p.category).includes('document'))) {
-                deliveryHtml = `<div class="flex items-center gap-1 mb-1.5"><span class="text-[8px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 uppercase flex items-center gap-1"><i data-lucide="clock" class="w-2 h-2"></i> ${p.deliveryTime}</span></div>`;
-            }
-
-            let dwBadge = p.isForbidden ? `<i data-lucide="ban" class="w-3 h-3 text-rose-500" title="Restringido"></i>` : '';
-            const opacityClass = stock <= 0 ? 'opacity-90 grayscale-[0.5]' : '';
-
+            const opacityClass = !hasStock ? 'opacity-90 grayscale-[0.5]' : '';
             const card = document.createElement('div');
-            card.style.animationDelay = `${index * 50}ms`;
-            card.className = `${opacityClass} bg-white p-3 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-indigo-100/50 border border-gray-100 transition-all duration-300 cursor-pointer group flex flex-col justify-between animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards`;
+            card.className = `${opacityClass} bg-white p-3 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-indigo-100/50 border border-gray-100 transition-all duration-300 cursor-pointer group flex flex-col justify-between`;
             
+            // IMPORTANTE: Aquí pasamos p.category para que buyProduct sepa qué es
             card.innerHTML = `
-            <div onclick="buyProduct('${p.id}', '${p.name}', ${finalPrice}, ${stock}, '${safeDesc}', '${p.imageUrl}', '${p.category}', '${p.deliveryTime || ''}')" class="h-full flex flex-col">
-                <div class="relative w-full aspect-[4/3] bg-gray-50 rounded-2xl overflow-hidden mb-3 border border-gray-50 group-hover:border-indigo-100 transition-colors">
-                    ${imageOverlayHtml}
-                    <img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy">
-                </div>
-                
-                <div class="px-1 flex-1 flex flex-col">
-                    <div class="flex justify-between items-start mb-1">
-                        <h4 class="font-bold text-gray-800 text-xs leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors pr-2">${p.name}</h4>
-                        ${dwBadge}
+                <div onclick="buyProduct('${p.id}', '${p.name}', ${finalPrice}, ${stock}, '${safeDesc}', '${p.imageUrl}', '${p.category}', '${p.deliveryTime || ''}')" class="h-full flex flex-col">
+                    <div class="relative w-full aspect-[4/3] bg-gray-50 rounded-2xl overflow-hidden mb-3 border border-gray-50 group-hover:border-indigo-100 transition-colors">
+                        ${imageOverlayHtml}
+                        <img src="${p.imageUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy">
                     </div>
-                    <p class="text-[10px] text-gray-400 line-clamp-1 mb-3">${p.description || 'Entrega automática'}</p>
-                    
-                    <div class="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
-                        <div class="flex flex-col items-start">
-                            ${deliveryHtml}
-                            ${stockFooterHtml}
-                            <div class="mt-1.5">
-                                <span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded border ${labelBg} mb-0.5 inline-block tracking-wider">${labelText}</span>
-                                <div class="text-lg font-black ${priceColor}">$${finalPrice}</div>
+                    <div class="px-1 flex-1 flex flex-col">
+                        <h4 class="font-bold text-gray-800 text-xs leading-snug line-clamp-2 mb-1 group-hover:text-indigo-600 transition-colors pr-2">${p.name}</h4>
+                        <p class="text-[10px] text-gray-400 line-clamp-1 mb-3">${p.description || 'Entrega automática'}</p>
+                        
+                        <div class="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
+                            <div class="flex flex-col items-start">
+                                ${stockFooterHtml}
+                                <div class="mt-1.5">
+                                    <span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded border ${labelBg} mb-0.5 inline-block tracking-wider">${labelText}</span>
+                                    <div class="text-lg font-black ${priceColor}">$${finalPrice}</div>
+                                </div>
                             </div>
+                            <button class="w-10 h-10 rounded-full bg-gray-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                                <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                            </button>
                         </div>
-                        <button class="w-10 h-10 rounded-full bg-gray-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
-                        </button>
                     </div>
-                </div>
-            </div>`;
-            
+                </div>`;
             grid.appendChild(card);
         });
-        
-        // Mensaje si TODO se ocultó (ej: había 5 promos y todas están agotadas)
-        if (visibleCount === 0 && snapshot.size > 0) {
-            grid.innerHTML = `
-                <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-60">
-                    <i data-lucide="sparkles" class="w-16 h-16 text-indigo-200 mb-3"></i>
-                    <p class="text-sm font-bold text-gray-400 text-center">¡Ups! Las promociones volaron.<br>Vuelve pronto.</p>
-                </div>`;
-        }
 
         if(snapshot.empty) {
-             grid.innerHTML = `
-                <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-60">
-                    <i data-lucide="package-open" class="w-16 h-16 text-gray-200 mb-3"></i>
-                    <p class="text-sm font-bold text-gray-400">No hay productos disponibles</p>
-                </div>`;
+            grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-400 font-bold text-sm">No hay productos disponibles</div>`;
         }
-        
         lucide.createIcons();
-    }, (error) => {
-        console.error(error);
-        showToast("Error de conexión.", "error");
     });
 };
+
 
 
   // ======================================================
@@ -4345,195 +4270,237 @@ window.renderCategoryView = (categorySlug, title) => {
         // ======================================================
 
 
-    // === REEMPLAZO: FUNCIÓN DE COMPRA CON CURP ===
-    window.buyProduct = (id, name, price, stock, description, imageUrl, category, deliveryTime) => {
-        const desc = decodeURIComponent(description);
-        const isStock = stock > 0;
-        const safeCategory = category || 'general';
-        const backTitle = safeCategory.charAt(0).toUpperCase() + safeCategory.slice(1);
-        const backAction = `openCategoryModule('${safeCategory}', '${backTitle}')`;
-        const btnClass = isStock ? "bg-gray-900 text-white hover:bg-black shadow-xl shadow-gray-200 hover:shadow-gray-300 active:scale-95" : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200";
-        const btnText = isStock ? "Confirmar Compra" : "Agotado";
+   // ======================================================
+// FUNCIÓN PUENTE DE COMPRA (ACTUALIZADA)
+// ======================================================
+window.buyProduct = (id, name, price, stock, description, imageUrl, category, deliveryTime) => {
+    const desc = decodeURIComponent(description);
+    
+    // Validar si es infinito (Documentos) o tiene stock físico
+    const safeCategory = (category || 'general').toLowerCase();
+    const isInfinite = safeCategory.includes('document') || safeCategory.includes('tramite');
+    const isStock = isInfinite || stock > 0;
 
-        // --- DETECCIÓN DE DOCUMENTOS QUE REQUIEREN CURP ---
-        const targetDocs = ["acta de divorcio", "acta de matrimonio", "acta de nacimiento", "acta defunción"];
-        // Convertimos a minúsculas para comparar sin errores
-        const lowerName = name.toLowerCase();
-        const needsCurp = targetDocs.some(docName => lowerName.includes(docName));
-        
-        // Si necesita CURP llamamos a validateCurpAndPurchase, si no, a processPurchase normal
-        const btnAction = isStock 
-            ? (needsCurp ? `validateCurpAndPurchase('${id}', '${name}', ${price})` : `processPurchase('${id}', '${name}', ${price})`) 
-            : "";
+    const backTitle = safeCategory.charAt(0).toUpperCase() + safeCategory.slice(1);
+    const backAction = `openCategoryModule('${category}', '${backTitle}')`; // Corregido: usar category original
+    const btnClass = isStock ? "bg-gray-900 text-white hover:bg-black shadow-xl shadow-gray-200 hover:shadow-gray-300 active:scale-95" : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200";
+    const btnText = isStock ? "Confirmar Compra" : "Agotado";
 
-        let specialInputHtml = '';
-        
-        // Input de CURP
-        if (needsCurp) {
-            specialInputHtml = `
-            <div class="mt-4 animate-in fade-in slide-in-from-bottom-2">
-                <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">CURP (Obligatorio)</label>
-                <input type="text" id="purchase-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Ingresa la CURP aquí" maxlength="18">
-                <p class="text-[9px] text-gray-400 mt-1 ml-1">Dato requerido para tramitar el documento.</p>
-            </div>`;
-        } 
-        else if (deliveryTime && (safeCategory.toLowerCase().includes('doc') || safeCategory.toLowerCase().includes('tramite'))) {
-            specialInputHtml = `
-            <div class="mt-auto pt-4 pb-2 text-center animate-pulse">
-                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Tiempo de entrega:</span>
-                <span class="text-xl font-black neon-text-normal">${deliveryTime}</span>
-            </div>`;
-        }
+    // Detectar documentos (CURP)
+    const lowerName = name.toLowerCase();
+    const needsCurp = lowerName.includes("acta") || lowerName.includes("curp") || lowerName.includes("rfc") || lowerName.includes("constancia");
 
-        const html = `
-        <div class="flex flex-col md:flex-row h-full w-full bg-white overflow-hidden relative">
-            <div class="relative w-full md:w-5/12 h-48 md:h-auto bg-gray-50 flex-shrink-0 group overflow-hidden">
-                <img src="${imageUrl}" class="w-full h-full object-cover transition-transform hover:scale-105 duration-700">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent md:bg-gradient-to-r md:from-transparent md:to-black/10 opacity-60"></div>
-                <button onclick="closeModal()" class="md:hidden absolute top-4 right-4 bg-black/20 backdrop-blur-md p-2.5 rounded-full text-white border border-white/10 shadow-lg active:scale-90 z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
-                <button onclick="${backAction}" class="md:hidden absolute top-4 left-4 bg-black/20 backdrop-blur-md p-2.5 rounded-full text-white border border-white/10 shadow-lg active:scale-90 z-20"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <div class="absolute bottom-4 left-4">
-                    <span class="bg-white/90 backdrop-blur text-gray-900 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm border border-white/50">${category || 'Digital'}</span>
-                </div>
-            </div>
-            <div class="flex-1 p-6 md:p-8 flex flex-col relative">
-                <button onclick="closeModal()" class="hidden md:flex absolute top-6 right-6 text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all p-2.5 rounded-full z-10"><i data-lucide="x" class="w-6 h-6"></i></button>
-                
-                <div class="mb-2 text-center md:text-left md:mt-4">
-                    <h2 class="text-xl md:text-2xl font-black text-gray-800 leading-tight mb-2 line-clamp-2">${name}</h2>
-                    <div class="flex items-center justify-center md:justify-start gap-2">
-                        <div class="w-2 h-2 rounded-full ${isStock ? 'bg-emerald-500' : 'bg-rose-500'}"></div>
-                        <span class="text-[11px] font-bold ${isStock ? 'text-emerald-600' : 'text-rose-500'} uppercase tracking-wide">
-                            ${isStock ? `Disponible (${stock})` : 'Agotado'}
-                        </span>
-                    </div>
-                </div>
+    // IMPORTANTE: Pasamos 'category' al final de las funciones
+    const btnAction = isStock 
+        ? (needsCurp 
+            ? `validateCurpAndPurchase('${id}', '${name}', ${price}, '${category}')` 
+            : `processPurchase('${id}', '${name}', ${price}, '${category}')`) 
+        : "";
 
-                <div class="flex-1 overflow-y-auto scrollbar-hide mb-2 pr-2 text-center md:text-left mt-2 max-h-[100px] md:max-h-none">
-                    <p class="text-xs text-gray-500 font-medium leading-relaxed">${desc || 'Producto digital verificado.'}</p>
-                    ${specialInputHtml} 
-                </div>
-
-                <div class="py-5 border-t border-gray-50 flex flex-col items-center justify-center mt-4">
-                    <div class="flex items-baseline gap-1 mb-5">
-                        <span class="text-xl font-bold text-[var(--color-accent)] opacity-70 mr-1">$</span>
-                        <span class="text-4xl font-black tracking-tight text-[var(--color-accent)]">${price}</span>
-                        <span class="text-xs font-bold text-gray-400 self-end mb-1 ml-1">MXN</span>
-                    </div>
-                    <button onclick="${btnAction}" ${!isStock ? 'disabled' : ''} class="w-full py-3.5 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 ${btnClass}">
-                        <i data-lucide="${isStock ? 'check-circle' : 'ban'}" class="w-4 h-4"></i> ${btnText}
-                    </button>
-                </div>
-            </div>
+    let specialInputHtml = '';
+    if (needsCurp) {
+        specialInputHtml = `
+        <div class="mt-4 animate-in fade-in slide-in-from-bottom-2">
+            <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">Dato / CURP (Obligatorio)</label>
+            <input type="text" id="purchase-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Escribe el dato aquí" required>
+            <p class="text-[9px] text-gray-400 mt-1 ml-1">Requerido para el trámite.</p>
         </div>`;
+    }
 
-        const m = document.getElementById('app-modal');
-        const mc = document.getElementById('modal-card');
-        const content = document.getElementById('modal-content');
-        
-        content.innerHTML = html;
-        m.className = "fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 transition-opacity duration-300";
-        mc.className = "relative w-full max-w-3xl bg-white rounded-[2rem] shadow-2xl flex flex-col md:flex-row overflow-hidden transform scale-100 opacity-100 transition-all";
-        
-        m.classList.remove('hidden');
-        lucide.createIcons();
-    };
+    const html = `
+    <div class="flex flex-col md:flex-row h-full w-full bg-white overflow-hidden relative">
+        <div class="relative w-full md:w-5/12 h-48 md:h-auto bg-gray-50 flex-shrink-0 group overflow-hidden">
+            <img src="${imageUrl}" class="w-full h-full object-cover transition-transform hover:scale-105 duration-700">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent md:bg-gradient-to-r md:from-transparent md:to-black/10 opacity-60"></div>
+            <button onclick="closeModal()" class="md:hidden absolute top-4 right-4 bg-black/20 backdrop-blur-md p-2.5 rounded-full text-white border border-white/10 shadow-lg active:scale-90 z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <div class="absolute bottom-4 left-4">
+                <span class="bg-white/90 backdrop-blur text-gray-900 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm border border-white/50">${category || 'Digital'}</span>
+            </div>
+        </div>
+        <div class="flex-1 p-6 md:p-8 flex flex-col relative">
+            <button onclick="closeModal()" class="hidden md:flex absolute top-6 right-6 text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all p-2.5 rounded-full z-10"><i data-lucide="x" class="w-6 h-6"></i></button>
+            
+            <div class="mb-2 text-center md:text-left md:mt-4">
+                <h2 class="text-xl md:text-2xl font-black text-gray-800 leading-tight mb-2 line-clamp-2">${name}</h2>
+                <div class="flex items-center justify-center md:justify-start gap-2">
+                    <div class="w-2 h-2 rounded-full ${isStock ? 'bg-emerald-500' : 'bg-rose-500'}"></div>
+                    <span class="text-[11px] font-bold ${isStock ? 'text-emerald-600' : 'text-rose-500'} uppercase tracking-wide">
+                        ${isInfinite ? 'Disponibilidad Ilimitada' : (isStock ? `Disponible (${stock})` : 'Agotado')}
+                    </span>
+                </div>
+            </div>
 
-    // === AGREGADO: NUEVA FUNCIÓN PARA VALIDAR CURP ===
-    window.validateCurpAndPurchase = (id, name, price) => {
-        const curpInput = document.getElementById('purchase-curp');
-        if (!curpInput) return;
-        
-        const curpValue = curpInput.value.trim().toUpperCase();
-        
-        if (curpValue.length < 10) { 
-            showToast('⚠️ Debes ingresar una CURP válida.', 'error');
-            curpInput.focus();
-            curpInput.classList.add('ring-2', 'ring-rose-500', 'bg-rose-50');
-            setTimeout(() => curpInput.classList.remove('ring-2', 'ring-rose-500', 'bg-rose-50'), 2000);
-            return;
-        }
+            <div class="flex-1 overflow-y-auto scrollbar-hide mb-2 pr-2 text-center md:text-left mt-2 max-h-[250px]">
+                <p class="text-xs text-gray-500 font-medium leading-relaxed">${desc || 'Producto verificado.'}</p>
+                ${specialInputHtml}
+            </div>
 
-        // Si la validación pasa, procesamos la compra enviando el dato
-        processPurchase(id, name, price, curpValue);
-    };
+            <div class="py-5 border-t border-gray-50 flex flex-col items-center justify-center mt-4">
+                <div class="flex items-baseline gap-1 mb-5">
+                    <span class="text-xl font-bold text-[var(--color-accent)] opacity-70 mr-1">$</span>
+                    <span class="text-4xl font-black tracking-tight text-[var(--color-accent)]">${price}</span>
+                    <span class="text-xs font-bold text-gray-400 self-end mb-1 ml-1">MXN</span>
+                </div>
+                <button onclick="${btnAction}" ${!isStock ? 'disabled' : ''} class="w-full py-3.5 rounded-xl font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 ${btnClass}">
+                    <i data-lucide="${isStock ? 'check-circle' : 'ban'}" class="w-4 h-4"></i> ${btnText}
+                </button>
+            </div>
+        </div>
+    </div>`;
+
+    const m = document.getElementById('app-modal');
+    const content = document.getElementById('modal-content');
+    content.innerHTML = html;
+    m.classList.remove('hidden');
+    lucide.createIcons();
+};
+
+
+  // ==========================================
+// VALIDAR CURP ANTES DE COMPRAR
+// ==========================================
+window.validateCurpAndPurchase = (id, name, price, category) => {
+    const curpInput = document.getElementById('purchase-curp');
+    if (!curpInput) return;
+    
+    const curpValue = curpInput.value.trim().toUpperCase();
+    
+    // Validación básica: que no esté vacío
+    if (curpValue.length < 5) {
+        showToast('⚠️ Ingresa un dato válido.', 'error');
+        curpInput.focus();
+        curpInput.classList.add('ring-2', 'ring-rose-500', 'bg-rose-50');
+        setTimeout(() => curpInput.classList.remove('ring-2', 'ring-rose-500', 'bg-rose-50'), 2000);
+        return;
+    }
+
+    // Pasamos category a la función final
+    window.processPurchase(id, name, price, category);
+};
 
 
 
 
-                            // === REEMPLAZO: PROCESAR COMPRA (AHORA RECIBE CURP) ===
-    window.processPurchase = async (pid, name, price, curpData = null) => {
-        const btn = document.querySelector('button[onclick^="processPurchase"], button[onclick^="validateCurpAndPurchase"]');
-        if(btn) { btn.disabled = true; btn.innerHTML = '<span class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Procesando...'; }
 
-        try {
-            // Verificar stock primero
+                     // ==========================================
+// PROCESAR COMPRA (LÓGICA BLINDADA STOCK INFINITO)
+// ==========================================
+window.processPurchase = async (pid, name, price, categoryRaw) => {
+    const btn = document.querySelector('button[onclick*="processPurchase"]');
+    const curpData = document.getElementById('purchase-curp')?.value;
+    
+    if(btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Procesando...';
+    }
+
+    try {
+        // DETECCIÓN INTELIGENTE DE DOCUMENTOS
+        // Si la categoría contiene "doc" o "tramite", activamos modo infinito
+        const cat = (categoryRaw || '').toLowerCase();
+        const isDoc = cat.includes('document') || cat.includes('tramite') || name.toLowerCase().includes('acta');
+
+        let itemId = null;
+        let itemDetails = {};
+
+        // 1. SI NO ES DOCUMENTO, VERIFICAR STOCK REAL
+        if (!isDoc) {
             const qInv = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('productId', '==', pid), where('status', '==', 'available'), limit(1));
             const invSnap = await getDocs(qInv);
-            
-            // Si no hay stock y NO es un documento infinito, dar error (Opcional: puedes quitar esto si los documentos siempre tienen stock infinito)
+
             if(invSnap.empty) throw new Error("¡Se acaban de agotar! Intenta más tarde.");
             
-            const item = invSnap.docs[0].data();
-            const itemId = invSnap.docs[0].id;
+            const itemDoc = invSnap.docs[0];
+            itemId = itemDoc.id;
+            itemDetails = itemDoc.data();
+        } else {
+            // SI ES DOCUMENTO, DATOS DUMMY
+            itemDetails = { serviceName: name, isDocument: true };
+        }
 
-            await runTransaction(db, async (t) => {
-                const wRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main');
-                const wSnap = await t.get(wRef);
-                const currentBalance = Number(wSnap.data().balance) || 0;
-                const cost = Number(price); 
+        await runTransaction(db, async (t) => {
+            // 2. Cobrar Saldo
+            const wRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main');
+            const wSnap = await t.get(wRef);
+            const currentBalance = Number(wSnap.data().balance) || 0;
+            const cost = Number(price);
 
-                if(currentBalance < cost) throw new Error("Saldo insuficiente. Por favor recarga.");
+            if(currentBalance < cost) throw new Error("Saldo insuficiente. Por favor recarga.");
+            t.update(wRef, { balance: (currentBalance - cost) });
 
-                // Cobrar
-                t.update(wRef, { balance: (currentBalance - cost) });
-
-                // Marcar item como vendido
+            // 3. SI NO ES DOCUMENTO: Descontar Stock y Marcar Vendido
+            if (!isDoc && itemId) {
+                // Marcar item vendido
                 t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { 
                     status: 'sold', 
                     soldTo: currentUser.uid, 
-                    soldAt: serverTimestamp() 
+                    soldAt: serverTimestamp(),
+                    soldPrice: cost 
                 });
                 
-                // Bajar contador de stock
+                // Restar 1 al stock visual
                 const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', pid);
                 t.update(pRef, { stock: increment(-1) });
+            }
 
-                // Registrar Transacción
-                const details = { serviceName: name, curp: curpData || null, ...item };
-                
-                t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), {
-                    type: 'purchase',
-                    amount: cost,
-                    description: `Compra: ${name}`,
-                    details: details,
-                    timestamp: serverTimestamp()
-                });
-
-                                // === NUEVO: ENVIAR SOLICITUD AL ADMIN SI HAY CURP ===
-                if (curpData) {
-                    const reqRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'document_requests'));
-                    // CORRECCIÓN: Aquí cambiamos 'cost' por 'price'
-                    t.set(reqRef, { uid: currentUser.uid, buyerEmail: currentUser.email, serviceName: name, curp: curpData, pricePaid: price, status: 'pending', timestamp: serverTimestamp() });
-                }
+            // 4. Registrar Transacción en Historial Usuario
+            const details = { 
+                serviceName: name, 
+                curp: curpData || null, 
+                category: categoryRaw,
+                ...itemDetails 
+            };
+            
+            t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), {
+                type: 'purchase',
+                amount: cost,
+                description: `Compra: ${name}`,
+                details: details,
+                timestamp: serverTimestamp(),
+                status: isDoc ? 'pending' : 'completed' // Documentos quedan pendientes
             });
 
-            // --- CORRECCIÓN: Aquí también cambiamos 'cost' por 'price' ---
-            await processReferralCommission(currentUser.uid, price);
-            // -------------------------------------------------------------
+            // 5. SI ES DOCUMENTO: Crear Solicitud para Admin
+            if (isDoc) {
+                const reqRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'document_requests'));
+                t.set(reqRef, {
+                    uid: currentUser.uid,
+                    buyerEmail: currentUser.email,
+                    serviceName: name,
+                    curp: curpData || 'Sin dato',
+                    pricePaid: cost,
+                    status: 'pending',
+                    timestamp: serverTimestamp(),
+                    downloadUrl: ''
+                });
+            }
+        });
 
-            showToast('¡Compra realizada con éxito!', 'success');
-            closeModal();
-            // Mostrar ticket (puedes pasar curpData si quieres que salga en el ticket)
-            showTicketModal({serviceName: name, ...item});
+        // Comisión Referido (Si aplica)
+        try { await processReferralCommission(currentUser.uid, price); } catch(e){}
 
-        } catch (e) {
-            let m = e.message || "Error desconocido";
-            if(m.includes("Saldo")) openChargeModal();
-            else showToast(m, 'error');
-            if(btn) { btn.disabled = false; btn.innerHTML = "Confirmar Compra"; }
+        showToast('¡Compra realizada con éxito!', 'success');
+        closeModal();
+        
+        // Si NO es documento, mostramos el ticket con la cuenta
+        if (!isDoc) {
+            showTicketModal({serviceName: name, ...itemDetails});
+        } else {
+            // Si es documento, avisamos que está en proceso
+            showToast('Tu solicitud fue enviada al administrador.', 'info');
         }
-    };
+
+    } catch (e) {
+        let m = e.message || "Error desconocido";
+        if(m.includes("Saldo")) openChargeModal();
+        else showToast(m, 'error');
+        
+        if(btn) {
+            btn.disabled = false;
+            btn.innerHTML = "Confirmar Compra";
+        }
+    }
+};
 
     
 
