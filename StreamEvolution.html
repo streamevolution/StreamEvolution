@@ -9927,58 +9927,53 @@ auth.onAuthStateChanged(user => {
 // NUEVO: SISTEMA DE ENTREGA DE DOCUMENTOS
 // ==========================================
 
-// 1. VISTA DE DOCUMENTOS (VERSIÓN CORREGIDA PARA EVITAR ERROR DE ÍNDICE)
+// ==========================================
+// VISTA DE DOCUMENTOS (USUARIO) - FINAL CON CURP
+// ==========================================
 window.renderDocumentsView = async () => {
     // Gestión de Vistas
     document.getElementById('user-view').classList.add('hidden');
     document.getElementById('admin-view').classList.add('hidden');
-    
     const docView = document.getElementById('documents-view');
     docView.classList.remove('hidden');
-    docView.innerHTML = '<div class="text-center py-10"><span class="animate-spin inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></span><p class="text-xs text-gray-400 mt-2">Buscando archivos...</p></div>';
+    
+    docView.innerHTML = '<div class="text-center py-10"><span class="animate-spin inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></span><p class="text-xs text-gray-400 mt-2">Cargando...</p></div>';
 
     try {
-        // CORRECCIÓN: Quitamos "orderBy" de aquí para que no pida índice en Firebase
         const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'document_requests'), where('uid', '==', currentUser.uid));
         const snapshot = await getDocs(q);
-        
-        // Procesamos y ordenamos los datos AQUÍ (en el celular) en vez de en la base de datos
-        let docsList = [];
-        snapshot.forEach(doc => {
-            docsList.push(doc.data());
-        });
 
-        // Ordenar manualmente del más reciente al más antiguo
+        let docsList = [];
+        snapshot.forEach(doc => { docsList.push(doc.data()); });
+
+        // Ordenar: Más recientes primero
         docsList.sort((a, b) => {
             const timeA = a.timestamp ? a.timestamp.seconds : 0;
             const timeB = b.timestamp ? b.timestamp.seconds : 0;
             return timeB - timeA;
         });
-        
+
         let html = `
         <div class="flex items-center gap-3 mb-6">
             <button onclick="switchView('user')" class="bg-gray-100 p-2 rounded-xl hover:bg-gray-200 transition-colors"><i data-lucide="arrow-left" class="w-5 h-5 text-gray-600"></i></button>
             <h2 class="text-2xl font-black text-gray-800">Mis Documentos</h2>
         </div>
         <div class="space-y-4">`;
-        
+
         if (docsList.length === 0) {
             html += `
             <div class="flex flex-col items-center justify-center py-16 opacity-50 text-center">
-                <div class="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-4 neumo-inset border border-indigo-100">
-                    <i data-lucide="folder-open" class="w-10 h-10 text-indigo-300"></i>
-                </div>
+                <i data-lucide="folder-open" class="w-12 h-12 text-gray-300 mb-3"></i>
                 <h3 class="text-sm font-bold text-gray-500">Sin documentos</h3>
-                <p class="text-xs text-gray-400 mt-1 max-w-[200px]">Aquí aparecerán tus actas y trámites cuando estén listos.</p>
+                <p class="text-xs text-gray-400 mt-1">Tus solicitudes aparecerán aquí.</p>
             </div>`;
         } else {
-            // Usamos docsList en lugar de snapshot
             docsList.forEach(d => {
                 const isReady = d.status === 'completed';
                 const statusColor = isReady ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-amber-600 bg-amber-50 border-amber-100';
                 const statusIcon = isReady ? 'check-circle-2' : 'clock';
                 const statusText = isReady ? 'DISPONIBLE' : 'EN PROCESO';
-                
+
                 html += `
                 <div class="neumo-card p-5 rounded-2xl relative overflow-hidden bg-white border border-gray-100 group transition-all hover:shadow-md">
                     <div class="flex justify-between items-start mb-4">
@@ -9998,31 +9993,40 @@ window.renderDocumentsView = async () => {
                             <i data-lucide="${statusIcon}" class="w-3 h-3"></i> ${statusText}
                         </span>
                     </div>
+
+                    <div class="mb-4 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 relative overflow-hidden">
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1">Dato / CURP enviado:</p>
+                        <p class="text-sm font-black text-gray-800 font-mono select-all tracking-wide">${d.curp || 'No especificado'}</p>
+                        <i data-lucide="scan-line" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-200 -z-0"></i>
+                    </div>
                     
                     ${isReady && d.downloadUrl ? `
-                    <div class="pt-4 border-t border-gray-100">
-                        <a href="${d.downloadUrl}" target="_blank" class="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-black flex items-center justify-center gap-2 transition-all active:scale-95 group-hover:shadow-xl">
-                            <i data-lucide="download-cloud" class="w-5 h-5"></i> 
-                            <span>Descargar Archivo</span>
-                        </a>
-                        <p class="text-[9px] text-center text-gray-400 mt-2">Enlace seguro proporcionado por administración</p>
-                    </div>` 
+                        <div class="pt-2 border-t border-gray-100">
+                            <button onclick="openSafeUrl('${d.downloadUrl}')" class="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-black flex items-center justify-center gap-2 transition-all active:scale-95 group-hover:shadow-xl">
+                                <i data-lucide="download-cloud" class="w-5 h-5"></i>
+                                <span>Descargar Archivo</span>
+                            </button>
+                        </div>` 
                     : `
-                    <div class="mt-3 bg-amber-50/50 p-3 rounded-xl border border-amber-100/50 flex items-center gap-3">
-                        <div class="animate-spin w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full flex-shrink-0"></div>
-                        <p class="text-xs text-amber-700 font-medium leading-tight">Estamos gestionando tu documento. Recibirás una notificación cuando esté listo.</p>
-                    </div>`}
+                        <div class="mt-3 bg-amber-50/50 p-3 rounded-xl border border-amber-100/50 flex items-center gap-3">
+                            <div class="animate-spin w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full flex-shrink-0"></div>
+                            <p class="text-xs text-amber-700 font-medium leading-tight">Estamos trabajando en tu solicitud...</p>
+                        </div>`}
                 </div>`;
             });
         }
+
         html += '</div>';
         docView.innerHTML = html;
         lucide.createIcons();
+
     } catch (e) {
         console.error(e);
         docView.innerHTML = `<div class="text-center py-10 text-red-500">Error: ${e.message}</div>`;
     }
 };
+
+
 
 
 // 2. MODAL DE ENTREGA (ADMIN)
@@ -10147,6 +10151,19 @@ window.adminDeliverDocument = async (docId, serviceName, buyerUid) => {
         console.error(error);
         showToast('Error al entregar: ' + error.message, 'error');
     }
+};
+
+// ==========================================
+// FUNCIÓN PARA ABRIR LINKS EXTERNOS (CORRIGE EL ERROR DE URL)
+// ==========================================
+window.openSafeUrl = (url) => {
+    if (!url) return;
+    let finalUrl = url.trim();
+    // Si el link NO empieza con http o https, se lo agregamos
+    if (!/^https?:\/\//i.test(finalUrl)) {
+        finalUrl = 'https://' + finalUrl;
+    }
+    window.open(finalUrl, '_blank');
 };
         
     </script>
