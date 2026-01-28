@@ -4118,7 +4118,7 @@ window.openCategoryModule = (categorySlug, title) => {
 };
 
 // ======================================================
-// VISTA TIENDA: STOCK INFINITO PARA DOCUMENTOS
+// VISTA TIENDA: STOCK INFINITO + FILTRO PROMOCIONES
 // ======================================================
 window.renderCategoryView = (categorySlug, title) => {
     const m = document.getElementById('app-modal');
@@ -4178,44 +4178,50 @@ window.renderCategoryView = (categorySlug, title) => {
         const cleanText = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
         const cleanSlug = cleanText(categorySlug);
         
-        // ¿Es categoría de documentos?
-        const isDocumentsCat = cleanSlug.includes('document') || cleanSlug.includes('tramite');
+        // Detección de Categorías Especiales
+        const isInfiniteCat = cleanSlug.includes('document') || cleanSlug.includes('tramite') || cleanSlug.includes('liberacion') || cleanSlug.includes('movil') || cleanSlug.includes('libro');
+        
+        // ¿Es la categoría Promociones?
+        const isPromotions = cleanSlug.includes('promocion');
 
         grid.innerHTML = '';
         let rawRole = 'client';
         if (typeof currentUserRole !== 'undefined' && currentUserRole) rawRole = currentUserRole;
         let myRole = rawRole.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+        let visibleCount = 0;
+
         products.forEach((p, index) => {
             const stock = p.stock || 0;
             const safeDesc = encodeURIComponent(p.description || '');
             
-            // LÓGICA DE STOCK INFINITO: Si es documento, ignoramos stock 0
-            const hasStock = isDocumentsCat || stock > 0;
+            const hasStock = isInfiniteCat || stock > 0;
+
+            // --- FILTRO DE PROMOCIONES ---
+            // Si es "Promociones" y NO tiene stock, nos saltamos este producto (lo ocultamos)
+            if (isPromotions && !hasStock) return;
+
+            visibleCount++;
 
             const pClient = Number(p.priceClient || p.price || 0);
             const pVip = Number(p.priceVip || 0);
             const pReseller = Number(p.priceReseller || 0);
             const pLeader = Number(p.priceLeader || 0);
 
-            // Cálculo de Precio
             let finalPrice = pClient;
             if (myRole === 'lider') { finalPrice = pLeader > 0 ? pLeader : (pReseller > 0 ? pReseller : (pVip > 0 ? pVip : pClient)); }
             else if (myRole === 'reseller') { finalPrice = pReseller > 0 ? pReseller : (pVip > 0 ? pVip : pClient); }
             else if (myRole === 'vip') { finalPrice = pVip > 0 ? pVip : pClient; }
 
-            // Etiquetas de Rol
             let labelText = 'CLIENTE', labelBg = 'bg-gray-100 text-gray-500 border-gray-200', priceColor = 'text-gray-800';
             if (myRole === 'lider') { labelText = 'PRECIO LÍDER'; labelBg = 'bg-amber-100 text-amber-700 border-amber-200'; priceColor = 'text-amber-600'; }
             else if (myRole === 'reseller') { labelText = 'PRECIO REVENDEDOR'; labelBg = 'bg-indigo-100 text-indigo-700 border-indigo-200'; priceColor = 'text-indigo-600'; }
             else if (myRole === 'vip') { labelText = 'PRECIO VIP'; labelBg = 'bg-purple-100 text-purple-700 border-purple-200'; priceColor = 'text-purple-600'; }
 
-            // UI Stock
             let stockFooterHtml = '';
             let imageOverlayHtml = '';
 
-            if (isDocumentsCat) {
-                // Si es documento, mostramos "Ilimitado" siempre
+            if (isInfiniteCat) {
                 stockFooterHtml = `<span class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 uppercase">∞ Ilimitado</span>`;
             } else if (!hasStock) {
                 imageOverlayHtml = `<div class="absolute inset-0 z-20 flex items-center justify-center"><div class="absolute inset-0 bg-white/60 backdrop-blur-[1px]"></div><span class="relative bg-rose-600 text-white text-[10px] font-black px-3 py-1 rounded shadow-lg -rotate-6 border-2 border-white tracking-widest">AGOTADO</span></div>`;
@@ -4228,7 +4234,6 @@ window.renderCategoryView = (categorySlug, title) => {
             const card = document.createElement('div');
             card.className = `${opacityClass} bg-white p-3 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-indigo-100/50 border border-gray-100 transition-all duration-300 cursor-pointer group flex flex-col justify-between`;
             
-            // IMPORTANTE: Aquí pasamos p.category para que buyProduct sepa qué es
             card.innerHTML = `
                 <div onclick="buyProduct('${p.id}', '${p.name}', ${finalPrice}, ${stock}, '${safeDesc}', '${p.imageUrl}', '${p.category}', '${p.deliveryTime || ''}')" class="h-full flex flex-col">
                     <div class="relative w-full aspect-[4/3] bg-gray-50 rounded-2xl overflow-hidden mb-3 border border-gray-50 group-hover:border-indigo-100 transition-colors">
@@ -4256,13 +4261,17 @@ window.renderCategoryView = (categorySlug, title) => {
             grid.appendChild(card);
         });
 
-        if(snapshot.empty) {
-            grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-400 font-bold text-sm">No hay productos disponibles</div>`;
+        // Si después de filtrar (por ejemplo, todas las promociones agotadas) no queda nada:
+        if(visibleCount === 0) {
+            grid.innerHTML = `
+                <div class="col-span-full py-20 text-center text-gray-400 font-bold text-sm flex flex-col items-center">
+                    <i data-lucide="package-open" class="w-10 h-10 mb-2 opacity-50"></i>
+                    <p>No hay promociones disponibles por ahora.</p>
+                </div>`;
         }
         lucide.createIcons();
     });
 };
-
 
 
   // ======================================================
@@ -4270,40 +4279,50 @@ window.renderCategoryView = (categorySlug, title) => {
         // ======================================================
 
 
-   // ======================================================
-// FUNCIÓN PUENTE DE COMPRA (ACTUALIZADA)
+  // ======================================================
+// FUNCIÓN PUENTE DE COMPRA (INCLUYE LIBROS)
 // ======================================================
 window.buyProduct = (id, name, price, stock, description, imageUrl, category, deliveryTime) => {
     const desc = decodeURIComponent(description);
     
-    // Validar si es infinito (Documentos) o tiene stock físico
+    // 1. Detectar Categorías Infinitas
     const safeCategory = (category || 'general').toLowerCase();
-    const isInfinite = safeCategory.includes('document') || safeCategory.includes('tramite');
+    
+    const isDoc = safeCategory.includes('document') || safeCategory.includes('tramite');
+    const isLib = safeCategory.includes('liberacion') || safeCategory.includes('movil');
+    // NUEVO: Detectar libros
+    const isBook = safeCategory.includes('libro');
+    
+    // Agrupamos todos los infinitos
+    const isInfinite = isDoc || isLib || isBook;
+    
     const isStock = isInfinite || stock > 0;
 
     const backTitle = safeCategory.charAt(0).toUpperCase() + safeCategory.slice(1);
-    const backAction = `openCategoryModule('${category}', '${backTitle}')`; // Corregido: usar category original
+    const backAction = `openCategoryModule('${category}', '${backTitle}')`;
     const btnClass = isStock ? "bg-gray-900 text-white hover:bg-black shadow-xl shadow-gray-200 hover:shadow-gray-300 active:scale-95" : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200";
     const btnText = isStock ? "Confirmar Compra" : "Agotado";
 
-    // Detectar documentos (CURP)
+    // 2. Detectar si necesita Input
     const lowerName = name.toLowerCase();
-    const needsCurp = lowerName.includes("acta") || lowerName.includes("curp") || lowerName.includes("rfc") || lowerName.includes("constancia");
+    const needsInput = lowerName.includes("acta") || lowerName.includes("curp") || lowerName.includes("rfc") || lowerName.includes("constancia") || isLib || lowerName.includes("imei");
 
-    // IMPORTANTE: Pasamos 'category' al final de las funciones
+    // Etiqueta dinámica
+    const inputLabel = (isLib || lowerName.includes("imei")) ? "Código IMEI / Serie" : "Dato / CURP";
+
     const btnAction = isStock 
-        ? (needsCurp 
+        ? (needsInput 
             ? `validateCurpAndPurchase('${id}', '${name}', ${price}, '${category}')` 
             : `processPurchase('${id}', '${name}', ${price}, '${category}')`) 
         : "";
 
     let specialInputHtml = '';
-    if (needsCurp) {
+    if (needsInput) {
         specialInputHtml = `
         <div class="mt-4 animate-in fade-in slide-in-from-bottom-2">
-            <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">Dato / CURP (Obligatorio)</label>
-            <input type="text" id="purchase-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Escribe el dato aquí" required>
-            <p class="text-[9px] text-gray-400 mt-1 ml-1">Requerido para el trámite.</p>
+            <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">${inputLabel} (Obligatorio)</label>
+            <input type="text" id="purchase-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Escribe aquí..." required>
+            <p class="text-[9px] text-gray-400 mt-1 ml-1">Requerido para el servicio.</p>
         </div>`;
     }
 
@@ -4356,6 +4375,7 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
 };
 
 
+
   // ==========================================
 // VALIDAR CURP ANTES DE COMPRAR
 // ==========================================
@@ -4383,11 +4403,11 @@ window.validateCurpAndPurchase = (id, name, price, category) => {
 
 
                      // ==========================================
-// PROCESAR COMPRA (LÓGICA BLINDADA STOCK INFINITO)
+// PROCESAR COMPRA (LÓGICA FINAL CORREGIDA)
 // ==========================================
 window.processPurchase = async (pid, name, price, categoryRaw) => {
     const btn = document.querySelector('button[onclick*="processPurchase"]');
-    const curpData = document.getElementById('purchase-curp')?.value;
+    const inputValue = document.getElementById('purchase-curp')?.value; // CURP o IMEI
     
     if(btn) {
         btn.disabled = true;
@@ -4395,31 +4415,46 @@ window.processPurchase = async (pid, name, price, categoryRaw) => {
     }
 
     try {
-        // DETECCIÓN INTELIGENTE DE DOCUMENTOS
-        // Si la categoría contiene "doc" o "tramite", activamos modo infinito
         const cat = (categoryRaw || '').toLowerCase();
-        const isDoc = cat.includes('document') || cat.includes('tramite') || name.toLowerCase().includes('acta');
+        
+        // --- 1. CLASIFICACIÓN DEL PRODUCTO ---
+        // A) Documentos para Panel Admin (Sin ticket inmediato)
+        const isDocPanel = cat.includes('document') || cat.includes('tramite') || name.toLowerCase().includes('acta');
+        
+        // B) Liberaciones (Ticket inmediato + Stock Infinito + Datos Reales)
+        const isLib = cat.includes('liberacion') || cat.includes('movil') || name.toLowerCase().includes('imei');
 
         let itemId = null;
         let itemDetails = {};
 
-        // 1. SI NO ES DOCUMENTO, VERIFICAR STOCK REAL
-        if (!isDoc) {
+        // --- 2. OBTENCIÓN DE DATOS (CORRECCIÓN TICKET LIBERACIÓN) ---
+        // Si NO es un documento de panel, NECESITAMOS datos reales del inventario para el ticket.
+        // Esto aplica tanto para productos normales como para Liberaciones.
+        if (!isDocPanel) {
+            // Buscamos el primer ítem disponible que haya puesto el admin
             const qInv = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('productId', '==', pid), where('status', '==', 'available'), limit(1));
             const invSnap = await getDocs(qInv);
 
-            if(invSnap.empty) throw new Error("¡Se acaban de agotar! Intenta más tarde.");
+            // Si el admin no ha puesto nada en el inventario (ni siquiera las instrucciones genéricas)
+            if(invSnap.empty) {
+                 throw new Error("Producto no disponible temporalmente para entrega inmediata.");
+            }
             
+            // ¡Aquí obtenemos los datos reales (cuentas, instrucciones)!
             const itemDoc = invSnap.docs[0];
             itemId = itemDoc.id;
             itemDetails = itemDoc.data();
+
         } else {
-            // SI ES DOCUMENTO, DATOS DUMMY
-            itemDetails = { serviceName: name, isDocument: true };
+            // Datos dummy solo para Documentos de Panel (porque no llevan ticket)
+            itemDetails = { 
+                serviceName: name, 
+                isDocumentRequest: true
+            };
         }
 
         await runTransaction(db, async (t) => {
-            // 2. Cobrar Saldo
+            // --- 3. COBRO (Igual que siempre) ---
             const wRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallet', 'main');
             const wSnap = await t.get(wRef);
             const currentBalance = Number(wSnap.data().balance) || 0;
@@ -4428,46 +4463,49 @@ window.processPurchase = async (pid, name, price, categoryRaw) => {
             if(currentBalance < cost) throw new Error("Saldo insuficiente. Por favor recarga.");
             t.update(wRef, { balance: (currentBalance - cost) });
 
-            // 3. SI NO ES DOCUMENTO: Descontar Stock y Marcar Vendido
-            if (!isDoc && itemId) {
-                // Marcar item vendido
+            // --- 4. ACTUALIZACIÓN DE STOCK (LA CLAVE DEL INFINITO) ---
+            // Solo descontamos stock si es producto NORMAL (Ni DocPanel, Ni Liberación)
+            if (!isDocPanel && !isLib && itemId) {
+                // Marcar como vendido (se gasta)
                 t.update(doc(db, 'artifacts', appId, 'public', 'data', 'inventory_items', itemId), { 
                     status: 'sold', 
                     soldTo: currentUser.uid, 
                     soldAt: serverTimestamp(),
                     soldPrice: cost 
                 });
-                
-                // Restar 1 al stock visual
+                // Restar 1 al contador visual
                 const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', pid);
                 t.update(pRef, { stock: increment(-1) });
             }
+            // NOTA IMPORTANTE: Si es 'isLib', usamos los datos de 'itemId' para el ticket, 
+            // pero NO ejecutamos el bloque de arriba, por lo que el stock NO baja.
 
-            // 4. Registrar Transacción en Historial Usuario
-            const details = { 
+            // --- 5. REGISTRO DE TRANSACCIÓN ---
+            // Preparamos los detalles para el historial y el ticket
+            const finalDetails = { 
                 serviceName: name, 
-                curp: curpData || null, 
                 category: categoryRaw,
-                ...itemDetails 
+                userInputStr: inputValue || null, // El IMEI o CURP que escribió el cliente
+                ...itemDetails // Los datos reales del admin (instrucciones, cuentas, etc.)
             };
             
             t.set(doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')), {
                 type: 'purchase',
                 amount: cost,
                 description: `Compra: ${name}`,
-                details: details,
+                details: finalDetails,
                 timestamp: serverTimestamp(),
-                status: isDoc ? 'pending' : 'completed' // Documentos quedan pendientes
+                status: isDocPanel ? 'pending' : 'completed' 
             });
 
-            // 5. SI ES DOCUMENTO: Crear Solicitud para Admin
-            if (isDoc) {
+            // --- 6. SOLO SI ES DOC PANEL: ENVIAR AL ADMIN ---
+            if (isDocPanel) {
                 const reqRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'document_requests'));
                 t.set(reqRef, {
                     uid: currentUser.uid,
                     buyerEmail: currentUser.email,
                     serviceName: name,
-                    curp: curpData || 'Sin dato',
+                    curp: inputValue || 'Sin dato',
                     pricePaid: cost,
                     status: 'pending',
                     timestamp: serverTimestamp(),
@@ -4476,23 +4514,30 @@ window.processPurchase = async (pid, name, price, categoryRaw) => {
             }
         });
 
-        // Comisión Referido (Si aplica)
+        // Comisión Referido
         try { await processReferralCommission(currentUser.uid, price); } catch(e){}
 
-        showToast('¡Compra realizada con éxito!', 'success');
+        showToast('¡Procesado exitosamente!', 'success');
         closeModal();
         
-        // Si NO es documento, mostramos el ticket con la cuenta
-        if (!isDoc) {
-            showTicketModal({serviceName: name, ...itemDetails});
+        // --- 7. DECISIÓN FINAL DE UI ---
+        if (isDocPanel) {
+            // Si es Acta/Trámite -> Aviso de espera
+            showToast('Solicitud enviada. Revisa "Mis Documentos".', 'info');
         } else {
-            // Si es documento, avisamos que está en proceso
-            showToast('Tu solicitud fue enviada al administrador.', 'info');
+            // Si es Liberación o Normal -> TICKET CON DATOS REALES
+            // Ahora 'itemDetails' sí trae la info del admin.
+            showTicketModal({
+                serviceName: name,
+                category: categoryRaw,
+                userInputStr: inputValue, // Para mostrar el IMEI en el ticket
+                ...itemDetails
+            });
         }
 
     } catch (e) {
         let m = e.message || "Error desconocido";
-        if(m.includes("Saldo")) openChargeModal();
+        if(m.includes("Saldo") || m.includes("insuficiente")) openChargeModal();
         else showToast(m, 'error');
         
         if(btn) {
@@ -4501,7 +4546,6 @@ window.processPurchase = async (pid, name, price, categoryRaw) => {
         }
     }
 };
-
     
 
                 window.showTicketModal = (item) => {
