@@ -3038,83 +3038,88 @@ window.submitReport = async (e) => {
     }
 };
 
-                // ======================================================
+                   // ======================================================
         // 3. VISTA ADMIN (MUESTRA EL TEXTO DEL TICKET)
         // ======================================================
-  window.openReportDetails = (id) => {
-    const r = window.adminReportsCache.find(x => x.id === id);
-    if(!r) return showToast('Reporte no encontrado', 'error');
+        window.openReportDetails = (id) => {
+            const r = window.adminReportsCache.find(x => x.id === id);
+            if(!r) return showToast('Reporte no encontrado', 'error');
 
-    let extraInfoHtml = '';
+            let extraInfoHtml = '';
 
-    // --- RECLAMACIONES DE MEMBRESÍA ---
-    if (r.type === 'claim' && r.claimData) {
-        let rows = '';
-        if(r.claimData.email) {
-            rows += `<div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">Correo proporcionado</span><span class="text-sm font-bold text-gray-800 select-all font-mono bg-white px-2 py-1 rounded border border-indigo-100 inline-block">${r.claimData.email}</span></div>`;
-        }
-        if(r.claimData.password) {
-            rows += `<div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">Contraseña</span><span class="text-sm font-bold text-gray-800 select-all font-mono bg-white px-2 py-1 rounded border border-indigo-100 inline-block">${r.claimData.password}</span></div>`;
-        }
-        if(r.claimData.whatsapp) {
-            rows += `<div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">WhatsApp</span><span class="text-sm font-bold text-green-600 select-all font-mono bg-white px-2 py-1 rounded border border-green-100 inline-block">${r.claimData.whatsapp}</span> <a href="https://wa.me/${r.claimData.whatsapp}" target="_blank" class="text-green-500 text-[10px] underline ml-2 font-bold hover:text-green-700">Abrir Chat</a></div>`;
-        }
+            // --- RECLAMACIONES DE MEMBRESÍA ---
+            if (r.type === 'claim' && r.claimData) {
+                let rows = '';
+                
+                if(r.claimData.email) {
+                    rows += `<div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">Correo proporcionado</span><span class="text-sm font-bold text-gray-800 select-all font-mono bg-white px-2 py-1 rounded border border-indigo-100 inline-block">${r.claimData.email}</span></div>`;
+                }
+                if(r.claimData.password) {
+                    rows += `<div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">Contraseña</span><span class="text-sm font-bold text-gray-800 select-all font-mono bg-white px-2 py-1 rounded border border-indigo-100 inline-block">${r.claimData.password}</span></div>`;
+                }
+                if(r.claimData.whatsapp) {
+                    rows += `<div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">WhatsApp</span><span class="text-sm font-bold text-green-600 select-all font-mono bg-white px-2 py-1 rounded border border-green-100 inline-block">${r.claimData.whatsapp}</span> <a href="https://wa.me/${r.claimData.whatsapp}" target="_blank" class="text-green-500 text-[10px] underline ml-2 font-bold hover:text-green-700">Abrir Chat</a></div>`;
+                }
+                // --- NUEVO: VISUALIZACIÓN DE IMEI ---
+                if(r.claimData.imei) {
+                    rows += `<div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">IMEI / Serie</span><span class="text-lg font-black text-indigo-600 select-all font-mono bg-indigo-50 px-2 py-1 rounded border border-indigo-100 inline-block tracking-widest">${r.claimData.imei}</span></div>`;
+                }
 
-        extraInfoHtml = `
-        <div class="bg-fuchsia-50 border border-fuchsia-100 p-4 rounded-xl mb-4 relative overflow-hidden shadow-sm">
-            <div class="absolute top-0 left-0 w-1 h-full bg-fuchsia-500"></div>
-            <h4 class="text-xs font-black text-fuchsia-600 uppercase mb-3 flex items-center gap-2">
-                <i data-lucide="ticket" class="w-4 h-4"></i> Datos de Membresía
-            </h4>
-            <div class="mb-2">
-                <span class="text-[9px] font-bold text-gray-400 uppercase block">Servicio Solicitado</span>
-                <span class="text-sm font-black text-gray-800 uppercase tracking-wide">${r.serviceName}</span>
-            </div>
-            ${rows}
-        </div>`;
-    }
-    
-    // --- SOPORTE O CUENTAS ---
-    else if (r.type === 'account' || r.manualTicketData) {
-        extraInfoHtml = `
-        <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl mb-4 relative overflow-hidden shadow-sm">
-            <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-            <h4 class="text-xs font-black text-indigo-600 uppercase mb-3 flex items-center gap-2">
-                <i data-lucide="shield-alert" class="w-4 h-4"></i> Datos de la Cuenta
-            </h4>
-            ${r.serviceName ? `<div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">Servicio</span><span class="text-sm font-bold text-gray-800">${r.serviceName}</span></div>` : ''}
-            <div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">Correo de la Cuenta</span><div class="flex items-center gap-2"><span class="text-sm font-mono font-bold text-gray-800 bg-white px-2 py-1 rounded border border-indigo-100 select-all">${r.accountEmail || 'No especificado'}</span></div></div>
-            ${r.manualTicketData ? `<div><span class="text-[9px] font-bold text-gray-400 uppercase block">Ticket / Datos</span><div class="bg-white p-2 rounded-lg border border-indigo-100 text-xs text-gray-600 font-mono whitespace-pre-wrap select-all">${r.manualTicketData}</div></div>` : ''}
-        </div>`;
-    }
+                extraInfoHtml = `
+                <div class="bg-fuchsia-50 border border-fuchsia-100 p-4 rounded-xl mb-4 relative overflow-hidden shadow-sm">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-fuchsia-500"></div>
+                    <h4 class="text-xs font-black text-fuchsia-600 uppercase mb-3 flex items-center gap-2">
+                        <i data-lucide="ticket" class="w-4 h-4"></i> Datos de Membresía
+                    </h4>
+                    <div class="mb-2">
+                        <span class="text-[9px] font-bold text-gray-400 uppercase block">Servicio Solicitado</span>
+                        <span class="text-sm font-black text-gray-800 uppercase tracking-wide">${r.serviceName}</span>
+                    </div>
+                    ${rows}
+                </div>`;
+            }
+            
+            // --- SOPORTE O CUENTAS ---
+            else if (r.type === 'account' || r.manualTicketData) {
+                extraInfoHtml = `
+                <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl mb-4 relative overflow-hidden shadow-sm">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                    <h4 class="text-xs font-black text-indigo-600 uppercase mb-3 flex items-center gap-2">
+                        <i data-lucide="shield-alert" class="w-4 h-4"></i> Datos de la Cuenta
+                    </h4>
+                    ${r.serviceName ? `<div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">Servicio</span><span class="text-sm font-bold text-gray-800">${r.serviceName}</span></div>` : ''}
+                    <div class="mb-2"><span class="text-[9px] font-bold text-gray-400 uppercase block">Correo de la Cuenta</span><div class="flex items-center gap-2"><span class="text-sm font-mono font-bold text-gray-800 bg-white px-2 py-1 rounded border border-indigo-100 select-all">${r.accountEmail || 'No especificado'}</span></div></div>
+                    ${r.manualTicketData ? `<div><span class="text-[9px] font-bold text-gray-400 uppercase block">Ticket / Datos</span><div class="bg-white p-2 rounded-lg border border-indigo-100 text-xs text-gray-600 font-mono whitespace-pre-wrap select-all">${r.manualTicketData}</div></div>` : ''}
+                </div>`;
+            }
 
-    openModal(`
-        <div class="text-left bounce-enter flex flex-col h-[85vh]">
-            <div class="flex justify-between items-start mb-4 border-b border-gray-100 pb-2">
-                <div>
-                    <h3 class="font-bold text-gray-800 text-xl">Detalle del Ticket</h3>
-                    <p class="text-xs text-gray-400 flex items-center gap-1">
-                        <i data-lucide="user" class="w-3 h-3"></i> ${r.email}
-                    </p>
+            openModal(`
+                <div class="text-left bounce-enter flex flex-col h-[85vh]">
+                    <div class="flex justify-between items-start mb-4 border-b border-gray-100 pb-2">
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-xl">Detalle del Ticket</h3>
+                            <p class="text-xs text-gray-400 flex items-center gap-1">
+                                <i data-lucide="user" class="w-3 h-3"></i> ${r.email}
+                            </p>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">${r.type === 'claim' ? 'Reclamación' : 'Soporte'}</span>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto scrollbar-hide pr-1">
+                        ${extraInfoHtml}
+                        ${r.description ? `<div class="mb-4"><label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Texto Original</label><div class="neumo-card neumo-inset p-4 rounded-xl text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border border-gray-100">${r.description}</div></div>` : ''}
+                        ${r.evidenceImage ? `<div class="mb-4"><label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Evidencia</label><img src="${r.evidenceImage}" class="w-full rounded-xl border border-gray-200 shadow-sm cursor-pointer" onclick="window.open(this.src)"></div>` : ''}
+                    </div>
+
+                    <div class="pt-4 mt-2 border-t border-gray-100 bg-white z-10 flex gap-3">
+                        <button onclick="deleteReport('${id}')" class="neumo-button w-12 flex items-center justify-center text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                        <button onclick="openReplyModal('${id}', '${r.uid}')" class="neumo-button flex-1 bg-gray-900 text-white py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-black"><i data-lucide="corner-up-left" class="w-4 h-4"></i> Responder</button>
+                        <button onclick="closeModal()" class="neumo-button flex-1 bg-gray-100 text-gray-500 py-3 rounded-xl font-bold hover:bg-gray-200">Cerrar</button>
+                    </div>
                 </div>
-                <span class="text-[10px] font-bold uppercase px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">${r.type === 'claim' ? 'Reclamación' : 'Soporte'}</span>
-            </div>
-
-            <div class="flex-1 overflow-y-auto scrollbar-hide pr-1">
-                ${extraInfoHtml}
-                ${r.description ? `<div class="mb-4"><label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Texto Original</label><div class="neumo-card neumo-inset p-4 rounded-xl text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border border-gray-100">${r.description}</div></div>` : ''}
-                ${r.evidenceImage ? `<div class="mb-4"><label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Evidencia</label><img src="${r.evidenceImage}" class="w-full rounded-xl border border-gray-200 shadow-sm cursor-pointer" onclick="window.open(this.src)"></div>` : ''}
-            </div>
-
-            <div class="pt-4 mt-2 border-t border-gray-100 bg-white z-10 flex gap-3">
-                <button onclick="deleteReport('${id}')" class="neumo-button w-12 flex items-center justify-center text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
-                <button onclick="openReplyModal('${id}', '${r.uid}')" class="neumo-button flex-1 bg-gray-900 text-white py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-black"><i data-lucide="corner-up-left" class="w-4 h-4"></i> Responder</button>
-                <button onclick="closeModal()" class="neumo-button flex-1 bg-gray-100 text-gray-500 py-3 rounded-xl font-bold hover:bg-gray-200">Cerrar</button>
-            </div>
-        </div>
-    `);
-    lucide.createIcons();
-};
+            `);
+            lucide.createIcons();
+        };
 
 
                 // ======================================================
@@ -8041,35 +8046,34 @@ window.openTicketHelpModal = () => {
     lucide.createIcons();
 };
 
-// ======================================================
-// LÓGICA: RECLAMAR MEMBRESÍA
-// ======================================================
+        // ======================================================
+        // LÓGICA: RECLAMAR MEMBRESÍA (VALIDACIÓN DE FOLIO)
+        // ======================================================
+        const CLAIM_CATALOG = [
+            // GRUPO: INVITACIÓN
+            { id: 'canva-1m', name: 'Canva Pro 1M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
+            { id: 'canva-2m', name: 'Canva Pro 2M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
+            { id: 'canva-6m', name: 'Canva Pro 6M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
+            { id: 'canva-12m', name: 'Canva Pro 12M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
+            { id: 'yt-inv-1m', name: 'YouTube + YouTube Music 1M Invitación', type: 'invite', icon: 'youtube', color: 'text-red-500', bg: 'bg-red-50' },
+            { id: 'yt-inv-3m', name: 'YouTube + YouTube Músic 3M Invitación', type: 'invite', icon: 'youtube', color: 'text-red-500', bg: 'bg-red-50' },
+            { id: 'amz-1m', name: 'Amazon Music 1M (Invitación)', type: 'invite', icon: 'music', color: 'text-cyan-500', bg: 'bg-cyan-50' },
+            { id: 'amz-3m', name: 'Amazon Music 3M (Invitación)', type: 'invite', icon: 'music', color: 'text-cyan-500', bg: 'bg-cyan-50' },
+            
+            // GRUPO: LOGIN
+            { id: 'yt-fam', name: 'YouTube Familiar MX', type: 'login', icon: 'users', color: 'text-red-600', bg: 'bg-red-100' },
+            { id: 'gemini-1m', name: 'Gémini AI Pro 1 Mes', type: 'login', icon: 'sparkles', color: 'text-blue-500', bg: 'bg-blue-50' },
 
-// ======================================================
-// LÓGICA: RECLAMAR MEMBRESÍA (VALIDACIÓN DE FOLIO)
-// ======================================================
+            // GRUPO: WHATSAPP
+            { id: 'gp-1m', name: 'Game Pass Últimate 1 Mes', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+            { id: 'gp-2m', name: 'Game Pass Últimate 2 Meses', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+            { id: 'gp-6m', name: 'Game Pass Últimate 6 Meses', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+            { id: 'gp-12m', name: 'Game Pass Últimate 12 Meses', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+            
+            // --- MODIFICADO: TIPO IMEI ---
+            { id: 'lib-movil', name: 'Liberación Móvil', type: 'imei', icon: 'smartphone', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+        ];
 
-const CLAIM_CATALOG = [
-    // GRUPO: INVITACIÓN (Solo correo + Folio)
-    { id: 'canva-1m', name: 'Canva Pro 1M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'canva-2m', name: 'Canva Pro 2M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'canva-6m', name: 'Canva Pro 6M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'canva-12m', name: 'Canva Pro 12M', type: 'invite', icon: 'palette', color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'yt-inv-1m', name: 'YouTube + YouTube Music 1M Invitación', type: 'invite', icon: 'youtube', color: 'text-red-500', bg: 'bg-red-50' },
-    { id: 'yt-inv-3m', name: 'YouTube + YouTube Músic 3M Invitación', type: 'invite', icon: 'youtube', color: 'text-red-500', bg: 'bg-red-50' },
-    { id: 'amz-1m', name: 'Amazon Music 1M (Invitación)', type: 'invite', icon: 'music', color: 'text-cyan-500', bg: 'bg-cyan-50' },
-    { id: 'amz-3m', name: 'Amazon Music 3M (Invitación)', type: 'invite', icon: 'music', color: 'text-cyan-500', bg: 'bg-cyan-50' },
-
-    // GRUPO: LOGIN (Correo + Pass + Folio)
-    { id: 'yt-fam', name: 'YouTube Familiar MX', type: 'login', icon: 'users', color: 'text-red-600', bg: 'bg-red-100' },
-    { id: 'gemini-1m', name: 'Gémini AI Pro 1 Mes', type: 'login', icon: 'sparkles', color: 'text-blue-500', bg: 'bg-blue-50' },
-
-    // GRUPO: WHATSAPP (WhatsApp + Folio)
-    { id: 'gp-1m', name: 'Game Pass Últimate 1 Mes', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'gp-2m', name: 'Game Pass Últimate 2 Meses', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'gp-6m', name: 'Game Pass Últimate 6 Meses', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'gp-12m', name: 'Game Pass Últimate 12 Meses', type: 'whatsapp', icon: 'gamepad-2', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-];
 
 window.openClaimModal = () => {
     let optionsHtml = '';
@@ -8099,97 +8103,103 @@ window.openClaimModal = () => {
     lucide.createIcons();
 };
 
-window.openClaimForm = (itemId) => {
-    const item = CLAIM_CATALOG.find(x => x.id === itemId);
-    if(!item) return;
+        window.openClaimForm = (itemId) => {
+            const item = CLAIM_CATALOG.find(x => x.id === itemId);
+            if(!item) return;
 
-    let fieldsHtml = '';
-    
-    // Campo Folio (Común)
-    let folioInput = `
-        <div class="mt-3">
-            <label class="block text-xs font-bold text-gray-800 uppercase mb-1 ml-1">Folio de Compra <span class="text-rose-500">*</span></label>
-            <div class="relative">
-                <i data-lucide="hash" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
-                <input type="text" id="claim-folio" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="Ingresa el folio exacto" required>
-            </div>
-        </div>`;
+            let fieldsHtml = '';
+            
+            // Campo Folio (Común para todos)
+            let folioInput = `
+                <div class="mt-3">
+                    <label class="block text-xs font-bold text-gray-800 uppercase mb-1 ml-1">Folio de Compra <span class="text-rose-500">*</span></label>
+                    <div class="relative">
+                        <i data-lucide="hash" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+                        <input type="text" id="claim-folio" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="Ingresa el folio exacto" required>
+                    </div>
+                </div>`;
 
-    if (item.type === 'invite') {
-        fieldsHtml = `
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Correo para Invitación</label>
-                <div class="relative">
-                    <i data-lucide="mail" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
-                    <input type="email" id="claim-email" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="ejemplo@gmail.com" required>
-                </div>
-            </div>`;
-    } 
-    else if (item.type === 'login') {
-        fieldsHtml = `
-            <div class="space-y-3">
+            if (item.type === 'invite') {
+                fieldsHtml = `
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Correo</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Correo para Invitación</label>
                     <div class="relative">
                         <i data-lucide="mail" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
-                        <input type="email" id="claim-email" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" required>
+                        <input type="email" id="claim-email" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="ejemplo@gmail.com" required>
                     </div>
-                </div>
+                </div>`;
+            } else if (item.type === 'login') {
+                fieldsHtml = `
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Correo</label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+                            <input type="email" id="claim-email" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Contraseña</label>
+                        <div class="relative">
+                            <i data-lucide="lock" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+                            <input type="text" id="claim-pass" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" required>
+                        </div>
+                    </div>
+                </div>`;
+            } else if (item.type === 'whatsapp') {
+                fieldsHtml = `
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Contraseña</label>
+                    <label class="block text-xs font-bold text-emerald-600 uppercase mb-1 ml-1">WhatsApp (Para entrega)</label>
                     <div class="relative">
-                        <i data-lucide="lock" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
-                        <input type="text" id="claim-pass" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" required>
+                        <i data-lucide="message-circle" class="absolute left-3 top-3 w-4 h-4 text-emerald-500"></i>
+                        <input type="number" id="claim-whatsapp" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="Solo números" required>
+                    </div>
+                </div>`;
+            } else if (item.type === 'imei') {
+                // --- NUEVO CAMPO ESPECÍFICO PARA IMEI ---
+                fieldsHtml = `
+                <div>
+                    <label class="block text-xs font-bold text-indigo-600 uppercase mb-1 ml-1">IMEI del celular a liberar</label>
+                    <div class="relative">
+                        <i data-lucide="smartphone" class="absolute left-3 top-3 w-4 h-4 text-indigo-500"></i>
+                        <input type="number" id="claim-imei" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" placeholder="Ej: 3520..." required>
+                    </div>
+                    <p class="text-[9px] text-gray-400 mt-1 ml-2">Marca *#06# en tu celular para verlo.</p>
+                </div>`;
+            }
+
+            openModal(`
+            <div class="text-left bounce-enter p-2">
+                <div class="flex items-center gap-3 mb-6 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                    <button onclick="openClaimModal()" class="w-8 h-8 flex items-center justify-center bg-white rounded-full text-gray-400 hover:text-gray-600 shadow-sm"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 leading-tight">${item.name}</h3>
+                        <p class="text-xs text-fuchsia-500 font-bold uppercase">Solicitud de Garantía</p>
                     </div>
                 </div>
-            </div>`;
-    } 
-    else if (item.type === 'whatsapp') {
-        fieldsHtml = `
-            <div>
-                <label class="block text-xs font-bold text-emerald-600 uppercase mb-1 ml-1">WhatsApp (Para entrega)</label>
-                <div class="relative">
-                    <i data-lucide="message-circle" class="absolute left-3 top-3 w-4 h-4 text-emerald-500"></i>
-                    <input type="number" id="claim-whatsapp" class="neumo-inset w-full bg-transparent border-none rounded-xl p-3 pl-10 text-sm font-bold text-gray-700 placeholder-gray-300" required>
-                </div>
-            </div>`;
-    }
-
-    openModal(`
-        <div class="text-left bounce-enter">
-            <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                <button onclick="openClaimModal()" class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
-                <div>
-                    <h3 class="text-lg font-bold text-gray-800 leading-tight">${item.name}</h3>
-                    <p class="text-xs text-fuchsia-500 font-bold uppercase">Solicitud de Garantía</p>
-                </div>
+                
+                <form onsubmit="submitClaim(event, '${item.id}', '${item.type}', '${item.name}')">
+                    ${fieldsHtml}
+                    ${folioInput}
+                    
+                    <button type="submit" id="btn-claim-submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg mt-8 flex items-center justify-center gap-2 hover:bg-black transition-transform active:scale-95">
+                        <span>Verificar y Reclamar</span>
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </form>
             </div>
-            
-            <form onsubmit="submitClaim(event, '${item.id}', '${item.type}', '${item.name}')">
-                ${fieldsHtml}
-                ${folioInput}
+            `);
+            lucide.createIcons();
+        };
 
-                <button type="submit" id="btn-claim-submit" class="neumo-button w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-lg mt-8 flex items-center justify-center gap-2 hover:bg-black transition-transform active:scale-95">
-                    <span>Verificar y Reclamar</span>
-                    <i data-lucide="send" class="w-4 h-4"></i>
-                </button>
-            </form>
-        </div>
-    `);
-    lucide.createIcons();
-};
-
-           // ======================================================
+              // ======================================================
         // ENVIAR RECLAMO (VALIDACIÓN ESTRICTA: 1 USO POR FOLIO)
         // ======================================================
         window.submitClaim = async (e, itemId, type, itemName) => {
             e.preventDefault();
-            
             const btn = document.getElementById('btn-claim-submit');
-            let originalText = '';
             
             if(btn) {
-                originalText = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Verificando...';
             }
@@ -8198,11 +8208,10 @@ window.openClaimForm = (itemId) => {
                 // 1. Obtener Folio
                 const folioEl = document.getElementById('claim-folio');
                 if (!folioEl) throw new Error('Error interno: Falta campo Folio');
-                
                 const folioInput = folioEl.value.trim();
                 if (!folioInput) throw new Error('El Folio es obligatorio');
 
-                // --- PASO A: BUSCAR EL FOLIO EN INVENTARIO (Para ver si existe y de qué es) ---
+                // --- PASO A: BUSCAR EL FOLIO EN INVENTARIO ---
                 const inventoryRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items');
                 const qFolio = query(inventoryRef, where('folio', '==', folioInput));
                 const folioSnapshot = await getDocs(qFolio);
@@ -8210,32 +8219,25 @@ window.openClaimForm = (itemId) => {
                 if (folioSnapshot.empty) {
                     throw new Error('❌ El Folio ingresado NO EXISTE en el sistema.');
                 }
-
+                
                 const itemData = folioSnapshot.docs[0].data();
 
                 // --- PASO B: VALIDAR QUE SEA LA MISMA PLATAFORMA ---
-                // Convertimos a minúsculas para comparar (ej: "Canva 1M" == "canva 1m")
                 const inventoryName = (itemData.serviceName || '').trim().toLowerCase();
                 const claimingName = itemName.trim().toLowerCase();
 
-                // Verificamos si el nombre del producto del folio coincide con lo que estás reclamando
                 if (inventoryName !== claimingName) {
                     throw new Error(`⛔ Folio incorrecto para este servicio.\nEste folio es de: "${itemData.serviceName}"`);
                 }
 
-                // --- PASO C: VALIDAR SI YA FUE USADO (CUALQUIER ESTADO) ---
+                // --- PASO C: VALIDAR SI YA FUE USADO ---
                 const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
-                
-                // Buscamos si existe CUALQUIER reporte con este folio (pendiente, atendido, etc.)
                 const qUsage = query(reportsRef, where('folio', '==', folioInput));
                 const usageSnap = await getDocs(qUsage);
 
                 if (!usageSnap.empty) {
-                    // Si encontramos algo, significa que ya se usó o se está usando.
-                    // Podemos revisar el estado del primero para dar un mensaje más claro, pero bloqueamos igual.
                     const existingReport = usageSnap.docs[0].data();
                     const status = existingReport.status;
-
                     if (status === 'unread' || status === 'pending') {
                         throw new Error('⚠️ Ya enviaste una solicitud con este Folio y está en revisión.');
                     } else {
@@ -8246,7 +8248,7 @@ window.openClaimForm = (itemId) => {
                 // --- PASO D: VALIDAR EXPIRACIÓN (FECHA) ---
                 if (itemData.expiryDate) {
                     const today = new Date();
-                    const expDate = new Date(itemData.expiryDate + 'T23:59:59'); 
+                    const expDate = new Date(itemData.expiryDate + 'T23:59:59');
                     if (today > expDate) {
                         throw new Error('⛔ Este Folio ya ha EXPIRADO. La garantía ha terminado.');
                     }
@@ -8258,55 +8260,59 @@ window.openClaimForm = (itemId) => {
 
                 if (type === 'invite') {
                     const emailEl = document.getElementById('claim-email');
-                    if (!emailEl) throw new Error('Falta campo email');
                     const email = emailEl.value;
                     if (!email.includes('@')) throw new Error('Correo inválido');
                     details.email = email;
                     descriptionText += `Correo Invitación: ${email}`;
-                } 
-                else if (type === 'login') {
+                
+                } else if (type === 'login') {
                     const emailEl = document.getElementById('claim-email');
                     const passEl = document.getElementById('claim-pass');
-                    if (!emailEl || !passEl) throw new Error('Faltan campos de acceso');
                     const email = emailEl.value;
                     const pass = passEl.value;
-                    if (!email.includes('@')) throw new Error('Correo inválido');
                     details.email = email;
                     details.password = pass;
                     descriptionText += `Datos Cuenta:\nCorreo: ${email}\nPass: ${pass}`;
-                } 
-                else if (type === 'whatsapp') {
+                
+                } else if (type === 'whatsapp') {
                     const waEl = document.getElementById('claim-whatsapp');
-                    if (!waEl) throw new Error('Falta campo WhatsApp');
                     const wa = waEl.value;
                     if (wa.length < 7) throw new Error('Número WhatsApp inválido');
                     details.whatsapp = wa;
                     descriptionText += `Contacto WhatsApp: ${wa}`;
+
+                } else if (type === 'imei') {
+                    // --- NUEVA LÓGICA PARA IMEI ---
+                    const imeiEl = document.getElementById('claim-imei');
+                    const imei = imeiEl.value.trim();
+                    if (imei.length < 14) throw new Error('El IMEI debe tener al menos 14 o 15 dígitos.');
+                    details.imei = imei; // Guardamos como campo 'imei', no 'whatsapp'
+                    descriptionText += `IMEI a Liberar: ${imei}`;
                 }
 
                 // --- ENVIAR REPORTE ---
-                await addDoc(reportsRef, {
-                    uid: currentUser.uid,
-                    email: currentUser.email,
+                await addDoc(reportsRef, { 
+                    uid: currentUser.uid, 
+                    email: currentUser.email, 
                     type: 'claim', 
                     serviceId: itemId,
-                    serviceName: itemName,
+                    serviceName: itemName, 
                     claimData: details, 
-                    description: descriptionText, 
-                    folio: folioInput, // Guardamos el folio en la raíz para la validación futura
-                    status: 'unread',
-                    timestamp: serverTimestamp()
+                    description: descriptionText,
+                    folio: folioInput, 
+                    status: 'unread', 
+                    timestamp: serverTimestamp() 
                 });
 
                 showToast('✅ Solicitud enviada correctamente.', 'success');
                 closeModal();
 
             } catch (err) {
-                console.error(err);
-                showToast(err.message || 'Error al procesar solicitud', 'error');
+                showToast(err.message, 'error');
                 if(btn) {
                     btn.disabled = false;
-                    btn.innerHTML = originalText;
+                    btn.innerHTML = `<span>Verificar y Reclamar</span> <i data-lucide="send" class="w-4 h-4"></i>`;
+                    lucide.createIcons();
                 }
             }
         };
