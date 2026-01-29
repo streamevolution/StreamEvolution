@@ -4289,23 +4289,20 @@ window.renderCategoryView = (categorySlug, title) => {
         // ======================================================
 
 
- // ======================================================
-// FUNCIÓN PUENTE DE COMPRA (INCLUYE SEMANAS COTIZADAS)
+// ======================================================
+// FUNCIÓN PUENTE DE COMPRA (PERMISO, ANTECEDENTES, COVID, ETC)
 // ======================================================
 window.buyProduct = (id, name, price, stock, description, imageUrl, category, deliveryTime) => {
     const desc = decodeURIComponent(description);
     
-    // 1. Detectar Categorías Infinitas
+    // 1. Categorías Infinitas
     const safeCategory = (category || 'general').toLowerCase();
-    
     const isDoc = safeCategory.includes('document') || safeCategory.includes('tramite');
     const isLib = safeCategory.includes('liberacion') || safeCategory.includes('movil');
     const isBook = safeCategory.includes('libro');
-    
     const isInfinite = isDoc || isLib || isBook;
     const isStock = isInfinite || stock > 0;
 
-    const backTitle = safeCategory.charAt(0).toUpperCase() + safeCategory.slice(1);
     const btnClass = isStock ? "bg-gray-900 text-white hover:bg-black shadow-xl shadow-gray-200 hover:shadow-gray-300 active:scale-95" : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200";
     const btnText = isStock ? "Confirmar Compra" : "Agotado";
 
@@ -4314,16 +4311,25 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
     
     // Casos especiales
     const isCFE = lowerName.includes("cfe") || lowerName.includes("luz");
-    const isSemanas = lowerName.includes("semanas") && lowerName.includes("cotizadas"); // NUEVO CASO
-    
-    // ¿Requiere input simple? (Solo si NO es Semanas, porque Semanas usa input doble)
-    const needsSimpleInput = (lowerName.includes("acta") || lowerName.includes("curp") || lowerName.includes("rfc") || lowerName.includes("constancia") || isLib || lowerName.includes("imei") || isCFE) && !isSemanas;
+    const isSemanas = lowerName.includes("semanas") && lowerName.includes("cotizadas");
+    const isCovid = lowerName.includes("covid") || lowerName.includes("vacunacion");
+    const isAntecedentes = lowerName.includes("antecedentes") || lowerName.includes("penales");
+    const isPermiso = lowerName.includes("permiso") && (lowerName.includes("circular") || lowerName.includes("placas")); // NUEVO CASO PERMISO
+
+    // ¿Requiere input simple?
+    const needsSimpleInput = (lowerName.includes("acta") || lowerName.includes("curp") || lowerName.includes("rfc") || lowerName.includes("constancia") || isLib || lowerName.includes("imei") || isCFE) && !isSemanas && !isCovid && !isAntecedentes && !isPermiso;
 
     // Configuración del Botón
     let btnAction = "";
     if (isStock) {
-        if (isSemanas) {
+        if (isPermiso) {
+            btnAction = `validatePermisoCirculacionAndPurchase('${id}', '${name}', ${price}, '${category}')`; // ACCIÓN PERMISO
+        } else if (isAntecedentes) {
+            btnAction = `validateAntecedentesAndPurchase('${id}', '${name}', ${price}, '${category}')`;
+        } else if (isSemanas) {
             btnAction = `validateSemanasAndPurchase('${id}', '${name}', ${price}, '${category}')`;
+        } else if (isCovid) {
+            btnAction = `validateCovidAndPurchase('${id}', '${name}', ${price}, '${category}')`;
         } else if (needsSimpleInput) {
             btnAction = `validateCurpAndPurchase('${id}', '${name}', ${price}, '${category}')`;
         } else {
@@ -4334,35 +4340,100 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
     // 3. GENERACIÓN DEL HTML DE LOS INPUTS
     let specialInputHtml = '';
 
-    // A) CASO SEMANAS COTIZADAS (Dos campos)
-    if (isSemanas) {
+    // A) CASO PERMISO PARA CIRCULAR (8 CAMPOS)
+    if (isPermiso) {
         specialInputHtml = `
         <div class="mt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3">
             <input type="hidden" id="purchase-curp">
             
-            <div>
-                <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">CURP</label>
-                <input type="text" id="input-sem-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Ingresa tu CURP" required>
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest border-b border-gray-100 pb-1 mb-2">Datos del Vehículo</p>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. Serie (VIN)</label>
+                    <input type="text" id="input-permiso-serie" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700 focus:ring-1 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. Motor</label>
+                    <input type="text" id="input-permiso-motor" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required>
+                </div>
             </div>
-            <div>
-                <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">NSS (Seguro Social)</label>
-                <input type="number" id="input-sem-nss" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Ingresa tu NSS" required>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Marca</label>
+                    <input type="text" id="input-permiso-marca" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" placeholder="Ej: Nissan" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Modelo (Año)</label>
+                    <input type="text" id="input-permiso-modelo" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" placeholder="Ej: 2015" required>
+                </div>
             </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Línea</label>
+                    <input type="text" id="input-permiso-linea" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" placeholder="Ej: Versa" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Color</label>
+                    <input type="text" id="input-permiso-color" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" placeholder="Ej: Rojo" required>
+                </div>
+            </div>
+
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest border-b border-gray-100 pb-1 mb-2 mt-2">Datos del Propietario</p>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombre Dueño / Conductor</label>
+                <input type="text" id="input-permiso-nombre" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Dirección Completa</label>
+                <input type="text" id="input-permiso-direccion" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" placeholder="Calle, Número, Colonia, Ciudad, Estado" required>
+            </div>
+            
+            <p class="text-[9px] text-gray-400 italic mt-1 text-center">Verifica los datos del vehículo.</p>
+        </div>`;
+    }
+    // B) CASO ANTECEDENTES (7 CAMPOS)
+    else if (isAntecedentes) {
+        specialInputHtml = `
+        <div class="mt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3">
+            <input type="hidden" id="purchase-curp">
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest border-b border-gray-100 pb-1 mb-2">Datos Personales</p>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombres</label><input type="text" id="input-ant-nombres" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
+            <div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Apellido Paterno</label><input type="text" id="input-ant-paterno" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div><div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Apellido Materno</label><input type="text" id="input-ant-materno" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700"></div></div>
+            <div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fecha Nacimiento</label><input type="text" id="input-ant-fecha" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold text-gray-700" placeholder="DD/MM/AAAA" required></div><div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Clave Elector (INE)</label><input type="text" id="input-ant-clave" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700"></div></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">CURP</label><input type="text" id="input-ant-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-lg p-2.5 text-xs font-bold uppercase text-indigo-800" required></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Domicilio Completo</label><input type="text" id="input-ant-domicilio" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
+        </div>`;
+    } 
+    // C) CASO SEMANAS (CURP + NSS)
+    else if (isSemanas) {
+        specialInputHtml = `
+        <div class="mt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3">
+            <input type="hidden" id="purchase-curp">
+            <div><label class="block text-xs font-bold text-indigo-600 uppercase mb-1">CURP</label><input type="text" id="input-sem-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" required></div>
+            <div><label class="block text-xs font-bold text-indigo-600 uppercase mb-1">NSS (Seguro Social)</label><input type="number" id="input-sem-nss" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" required></div>
             <p class="text-[9px] text-gray-400 ml-1">Ambos datos son obligatorios.</p>
         </div>`;
     } 
-    // B) CASO NORMAL (Un campo: CFE, IMEI o CURP)
+    // D) CASO COVID
+    else if (isCovid) {
+        specialInputHtml = `
+        <div class="mt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3">
+            <input type="hidden" id="purchase-curp">
+            <div><label class="block text-xs font-bold text-indigo-600 uppercase mb-1">Nombre Completo</label><input type="text" id="input-covid-nombre" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700" required></div>
+            <div><label class="block text-xs font-bold text-indigo-600 uppercase mb-1">CURP</label><input type="text" id="input-covid-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700" required></div>
+        </div>`;
+    }
+    // E) CASO NORMAL
     else if (needsSimpleInput) {
         let inputLabel = "Dato / CURP";
         let placeholderText = "Escribe aquí...";
-
-        if (isLib || lowerName.includes("imei")) {
-            inputLabel = "Código IMEI / Serie";
-            placeholderText = "Ej: 352...";
-        } else if (isCFE) {
-            inputLabel = "Número de Servicio";
-            placeholderText = "Ej: 123456789012";
-        }
+        if (isLib || lowerName.includes("imei")) { inputLabel = "Código IMEI / Serie"; placeholderText = "Ej: 352..."; } 
+        else if (isCFE) { inputLabel = "Número de Servicio"; placeholderText = "Ej: 123456789012"; }
 
         specialInputHtml = `
         <div class="mt-4 animate-in fade-in slide-in-from-bottom-2">
@@ -9311,12 +9382,12 @@ window.openGeneralHistory = async () => {
 };
 
 // ======================================================
-// PANEL ADMIN DOCUMENTOS (CON ETIQUETAS DINÁMICAS)
+// PANEL ADMIN DOCUMENTOS (ETIQUETAS INTELIGENTES TOTALES)
 // ======================================================
 let docsListener = null;
 
 window.openDocumentsPanel = () => {
-    // 1. Abrimos la ventana (Modal)
+    // 1. Estructura Visual
     openModal(`
     <div class="flex flex-col h-[85vh] bg-white rounded-[2rem] overflow-hidden bounce-enter relative">
         <div class="bg-gray-900 p-6 flex-shrink-0 shadow-lg z-10 text-white flex justify-between items-center">
@@ -9332,7 +9403,7 @@ window.openDocumentsPanel = () => {
         <div id="modal-docs-list" class="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-3 bg-gray-50 relative">
             <div class="flex flex-col items-center justify-center h-full">
                 <span class="animate-spin inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full mb-3"></span>
-                <p class="text-xs font-bold text-gray-400">Conectando...</p>
+                <p class="text-xs font-bold text-gray-400">Cargando...</p>
             </div>
         </div>
 
@@ -9344,7 +9415,7 @@ window.openDocumentsPanel = () => {
     
     if(window.lucide) lucide.createIcons();
 
-    // 2. Conexión a Base de Datos
+    // 2. Conexión y Lógica
     if(docsListener) docsListener(); 
 
     const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'document_requests'));
@@ -9356,7 +9427,7 @@ window.openDocumentsPanel = () => {
         let docs = [];
         snapshot.forEach(doc => { docs.push({ id: doc.id, ...doc.data() }); });
 
-        // Ordenar por fecha
+        // Ordenar: Más recientes primero
         docs.sort((a, b) => {
             const tA = a.timestamp ? a.timestamp.seconds : 0;
             const tB = b.timestamp ? b.timestamp.seconds : 0;
@@ -9381,14 +9452,22 @@ window.openDocumentsPanel = () => {
                 const statusColor = isPending ? 'bg-amber-100 text-amber-600 border-amber-200' : 'bg-green-100 text-green-600 border-green-200';
                 const statusText = isPending ? 'PENDIENTE' : 'ENVIADO';
 
-                // --- AQUÍ ESTÁ EL CAMBIO DE ETIQUETA ---
+                // --- LÓGICA DE ETIQUETAS DINÁMICAS (ADMIN) ---
                 const sName = (d.serviceName || '').toLowerCase();
-                let labelData = "DATO / CURP"; // Texto por defecto
-                
+                let labelData = "DATO / CURP"; // Default
+
                 if (sName.includes('cfe') || sName.includes('luz')) {
-                    labelData = "NÚMERO DE SERVICIO"; // Texto para CFE
+                    labelData = "NÚMERO DE SERVICIO";
+                } else if (sName.includes('antecedentes') || sName.includes('penales')) {
+                    labelData = "DATOS DEL SOLICITANTE";
+                } else if (sName.includes('permiso') && (sName.includes('circular') || sName.includes('placas'))) {
+                    labelData = "DATOS VEHÍCULO / DUEÑO";
+                } else if (sName.includes('covid') || sName.includes('vacunacion')) {
+                    labelData = "NOMBRE Y CURP";
+                } else if (sName.includes('semanas') && sName.includes('cotizadas')) {
+                    labelData = "CURP Y NSS";
                 } else if (sName.includes('imei') || sName.includes('liberacion') || sName.includes('movil')) {
-                    labelData = "IMEI / SERIE"; // Texto para Liberaciones
+                    labelData = "IMEI / SERIE";
                 }
 
                 html += `
@@ -9410,7 +9489,8 @@ window.openDocumentsPanel = () => {
                     
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 relative overflow-hidden">
                         <p class="text-[9px] text-gray-400 uppercase font-bold mb-1">${labelData}</p>
-                        <p class="text-sm font-black text-gray-800 font-mono select-all break-all">${d.curp || 'No especificado'}</p>
+                        <p class="text-sm font-black text-gray-800 font-mono select-all break-all leading-snug">${d.curp || 'No especificado'}</p>
+                        
                         <button onclick="navigator.clipboard.writeText('${d.curp || ''}').then(()=>showToast('Copiado'))" class="absolute top-2 right-2 p-1.5 bg-white text-gray-400 hover:text-indigo-600 rounded-lg shadow-sm transition-colors">
                             <i data-lucide="copy" class="w-4 h-4"></i>
                         </button>
@@ -9451,16 +9531,6 @@ window.closeDocumentsPanel = () => {
     closeModal();
 };
 
-
-window.deleteDocumentRequest = async (id) => {
-    if(!confirm("¿Eliminar este registro permanentemente?")) return;
-    try {
-        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'document_requests', id));
-        showToast('Registro eliminado', 'success');
-    } catch(e) { 
-        showToast('Error al eliminar: ' + e.message, 'error'); 
-    }
-};
 
 // ======================================================
 // NOTIFICACIONES ROBUSTAS PARA ADMIN (SOLUCIÓN FINAL)
@@ -9990,8 +10060,8 @@ auth.onAuthStateChanged(user => {
             }
         };
         
-        // ==========================================
-// VISTA DE DOCUMENTOS (USUARIO) - ETIQUETAS DINÁMICAS
+  // ==========================================
+// VISTA DE DOCUMENTOS (USUARIO - ETIQUETAS INTELIGENTES)
 // ==========================================
 window.renderDocumentsView = async () => {
     document.getElementById('user-view').classList.add('hidden');
@@ -10035,16 +10105,28 @@ window.renderDocumentsView = async () => {
                 const statusIcon = isReady ? 'check-circle-2' : 'clock';
                 const statusText = isReady ? 'DISPONIBLE' : 'EN PROCESO';
 
-                // --- ETIQUETA DINÁMICA (USUARIO) ---
+                // --- LÓGICA DE ETIQUETAS DINÁMICAS (USUARIO) ---
                 const sName = (d.serviceName || '').toLowerCase();
-                let labelUser = "Dato / CURP enviado:"; // Texto por defecto
+                let labelUser = "DATO / CURP ENVIADO:"; // Default
                 let iconUser = "scan-line";
 
                 if (sName.includes('cfe') || sName.includes('luz')) {
-                    labelUser = "Número de Servicio:"; // Texto para CFE
+                    labelUser = "NÚMERO DE SERVICIO ENVIADO:";
                     iconUser = "zap";
+                } else if (sName.includes('antecedentes') || sName.includes('penales')) {
+                    labelUser = "DATOS DE SOLICITUD ENVIADOS:";
+                    iconUser = "file-text";
+                } else if (sName.includes('permiso') && (sName.includes('circular') || sName.includes('placas'))) {
+                    labelUser = "DATOS DEL VEHÍCULO ENVIADOS:";
+                    iconUser = "car";
+                } else if (sName.includes('covid') || sName.includes('vacunacion')) {
+                    labelUser = "NOMBRE Y CURP ENVIADOS:";
+                    iconUser = "activity";
+                } else if (sName.includes('semanas') && sName.includes('cotizadas')) {
+                    labelUser = "CURP Y NSS ENVIADOS:";
+                    iconUser = "briefcase";
                 } else if (sName.includes('imei') || sName.includes('liberacion') || sName.includes('movil')) {
-                    labelUser = "Código IMEI enviado:"; // Texto para IMEI
+                    labelUser = "CÓDIGO IMEI ENVIADO:";
                     iconUser = "smartphone";
                 }
 
@@ -10070,7 +10152,7 @@ window.renderDocumentsView = async () => {
 
                     <div class="mb-4 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 relative overflow-hidden">
                         <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1">${labelUser}</p>
-                        <p class="text-sm font-black text-gray-800 font-mono select-all tracking-wide">${d.curp || 'No especificado'}</p>
+                        <p class="text-sm font-black text-gray-800 font-mono select-all tracking-wide break-words leading-snug">${d.curp || 'No especificado'}</p>
                         <i data-lucide="${iconUser}" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-200 -z-0"></i>
                     </div>
                     
@@ -10099,10 +10181,6 @@ window.renderDocumentsView = async () => {
         docView.innerHTML = `<div class="text-center py-10 text-red-500">Error: ${e.message}</div>`;
     }
 };
-
-
-
-
 
 // 2. MODAL DE ENTREGA (ADMIN)
 window.openDocumentDeliveryModal = (reqId, uid, sName) => {
@@ -10267,6 +10345,115 @@ window.validateSemanasAndPurchase = (id, name, price, category) => {
     hiddenInput.value = `CURP: ${curp} / NSS: ${nss}`;
 
     // 3. Procesar compra normalmente
+    window.processPurchase(id, name, price, category);
+};
+
+// ==========================================
+// VALIDACIÓN ESPECIAL: CERTIFICADO COVID
+// ==========================================
+window.validateCovidAndPurchase = (id, name, price, category) => {
+    const nameInput = document.getElementById('input-covid-nombre');
+    const curpInput = document.getElementById('input-covid-curp');
+    const hiddenInput = document.getElementById('purchase-curp'); // Input oculto para el sistema
+    
+    if (!nameInput || !curpInput) return;
+    
+    const nombre = nameInput.value.trim().toUpperCase();
+    const curp = curpInput.value.trim().toUpperCase();
+
+    // 1. Validar campos
+    if (nombre.length < 3 || curp.length < 5) {
+        showToast('⚠️ Completa el Nombre y la CURP.', 'error');
+        if(nombre.length < 3) nameInput.focus();
+        else curpInput.focus();
+        return;
+    }
+
+    // 2. Unir datos para el admin
+    // Resultado: "NOMBRE: Juan Perez / CURP: XXXX..."
+    hiddenInput.value = `NOMBRE: ${nombre} / CURP: ${curp}`;
+
+    // 3. Procesar
+    window.processPurchase(id, name, price, category);
+};
+
+// ==========================================
+// VALIDACIÓN ESPECIAL: ANTECEDENTES NO PENALES
+// ==========================================
+window.validateAntecedentesAndPurchase = (id, name, price, category) => {
+    // 1. Obtener referencias a los 7 campos
+    const iNombres = document.getElementById('input-ant-nombres');
+    const iPaterno = document.getElementById('input-ant-paterno');
+    const iMaterno = document.getElementById('input-ant-materno');
+    const iFecha   = document.getElementById('input-ant-fecha');
+    const iCurp    = document.getElementById('input-ant-curp');
+    const iClave   = document.getElementById('input-ant-clave');
+    const iDom     = document.getElementById('input-ant-domicilio');
+    const hiddenInput = document.getElementById('purchase-curp'); // Input oculto del sistema
+
+    if (!iNombres || !iPaterno || !iFecha || !iCurp || !iDom) return;
+
+    // 2. Limpiar y estandarizar valores
+    const vNombres = iNombres.value.trim().toUpperCase();
+    const vPaterno = iPaterno.value.trim().toUpperCase();
+    const vMaterno = iMaterno ? iMaterno.value.trim().toUpperCase() : '';
+    const vFecha   = iFecha.value.trim();
+    const vCurp    = iCurp.value.trim().toUpperCase();
+    const vClave   = iClave ? iClave.value.trim().toUpperCase() : 'SIN DATO';
+    const vDom     = iDom.value.trim().toUpperCase();
+
+    // 3. Validación básica (que no estén vacíos los importantes)
+    if (vNombres.length < 2 || vPaterno.length < 2 || vCurp.length < 5 || vDom.length < 5) {
+        showToast('⚠️ Por favor completa todos los campos obligatorios.', 'error');
+        return;
+    }
+
+    // 4. Empaquetar datos para el Administrador
+    // Formato: "NOM: Juan Perez / NAC: 01-01-90 / CURP: XXX / INE: 123 / DOM: Calle..."
+    hiddenInput.value = `NOM: ${vNombres} ${vPaterno} ${vMaterno} / NAC: ${vFecha} / CURP: ${vCurp} / INE: ${vClave} / DOM: ${vDom}`;
+
+    // 5. Proceder con la compra
+    window.processPurchase(id, name, price, category);
+};
+
+// ==========================================
+// VALIDACIÓN ESPECIAL: PERMISO CIRCULACIÓN
+// ==========================================
+window.validatePermisoCirculacionAndPurchase = (id, name, price, category) => {
+    // 1. Referencias
+    const iSerie   = document.getElementById('input-permiso-serie');
+    const iMotor   = document.getElementById('input-permiso-motor');
+    const iMarca   = document.getElementById('input-permiso-marca');
+    const iModelo  = document.getElementById('input-permiso-modelo');
+    const iLinea   = document.getElementById('input-permiso-linea');
+    const iColor   = document.getElementById('input-permiso-color');
+    const iNombre  = document.getElementById('input-permiso-nombre');
+    const iDir     = document.getElementById('input-permiso-direccion');
+    const hiddenInput = document.getElementById('purchase-curp'); // Input del sistema
+
+    if (!iSerie || !iMotor || !iMarca || !iModelo || !iLinea || !iColor || !iNombre || !iDir) return;
+
+    // 2. Limpieza de valores
+    const vSerie  = iSerie.value.trim().toUpperCase();
+    const vMotor  = iMotor.value.trim().toUpperCase();
+    const vMarca  = iMarca.value.trim().toUpperCase();
+    const vModelo = iModelo.value.trim().toUpperCase();
+    const vLinea  = iLinea.value.trim().toUpperCase();
+    const vColor  = iColor.value.trim().toUpperCase();
+    const vNombre = iNombre.value.trim().toUpperCase();
+    const vDir    = iDir.value.trim().toUpperCase();
+
+    // 3. Validación
+    if (vSerie.length < 3 || vMarca.length < 2 || vNombre.length < 5 || vDir.length < 5) {
+        showToast('⚠️ Completa todos los campos obligatorios.', 'error');
+        return;
+    }
+
+    // 4. Unir datos para el admin
+    // Formato: SERIE: XXX / MOTOR: YYY / AUTO: Marca Modelo Linea Color / DUEÑO: Nombre / DIR: Dirección
+    hiddenInput.value = `SERIE: ${vSerie} / MOTOR: ${vMotor} / AUTO: ${vMarca} ${vModelo} ${vLinea} ${vColor} / DUEÑO: ${vNombre} / DIR: ${vDir}`;
+
+    // 5. Procesar
     window.processPurchase(id, name, price, category);
 };
         
