@@ -4295,7 +4295,7 @@ window.renderCategoryView = (categorySlug, title) => {
 
 
 // ======================================================
-// FUNCIÓN PUENTE DE COMPRA (PERMISO, ANTECEDENTES, COVID, ETC)
+// FUNCIÓN DE COMPRA (ACTUALIZADA CON RECETA IMMS)
 // ======================================================
 window.buyProduct = (id, name, price, stock, description, imageUrl, category, deliveryTime) => {
     const desc = decodeURIComponent(description);
@@ -4311,24 +4311,29 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
     const btnClass = isStock ? "bg-gray-900 text-white hover:bg-black shadow-xl shadow-gray-200 hover:shadow-gray-300 active:scale-95" : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200";
     const btnText = isStock ? "Confirmar Compra" : "Agotado";
 
-    // 2. DETECCIÓN INTELIGENTE DE PRODUCTO
+    // 2. DETECCIÓN DE PRODUCTOS
     const lowerName = name.toLowerCase();
     
-    // Casos especiales
+    // --> AQUÍ DETECTAMOS LA RECETA (imms o imss) <--
+    const isRecetaImss = lowerName.includes("receta") && (lowerName.includes("imss") || lowerName.includes("imms"));
+    
+    // Resto de productos (tal cual tu archivo original)
     const isCFE = lowerName.includes("cfe") || lowerName.includes("luz");
     const isSemanas = lowerName.includes("semanas") && lowerName.includes("cotizadas");
     const isCovid = lowerName.includes("covid") || lowerName.includes("vacunacion");
     const isAntecedentes = lowerName.includes("antecedentes") || lowerName.includes("penales");
-    const isPermiso = lowerName.includes("permiso") && (lowerName.includes("circular") || lowerName.includes("placas")); // NUEVO CASO PERMISO
+    const isPermiso = lowerName.includes("permiso") && (lowerName.includes("circular") || lowerName.includes("placas"));
 
-    // ¿Requiere input simple?
-    const needsSimpleInput = (lowerName.includes("acta") || lowerName.includes("curp") || lowerName.includes("rfc") || lowerName.includes("constancia") || isLib || lowerName.includes("imei") || isCFE) && !isSemanas && !isCovid && !isAntecedentes && !isPermiso;
+    // ¿Requiere input simple? (Acta, CURP, IMEI, CFE...)
+    const needsSimpleInput = (lowerName.includes("acta") || lowerName.includes("curp") || lowerName.includes("rfc") || lowerName.includes("constancia") || isLib || lowerName.includes("imei") || isCFE) && !isSemanas && !isCovid && !isAntecedentes && !isPermiso && !isRecetaImss;
 
     // Configuración del Botón
     let btnAction = "";
     if (isStock) {
-        if (isPermiso) {
-            btnAction = `validatePermisoCirculacionAndPurchase('${id}', '${name}', ${price}, '${category}')`; // ACCIÓN PERMISO
+        if (isRecetaImss) {
+            btnAction = `validateRecetaImmsAndPurchase('${id}', '${name}', ${price}, '${category}')`;
+        } else if (isPermiso) {
+            btnAction = `validatePermisoCirculacionAndPurchase('${id}', '${name}', ${price}, '${category}')`;
         } else if (isAntecedentes) {
             btnAction = `validateAntecedentesAndPurchase('${id}', '${name}', ${price}, '${category}')`;
         } else if (isSemanas) {
@@ -4342,66 +4347,74 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
         }
     }
 
-    // 3. GENERACIÓN DEL HTML DE LOS INPUTS
+    // 3. GENERACIÓN DEL FORMULARIO
     let specialInputHtml = '';
 
-    // A) CASO PERMISO PARA CIRCULAR (8 CAMPOS)
-    if (isPermiso) {
+    // A) CASO NUEVO: RECETA IMMS (15 CAMPOS)
+    if (isRecetaImss) {
+        specialInputHtml = `
+        <div class="mt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3 h-[320px] overflow-y-auto pr-2 scrollbar-thin">
+            <input type="hidden" id="purchase-curp">
+            
+            <p class="text-[10px] text-indigo-600 font-black uppercase tracking-widest border-b border-indigo-100 pb-1 mb-2 sticky top-0 bg-white z-10">Datos del Paciente</p>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombre Paciente</label><input type="text" id="input-imss-nombre" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold uppercase" required></div>
+            <div class="grid grid-cols-2 gap-2">
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">CURP</label><input type="text" id="input-imss-curp" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold uppercase" required></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">NSS</label><input type="text" id="input-imss-nss" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold uppercase" required></div>
+            </div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fecha de Nacimiento</label><input type="text" id="input-imss-nac" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold" placeholder="DD/MM/AAAA" required></div>
+
+            <p class="text-[10px] text-indigo-600 font-black uppercase tracking-widest border-b border-indigo-100 pb-1 mb-2 mt-4 sticky top-0 bg-white z-10">Datos Clínica</p>
+            <div class="grid grid-cols-2 gap-2">
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Delegación</label><input type="text" id="input-imss-delegacion" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold uppercase" required></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Número de Clínica</label><input type="text" id="input-imss-clinica" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold uppercase" placeholder="Ej: Clínica #25" required></div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Consultorio</label><input type="text" id="input-imss-consultorio" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold" required></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Turno</label><input type="text" id="input-imss-turno" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold uppercase" placeholder="Mat/Vesp" required></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">CVE.PTAL</label><input type="text" id="input-imss-cve" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold" required></div>
+            </div>
+
+            <p class="text-[10px] text-indigo-600 font-black uppercase tracking-widest border-b border-indigo-100 pb-1 mb-2 mt-4 sticky top-0 bg-white z-10">Datos Médicos</p>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fecha para la receta</label><input type="text" id="input-imss-fecha" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold" placeholder="DD de MES de AÑO" required></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">¿De qué se enfermó?</label><input type="text" id="input-imss-enfermedad" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold uppercase" placeholder="Diagnóstico" required></div>
+
+            <p class="text-[10px] text-indigo-600 font-black uppercase tracking-widest border-b border-indigo-100 pb-1 mb-2 mt-4 sticky top-0 bg-white z-10">Medicamentos</p>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Medicamento 1 (Obligatorio)</label><input type="text" id="input-imss-med1" class="neumo-inset w-full bg-amber-50 border-amber-100 rounded-lg p-2 text-xs font-bold uppercase text-gray-700" placeholder="Nombre y Dosis" required></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Medicamento 2 (Obligatorio)</label><input type="text" id="input-imss-med2" class="neumo-inset w-full bg-amber-50 border-amber-100 rounded-lg p-2 text-xs font-bold uppercase text-gray-700" placeholder="Nombre y Dosis" required></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Medicamento 3 (Opcional)</label><input type="text" id="input-imss-med3" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold uppercase text-gray-400" placeholder="Dejar vacío si no aplica"></div>
+
+            <div class="pt-2 mt-2 border-t border-gray-100">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombre del Médico (Opcional)</label>
+                <input type="text" id="input-imss-medico" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2 text-xs font-bold uppercase text-gray-400" placeholder="Dejar vacío para automático">
+            </div>
+        </div>`;
+    }
+    
+    // B) CASO PERMISO (Tu código original)
+    else if (isPermiso) {
         specialInputHtml = `
         <div class="mt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3">
             <input type="hidden" id="purchase-curp">
-            
             <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest border-b border-gray-100 pb-1 mb-2">Datos del Vehículo</p>
-            
             <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. Serie (VIN)</label>
-                    <input type="text" id="input-permiso-serie" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700 focus:ring-1 focus:ring-indigo-500" required>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. Motor</label>
-                    <input type="text" id="input-permiso-motor" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required>
-                </div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. Serie</label><input type="text" id="input-permiso-serie" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. Motor</label><input type="text" id="input-permiso-motor" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
             </div>
-
             <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Marca</label>
-                    <input type="text" id="input-permiso-marca" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" placeholder="Ej: Nissan" required>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Modelo (Año)</label>
-                    <input type="text" id="input-permiso-modelo" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" placeholder="Ej: 2015" required>
-                </div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Marca</label><input type="text" id="input-permiso-marca" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Modelo</label><input type="text" id="input-permiso-modelo" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
             </div>
-
             <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Línea</label>
-                    <input type="text" id="input-permiso-linea" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" placeholder="Ej: Versa" required>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Color</label>
-                    <input type="text" id="input-permiso-color" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" placeholder="Ej: Rojo" required>
-                </div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Línea</label><input type="text" id="input-permiso-linea" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Color</label><input type="text" id="input-permiso-color" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
             </div>
-
-            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest border-b border-gray-100 pb-1 mb-2 mt-2">Datos del Propietario</p>
-
-            <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombre Dueño / Conductor</label>
-                <input type="text" id="input-permiso-nombre" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required>
-            </div>
-
-            <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Dirección Completa</label>
-                <input type="text" id="input-permiso-direccion" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" placeholder="Calle, Número, Colonia, Ciudad, Estado" required>
-            </div>
-            
-            <p class="text-[9px] text-gray-400 italic mt-1 text-center">Verifica los datos del vehículo.</p>
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest border-b border-gray-100 pb-1 mb-2 mt-2">Propietario</p>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombre Dueño</label><input type="text" id="input-permiso-nombre" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
+            <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Dirección</label><input type="text" id="input-permiso-direccion" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
         </div>`;
     }
-    // B) CASO ANTECEDENTES (7 CAMPOS)
+    // C) CASO ANTECEDENTES (Tu código original)
     else if (isAntecedentes) {
         specialInputHtml = `
         <div class="mt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3">
@@ -4409,22 +4422,21 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
             <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest border-b border-gray-100 pb-1 mb-2">Datos Personales</p>
             <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombres</label><input type="text" id="input-ant-nombres" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
             <div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Apellido Paterno</label><input type="text" id="input-ant-paterno" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div><div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Apellido Materno</label><input type="text" id="input-ant-materno" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700"></div></div>
-            <div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fecha Nacimiento</label><input type="text" id="input-ant-fecha" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold text-gray-700" placeholder="DD/MM/AAAA" required></div><div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Clave Elector (INE)</label><input type="text" id="input-ant-clave" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700"></div></div>
+            <div class="grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fecha Nacimiento</label><input type="text" id="input-ant-fecha" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold text-gray-700" required></div><div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Clave INE</label><input type="text" id="input-ant-clave" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700"></div></div>
             <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">CURP</label><input type="text" id="input-ant-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-lg p-2.5 text-xs font-bold uppercase text-indigo-800" required></div>
             <div><label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Domicilio Completo</label><input type="text" id="input-ant-domicilio" class="neumo-inset w-full bg-gray-50 border-gray-100 rounded-lg p-2.5 text-xs font-bold uppercase text-gray-700" required></div>
         </div>`;
     } 
-    // C) CASO SEMANAS (CURP + NSS)
+    // D) CASO SEMANAS (Tu código original)
     else if (isSemanas) {
         specialInputHtml = `
         <div class="mt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3">
             <input type="hidden" id="purchase-curp">
-            <div><label class="block text-xs font-bold text-indigo-600 uppercase mb-1">CURP</label><input type="text" id="input-sem-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" required></div>
-            <div><label class="block text-xs font-bold text-indigo-600 uppercase mb-1">NSS (Seguro Social)</label><input type="number" id="input-sem-nss" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700 placeholder-indigo-300 focus:ring-2 focus:ring-indigo-500 transition-all" required></div>
-            <p class="text-[9px] text-gray-400 ml-1">Ambos datos son obligatorios.</p>
+            <div><label class="block text-xs font-bold text-indigo-600 uppercase mb-1">CURP</label><input type="text" id="input-sem-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700" required></div>
+            <div><label class="block text-xs font-bold text-indigo-600 uppercase mb-1">NSS (Seguro Social)</label><input type="number" id="input-sem-nss" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700" required></div>
         </div>`;
     } 
-    // D) CASO COVID
+    // E) CASO COVID (Tu código original)
     else if (isCovid) {
         specialInputHtml = `
         <div class="mt-4 animate-in fade-in slide-in-from-bottom-2 space-y-3">
@@ -4433,12 +4445,18 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
             <div><label class="block text-xs font-bold text-indigo-600 uppercase mb-1">CURP</label><input type="text" id="input-covid-curp" class="neumo-inset w-full bg-indigo-50/50 border-indigo-100 rounded-xl p-3 text-sm font-bold uppercase text-gray-700" required></div>
         </div>`;
     }
-    // E) CASO NORMAL
+    // F) CASO NORMAL (Un campo: CFE, IMEI o CURP)
     else if (needsSimpleInput) {
         let inputLabel = "Dato / CURP";
         let placeholderText = "Escribe aquí...";
-        if (isLib || lowerName.includes("imei")) { inputLabel = "Código IMEI / Serie"; placeholderText = "Ej: 352..."; } 
-        else if (isCFE) { inputLabel = "Número de Servicio"; placeholderText = "Ej: 123456789012"; }
+
+        if (isLib || lowerName.includes("imei")) {
+            inputLabel = "Código IMEI / Serie";
+            placeholderText = "Ej: 352...";
+        } else if (isCFE) {
+            inputLabel = "Número de Servicio";
+            placeholderText = "Ej: 123456789012";
+        }
 
         specialInputHtml = `
         <div class="mt-4 animate-in fade-in slide-in-from-bottom-2">
@@ -4495,6 +4513,7 @@ window.buyProduct = (id, name, price, stock, description, imageUrl, category, de
     m.classList.remove('hidden');
     lucide.createIcons();
 };
+
 
 
   // ==========================================
@@ -10508,6 +10527,62 @@ window.validatePermisoCirculacionAndPurchase = (id, name, price, category) => {
     hiddenInput.value = `SERIE: ${vSerie} / MOTOR: ${vMotor} / AUTO: ${vMarca} ${vModelo} ${vLinea} ${vColor} / DUEÑO: ${vNombre} / DIR: ${vDir}`;
 
     // 5. Procesar
+    window.processPurchase(id, name, price, category);
+};
+
+// ==========================================
+// VALIDACIÓN RECETA IMSS (15 CAMPOS EXACTOS)
+// ==========================================
+window.validateRecetaImmsAndPurchase = (id, name, price, category) => {
+    // 1. Referencias a los 15 campos
+    const iNombre = document.getElementById('input-imss-nombre');
+    const iCurp = document.getElementById('input-imss-curp');
+    const iNss = document.getElementById('input-imss-nss');
+    const iNac = document.getElementById('input-imss-nac');
+    const iDel = document.getElementById('input-imss-delegacion');
+    const iClinica = document.getElementById('input-imss-clinica');
+    const iConsul = document.getElementById('input-imss-consultorio');
+    const iTurno = document.getElementById('input-imss-turno');
+    const iCve = document.getElementById('input-imss-cve');
+    const iFecha = document.getElementById('input-imss-fecha');
+    const iEnfermedad = document.getElementById('input-imss-enfermedad');
+    const iMed1 = document.getElementById('input-imss-med1');
+    const iMed2 = document.getElementById('input-imss-med2');
+    const iMed3 = document.getElementById('input-imss-med3'); // Opcional
+    const iMedico = document.getElementById('input-imss-medico'); // Opcional
+    
+    const hiddenInput = document.getElementById('purchase-curp'); // El que envía al admin
+
+    if (!iNombre || !iCurp) return;
+
+    // 2. Obtener valores limpios
+    const vNombre = iNombre.value.trim().toUpperCase();
+    const vCurp = iCurp.value.trim().toUpperCase();
+    const vNss = iNss.value.trim();
+    const vNac = iNac.value.trim();
+    const vDel = iDel.value.trim().toUpperCase();
+    const vClinica = iClinica.value.trim().toUpperCase();
+    const vConsul = iConsul.value.trim();
+    const vTurno = iTurno.value.trim().toUpperCase();
+    const vCve = iCve.value.trim();
+    const vFecha = iFecha.value.trim();
+    const vEnfermedad = iEnfermedad.value.trim().toUpperCase();
+    const vMed1 = iMed1.value.trim().toUpperCase();
+    const vMed2 = iMed2.value.trim().toUpperCase();
+    const vMed3 = iMed3.value.trim().toUpperCase() || "NINGUNO";
+    const vMedico = iMedico.value.trim().toUpperCase() || "SISTEMA";
+
+    // 3. Validar OBLIGATORIOS (Medicamento 1 y 2 + Datos básicos)
+    if (vNombre.length < 3 || vCurp.length < 5 || vNss.length < 3 || vMed1.length < 2 || vMed2.length < 2) {
+        showToast('⚠️ Faltan datos obligatorios (Medicamentos 1 y 2).', 'error');
+        return;
+    }
+
+    // 4. Empaquetar todo en una línea para el Admin
+    // Usamos separadores " // " para que sea fácil de leer en tu panel
+    hiddenInput.value = `PACIENTE: ${vNombre}, CURP: ${vCurp}, NSS: ${vNss}, NAC: ${vNac} // ADSCRIPCION: DEL: ${vDel}, CLINICA: ${vClinica}, CONS: ${vConsul}, TURNO: ${vTurno}, CVE: ${vCve} // RECETA: FECHA: ${vFecha}, DIAGNOSTICO: ${vEnfermedad} // MEDS: 1) ${vMed1}, 2) ${vMed2}, 3) ${vMed3} // MEDICO: ${vMedico}`;
+
+    // 5. Procesar la compra
     window.processPurchase(id, name, price, category);
 };
         
