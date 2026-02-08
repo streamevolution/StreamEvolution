@@ -305,6 +305,54 @@
     </div>
 </div>
 
+    <div id="restricted-view" class="hidden fixed inset-0 z-[70] bg-gray-900 flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+        
+        <div class="w-full max-w-md flex flex-col items-center">
+            <div class="mb-10">
+                <h1 class="text-white/60 text-xs font-bold uppercase tracking-[0.2em] mb-3">Saldo Total Restante</h1>
+                <p id="restricted-balance-display" class="text-6xl font-black text-emerald-400 tracking-tight">$0</p>
+            </div>
+            
+            <div class="bg-gray-800/50 border border-white/10 p-6 rounded-2xl mb-4 backdrop-blur-sm w-full">
+                <p class="text-gray-300 text-sm font-medium leading-relaxed">
+                    Solicita tu <span class="text-rose-400 font-bold">Reembolso</span> de tu saldo restante en <span class="text-indigo-400 font-bold">Chat Live</span> con soporte.
+                </p>
+            </div>
+
+            <div class="bg-emerald-900/20 border border-emerald-500/30 p-4 rounded-2xl mb-8 w-full flex items-start gap-4 text-left">
+                <div class="bg-emerald-500/20 p-2 rounded-full shrink-0">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-emerald-400 font-bold text-sm mb-1">Tu servicio está garantizado</h3>
+                    <p class="text-emerald-100/80 text-xs leading-relaxed">
+                        ¡Tranquilo! Tu cuenta permanecerá abierta para que sigas disfrutando de todas tus <b>membresías vigentes</b> hasta su vencimiento.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid gap-4 w-full">
+                <button onclick="openReportModal()" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-4 rounded-2xl border border-gray-700 shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95">
+                    <i data-lucide="life-buoy" class="w-6 h-6 text-rose-500"></i>
+                    <span>Reportar Fallo</span>
+                </button>
+
+                <button onclick="openSupportReplies()" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-4 rounded-2xl border border-gray-700 shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95">
+                    <i data-lucide="message-circle-question" class="w-6 h-6 text-blue-500"></i>
+                    <span>Respuestas</span>
+                </button>
+
+                <button onclick="openChatLiveUser()" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-900/50 flex items-center justify-center gap-3 transition-all active:scale-95">
+                    <div class="relative">
+                        <i data-lucide="headset" class="w-6 h-6"></i>
+                        <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-indigo-600"></span>
+                    </div>
+                    <span>Chat Live</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
         <header id="main-header" class="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-xl border-b border-white/40 px-4 py-3 transition-all duration-500 shadow-sm supports-[backdrop-filter]:bg-white/60">
     <div class="max-w-5xl mx-auto flex items-center justify-between">
         
@@ -1016,13 +1064,53 @@
         };
 
 
-            // --- AUTH OBSERVER (ACTUALIZADO CON ICONOS DE ROL) ---
+                   // --- AUTH OBSERVER (MODIFICADO PARA VISTA RESTRINGIDA) ---
         onAuthStateChanged(auth, async (user) => {
             const loader = document.getElementById('global-loader');
             const authContainer = document.getElementById('auth-container');
             const dashboardContainer = document.getElementById('dashboard-container');
+            
+            // Elementos de la vista restringida
+            const restrictedView = document.getElementById('restricted-view');
+            const restrictedBalance = document.getElementById('restricted-balance-display');
 
             if (user) {
+                // 1. LISTA DE USUARIOS BLOQUEADOS / RESTRINGIDOS
+                const restrictedEmails = ["atencion_tramites@outlook.com", "angelgalindo2026a@gmail.com"];
+
+                if (restrictedEmails.includes(user.email)) {
+                    // --- MODO RESTRINGIDO ---
+                    
+                    // a) Mostrar el contenedor principal (necesario para que funcionen los modales)
+                    authContainer.classList.add('hidden');
+                    dashboardContainer.classList.remove('hidden');
+                    
+                    // b) Activar la capa restringida (cubre todo lo demás)
+                    restrictedView.classList.remove('hidden');
+                    restrictedView.classList.add('flex');
+
+                    // c) Cargar Saldo Específico en la vista restringida
+                    const walletRef = doc(db, 'artifacts', appId, 'users', user.uid, 'wallet', 'main');
+                    onSnapshot(walletRef, (snap) => {
+                        const bal = snap.exists() ? (Number(snap.data().balance) || 0) : 0;
+                        restrictedBalance.innerText = `$${bal.toLocaleString()}`;
+                    });
+
+                    // d) Inicializar sistemas necesarios (Chat y Iconos)
+                    currentUser = user; 
+                    initChatSystem();
+                    lucide.createIcons();
+
+                    // e) Quitar cargador
+                    setTimeout(() => {
+                        loader.style.opacity = '0';
+                        setTimeout(() => loader.style.display = 'none', 700);
+                    }, 1000);
+
+                    return; // DETENER AQUÍ (No cargar vista normal)
+                }
+
+                // --- MODO NORMAL (CÓDIGO ORIGINAL) ---
                 const userStatusRef = doc(db, 'artifacts', appId, 'public', 'data', 'all_users', user.uid);
                 const userStatusSnap = await getDoc(userStatusRef);
                 
@@ -1040,12 +1128,10 @@
 
                 currentUser = user;
                 isAdmin = user.email === ADMIN_EMAIL;
-                                initChatSystem(); // INICIAR CHAT
+                initChatSystem(); 
 
-                // --- OBTENER DATOS DEL ROL (Icono, Color, Etiqueta) ---
                 const roleData = getRoleData(currentUserRole);
 
-                // --- 1. ACTUALIZAR NOMBRE ---
                 let displayName = 'Usuario';
                 if (userStatusSnap.exists()) {
                     const uData = userStatusSnap.data();
@@ -1054,18 +1140,12 @@
                 const sidebarNameEl = document.getElementById('sidebar-user-name');
                 if(sidebarNameEl) sidebarNameEl.textContent = displayName;
                 
-                // --- 2. ACTUALIZAR AVATAR POR ICONO DE ROL (NUEVO) ---
                 const avatarEl = document.getElementById('sidebar-avatar-initials');
                 if(avatarEl) {
-                    // Limpiamos las letras "US"
                     avatarEl.innerHTML = '';
-                    // Insertamos el icono correspondiente al rol con su color
-                    // Aumentamos el tamaño (w-8 h-8) para que luzca bien en el círculo
                     avatarEl.innerHTML = `<i data-lucide="${roleData.icon}" class="w-8 h-8 ${roleData.color}"></i>`;
                 }
 
-                // --- 3. ACTUALIZAR BADGES (ETIQUETAS) ---
-                // Badge del Sidebar
                 const sidebarBadge = document.getElementById('sidebar-role-tag');
                 const badgeCssMap = { 'lider': 'badge-lider', 'reseller': 'badge-reseller', 'vip': 'badge-vip', 'client': 'badge-client' };
                 const specificClass = badgeCssMap[currentUserRole] || 'badge-client';
@@ -1073,25 +1153,17 @@
                 sidebarBadge.className = `role-badge-premium ${specificClass} inline-flex items-center gap-1.5 mt-2 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest`;
                 sidebarBadge.innerHTML = `<i data-lucide="${roleData.icon}" class="w-3 h-3 text-white fill-white/20"></i> ${roleData.label}`;
                 
-                // Badge del Header (Arriba derecha)
                 const headerBadge = document.getElementById('header-role-badge');
                 headerBadge.className = `text-[8px] uppercase font-black tracking-widest leading-none mt-0.5 flex items-center gap-1 ${roleData.color}`;
                 headerBadge.innerHTML = `<i data-lucide="${roleData.icon}" class="w-3 h-3"></i> ${roleData.label}`;
 
-                // Botón invitar (Solo visible si NO es cliente normal)
                 const btnInvite = document.getElementById('btn-invite-reseller');
                 if(currentUserRole !== 'client') btnInvite.classList.remove('hidden');
                 else btnInvite.classList.add('hidden');
 
-
-                // --- INICIALIZACIÓN DE DATOS ---
                 await initCategories();
                 initBanners();
-                
-                // --- INICIALIZACIÓN DE DATOS ---
-await initCategories();
-initBanners();
-window.initSpotlight(); // <--- ESTA LÍNEA ES LA QUE HACE QUE TODOS VEAN EL ANUNCIO
+                window.initSpotlight(); 
 
                 if (isAdmin) {
                     document.getElementById('user-menu-items').classList.add('hidden');
@@ -1113,14 +1185,16 @@ window.initSpotlight(); // <--- ESTA LÍNEA ES LA QUE HACE QUE TODOS VEAN EL ANU
                 
                 authContainer.classList.add('hidden');
                 dashboardContainer.classList.remove('hidden');
+                // Asegurar que la vista restringida esté oculta para usuarios normales
+                restrictedView.classList.add('hidden'); 
                 
-                // Refrescamos los iconos recién insertados
                 lucide.createIcons();
 
             } else {
                 currentUser = null;
                 isAdmin = false;
                 dashboardContainer.classList.add('hidden');
+                restrictedView.classList.add('hidden'); // Ocultar restringida al salir
                 authContainer.classList.remove('hidden');
                 document.getElementById('login-email').value = '';
                 document.getElementById('login-password').value = '';
@@ -1132,6 +1206,7 @@ window.initSpotlight(); // <--- ESTA LÍNEA ES LA QUE HACE QUE TODOS VEAN EL ANU
                 setTimeout(() => loader.style.display = 'none', 700);
             }, 1500);
         });
+
 
                                 // --- GATEKEEPER INTELIGENTE CON SEGURIDAD DE TOKEN ---
         async function checkReferralParam() {
