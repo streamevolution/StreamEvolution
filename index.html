@@ -286,21 +286,6 @@
             </div>
         </div>
         
-        <div id="startup-modal" class="fixed inset-0 z-[150] hidden items-center justify-center p-6 animate-in fade-in duration-500">
-    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeStartupModal()"></div>
-    
-    <div class="relative w-full max-w-md h-[80vh] md:h-[85vh] rounded-xl overflow-hidden shadow-2xl transform transition-all scale-100 bg-white/20 backdrop-blur-xl border border-white/40 ring-4 ring-black/10">
-
-        <button onclick="closeStartupModal()" class="absolute top-4 right-4 z-50 bg-black/60 hover:bg-black/80 backdrop-blur-md text-white p-2 rounded-full transition-all shadow-md group border border-white/20">
-            <i data-lucide="x" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
-        </button>
-
-        <div id="startup-track" class="flex h-full transition-transform duration-500 ease-out will-change-transform bg-transparent">
-        </div>
-
-        <div id="startup-indicators" class="absolute bottom-5 left-0 right-0 flex justify-center gap-2 z-40"></div>
-    </div>
-</div>
 
     <div id="restricted-view" class="hidden fixed inset-0 z-[70] bg-gray-900 flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
         
@@ -699,15 +684,6 @@
     </div>
     <div id="badge-claims" class="absolute top-3 right-3 bg-rose-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-md hidden animate-bounce">0</div>
 </div>
-
-<div onclick="enterAdminModule('spotlight')" class="bg-white p-5 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 cursor-pointer group transition-all duration-300 hover:-translate-y-1 relative">
-    <div class="flex flex-col items-center justify-center text-center h-full gap-2">
-        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center shadow-sm group-hover:bg-rose-600 group-hover:text-white transition-colors duration-300">
-            <i data-lucide="megaphone" class="w-6 h-6"></i>
-        </div>
-        <span class="font-bold text-gray-700 text-sm">Anuncios Inicio</span>
-    </div>
-</div>
                     
 
                     <div onclick="enterAdminModule('requests')" class="bg-white p-5 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 cursor-pointer group transition-all duration-300 hover:-translate-y-1 relative">
@@ -871,8 +847,12 @@
 
                   <section id="admin-users-section" class="hidden bounce-enter">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-gray-800 text-xl">Usuarios</h3>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-xl">Usuarios</h3>
+                            <p class="text-[10px] text-emerald-600 font-bold uppercase"><i data-lucide="zap" class="w-3 h-3 inline"></i> Caché Activo</p>
+                        </div>
                         <div class="flex gap-2">
+                            <button onclick="loadAdminUsers(true)" class="neumo-button bg-white text-gray-600 px-3 py-2 rounded-xl text-xs font-bold flex items-center shadow-sm border border-gray-100 hover:bg-gray-50" title="Forzar Sincronización Nube"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
                             <button onclick="cleanDatabaseOrphans()" class="neumo-button bg-orange-50 text-orange-600 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm border border-orange-100 hover:bg-orange-100 transition-colors" title="Borrar datos de usuarios inexistentes">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i> Limpiar BD
                             </button>
@@ -885,7 +865,7 @@
                     
                     <div class="relative mb-4">
                         <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
-                        <input type="text" id="admin-user-search" oninput="filterAdminUsers()" class="neumo-inset w-full bg-transparent border-none rounded-xl pl-10 pr-4 py-3 text-sm font-bold text-gray-700 placeholder-gray-400" placeholder="Buscar por Nombre, Correo o WhatsApp...">
+                        <input type="text" id="admin-user-search" oninput="checkAndFetchAllUsers(); filterAdminUsers()" class="neumo-inset w-full bg-transparent border-none rounded-xl pl-10 pr-4 py-3 text-sm font-bold text-gray-700 placeholder-gray-400" placeholder="Buscar por Nombre, Correo o WhatsApp...">
                     </div>
 
                     <div id="admin-users-list" class="space-y-3"></div>
@@ -893,16 +873,28 @@
 
                 <section id="admin-stock-section" class="hidden bounce-enter">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-gray-800 text-xl">Productos</h3>
-                        <button onclick="openAddProductModal()" class="neumo-button bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 shadow-lg"><i data-lucide="plus" class="w-4 h-4"></i> Agregar</button>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-xl">Productos</h3>
+                            <p class="text-[10px] text-emerald-600 font-bold uppercase"><i data-lucide="zap" class="w-3 h-3 inline"></i> Caché Activo</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="loadAdminProducts(true)" class="neumo-button bg-white text-gray-600 px-3 py-2 rounded-xl text-xs font-bold flex items-center shadow-sm border border-gray-100 hover:bg-gray-50" title="Forzar Sincronización Nube"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                            <button onclick="openAddProductModal()" class="neumo-button bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 shadow-lg"><i data-lucide="plus" class="w-4 h-4"></i> Agregar</button>
+                        </div>
                     </div>
                     <div id="admin-stock-list" class="space-y-3"></div>
                 </section>
 
                 <section id="admin-inventory-section" class="hidden bounce-enter">
                     <div class="flex justify-between items-center mb-4">
-                        <div><h3 class="font-bold text-gray-800 text-xl">Inventario</h3><p class="text-xs text-gray-400">Cuentas a entregar</p></div>
-                        <button onclick="openAddInventoryModal()" class="neumo-button bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 shadow-lg"><i data-lucide="archive" class="w-4 h-4"></i> Cargar Item</button>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-xl">Inventario</h3>
+                            <p class="text-[10px] text-emerald-600 font-bold uppercase"><i data-lucide="zap" class="w-3 h-3 inline"></i> Caché Activo</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="loadAdminInventory(true)" class="neumo-button bg-white text-gray-600 px-3 py-2 rounded-xl text-xs font-bold flex items-center shadow-sm border border-gray-100 hover:bg-gray-50" title="Forzar Sincronización"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                            <button onclick="openAddInventoryModal()" class="neumo-button bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 shadow-lg"><i data-lucide="archive" class="w-4 h-4"></i> Cargar Item</button>
+                        </div>
                     </div>
                     <div id="admin-inventory-list" class="space-y-3"></div>
                 </section>
@@ -915,21 +907,6 @@
     <div id="admin-claims-list" class="space-y-3 pb-10">
         <div class="text-center py-10 opacity-50"><p class="text-xs text-gray-400">Cargando reclamaciones...</p></div>
     </div>
-</section>
-
-                <section id="admin-spotlight-section" class="hidden bounce-enter">
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h3 class="font-bold text-gray-800 text-xl">Anuncios Pop-up</h3>
-            <p class="text-xs text-gray-400">Aparecen al abrir la App</p>
-        </div>
-        <button onclick="openAddSpotlightModal()" class="neumo-button bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg hover:bg-rose-700">
-            <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Anuncio
-        </button>
-    </div>
-    
-    <div id="admin-spotlight-list" class="grid grid-cols-2 gap-3 pb-10">
-        </div>
 </section>
 
                 <section id="admin-banners-section" class="hidden bounce-enter">
@@ -1156,7 +1133,6 @@
 
                 await initCategories();
                 initBanners();
-                window.initSpotlight(); 
 
                 if (isAdmin) {
                     document.getElementById('user-menu-items').classList.add('hidden');
@@ -1902,10 +1878,12 @@
             });
 
 
-            // 4. PRODUCTOS
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), (snapshot) => {
-                const products = [];
-                snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
+            // 4. PRODUCTOS (SISTEMA DE CACHÉ INTELIGENTE)
+            window.productosCache = null; // Memoria vacía al iniciar
+
+            window.renderProductsFromCache = () => {
+                if(!window.productosCache) return;
+                const products = window.productosCache;
                 const groupedProducts = products.reduce((acc, product) => {
                     const category = product.category || 'otros';
                     if (!acc[category]) acc[category] = [];
@@ -1936,7 +1914,43 @@
                 const list = document.getElementById('admin-stock-list');
                 if(list) list.innerHTML = html; 
                 lucide.createIcons();
-            });
+            };
+
+            window.loadAdminProducts = async (forceRefresh = false) => {
+                const list = document.getElementById('admin-stock-list');
+                
+                // Si NO forzamos recarga y YA TENEMOS la memoria llena, usamos el caché gratis
+                if (!forceRefresh && window.productosCache !== null) {
+                    console.log("Cargando productos desde Memoria (Ahorro Firebase)");
+                    renderProductsFromCache();
+                    return;
+                }
+
+                // Si forzamos recarga o está vacío, leemos de Firebase
+                if (forceRefresh && list) {
+                    list.innerHTML = '<div class="text-center py-8"><span class="animate-spin inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full"></span><p class="text-[10px] text-gray-400 font-bold uppercase mt-2">Sincronizando Nube...</p></div>';
+                }
+
+                try {
+                    console.log("Consultando productos desde Firebase (Lectura cobrada)");
+                    const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'));
+                    const products = [];
+                    snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
+                    
+                    // Guardamos la "foto" en memoria
+                    window.productosCache = products;
+                    
+                    // Pintamos en pantalla
+                    renderProductsFromCache();
+                    if(forceRefresh && typeof showToast === 'function') showToast('Catálogo sincronizado con la Nube', 'success');
+                } catch (e) {
+                    console.error("Error obteniendo productos:", e);
+                    if(list) list.innerHTML = '<p class="text-center text-rose-500 text-xs py-4">Error al cargar el catálogo.</p>';
+                }
+            };
+
+            // Ejecutamos la carga al iniciar el panel
+            window.loadAdminProducts();
 
                                                                         // 5. USUARIOS (CON BUSCADOR Y FILTROS)
             window.allUsersCache = []; // Variable global para guardar usuarios
@@ -2018,53 +2032,139 @@
                 renderAdminUsersList(filtered);
             };
 
-            // Listener de Firebase (Carga inicial y cambios)
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'), (snapshot) => {
-                window.allUsersCache = [];
-                snapshot.forEach(doc => { 
-                    window.allUsersCache.push({ id: doc.id, ...doc.data() });
-                });
+            // MOTOR CACHÉ HÍBRIDO (Límite 5 + Búsqueda Inteligente)
+            window.allUsersLoaded = false;
+            window.fullDatabaseLoaded = false; 
 
-                // Ordenar: Nuevos arriba
-                window.allUsersCache.sort((a, b) => {
-                    const dateA = a.createdAt ? a.createdAt.toMillis() : 0;
-                    const dateB = b.createdAt ? b.createdAt.toMillis() : 0;
-                    if (dateA > 0 && dateB > 0) return dateB - dateA;
-                    if (dateA > 0) return -1;
-                    if (dateB > 0) return 1;
-                    const loginA = a.lastLogin ? a.lastLogin.toMillis() : 0;
-                    const loginB = b.lastLogin ? b.lastLogin.toMillis() : 0;
-                    return loginB - loginA;
-                });
+            window.loadAdminUsers = async (forceRefresh = false) => {
+                if (!forceRefresh && window.allUsersLoaded) {
+                    console.log("Cargando usuarios desde Memoria (Ahorro Firebase)");
+                    filterAdminUsers();
+                    return;
+                }
 
-                // Renderizar lista completa o filtrada si ya había texto
-                filterAdminUsers();
-            });
+                const list = document.getElementById('admin-users-list');
+                if (forceRefresh && list) {
+                    list.innerHTML = '<div class="text-center py-8"><span class="animate-spin inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></span><p class="text-[10px] text-gray-400 font-bold uppercase mt-2">Sincronizando Nube...</p></div>';
+                    window.fullDatabaseLoaded = false; 
+                }
 
+                try {
+                    console.log("Consultando SOLO 5 usuarios desde Firebase (Ahorro Masivo Activo)");
+                    
+                    // AHORRO: Traemos solo los 5 más recientes
+                    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'), orderBy('createdAt', 'desc'), limit(5));
+                    const snapshot = await getDocs(q);
+                    
+                    window.allUsersCache = [];
+                    snapshot.forEach(doc => { 
+                        window.allUsersCache.push({ id: doc.id, ...doc.data() });
+                    });
 
-            // 6. INVENTARIO
-            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('status', '==', 'available')), (snapshot) => {
-                    window.inventoryCache = []; const items = [];
-                    snapshot.forEach(doc => { const i = doc.data(); i.id = doc.id; items.push(i); window.inventoryCache.push(i); });
-                    const groupedItems = items.reduce((acc, item) => { const cat = item.category || 'varios'; if (!acc[cat]) acc[cat] = []; acc[cat].push(item); return acc; }, {});
-                    let html = ''; const sortedCategories = Object.keys(groupedItems).sort();
-                    if (items.length === 0) { html = '<div class="text-center py-10 opacity-50"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i><p class="text-gray-400 text-sm">El inventario está vacío</p></div>'; } 
-                    else {
-                        sortedCategories.forEach(cat => {
-                            const displayTitle = cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ');
-                            html += `<div class="mt-6 mb-3 flex items-center gap-3 slide-up"><div class="h-px bg-gray-300 flex-1"></div><span class="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-bg-primary px-2">${displayTitle}</span><div class="h-px bg-gray-300 flex-1"></div></div><div class="space-y-3">`;
-                            groupedItems[cat].forEach(i => {
-                            let detailInfo = '';
-                            if (i.link) { detailInfo = `<p class="text-[10px] text-indigo-500 mt-1 truncate font-medium bg-indigo-50 inline-block px-2 py-0.5 rounded border border-indigo-100"><i data-lucide="link" class="w-3 h-3 inline align-middle"></i> Digital / Link</p>`; } else if (i.description && !i.email) { detailInfo = `<p class="text-[10px] text-gray-400 mt-1 line-clamp-1 italic">${i.description}</p>`; } else { detailInfo = `<p class="text-[10px] text-gray-400 mt-1 font-mono">Expira: <span class="text-gray-600 font-bold">${i.expiryDate || 'N/A'}</span></p>`; }
-                            html += `<div class="neumo-card p-3 flex flex-col gap-2 slide-up relative group hover:scale-[1.01] transition-transform"><div class="flex justify-between items-start"><div class="overflow-hidden pr-2"><p class="font-bold text-gray-800 text-sm truncate">${i.serviceName}</p>${detailInfo}</div><div class="flex gap-2 flex-shrink-0"><button onclick="openEditInventoryModal('${i.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-blue-500 hover:text-white hover:bg-blue-500 rounded-lg transition-colors shadow-sm"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteInventoryItem('${i.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-rose-500 hover:text-white hover:bg-rose-500 rounded-lg transition-colors shadow-sm"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div><div class="flex justify-between items-end border-t border-gray-100 pt-2 mt-1"><span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Creado: ${i.createdAt ? i.createdAt.toDate().toLocaleDateString() : 'Reciente'}</span></div></div>`; 
-                            });
-                            html += `</div>`;
+                    window.allUsersLoaded = true;
+                    filterAdminUsers();
+                    if(forceRefresh && typeof showToast === 'function') showToast('Caché actualizado', 'success');
+                } catch (e) {
+                    console.error(e);
+                    if(list) list.innerHTML = '<p class="text-center text-rose-500 text-xs py-4">Error al cargar datos.</p>';
+                }
+            };
+
+            // NUEVA FUNCIÓN ESPÍA: Descarga a todos SOLO si se usa el buscador
+            window.checkAndFetchAllUsers = async () => {
+                const searchVal = document.getElementById('admin-user-search').value.trim();
+                
+                if (searchVal.length > 0 && !window.fullDatabaseLoaded) {
+                    const list = document.getElementById('admin-users-list');
+                    if(list) list.innerHTML = '<div class="text-center py-8"><span class="animate-spin inline-block w-6 h-6 border-3 border-indigo-500 border-t-transparent rounded-full"></span><p class="text-[10px] text-indigo-600 font-bold uppercase mt-2">Buscando en Base de Datos...</p></div>';
+                    
+                    try {
+                        console.log("Buscador activado: Descargando base completa (Cobro único)");
+                        const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'all_users'));
+                        window.allUsersCache = [];
+                        snapshot.forEach(doc => { 
+                            window.allUsersCache.push({ id: doc.id, ...doc.data() });
                         });
+
+                        window.allUsersCache.sort((a, b) => {
+                            const dateA = a.createdAt ? a.createdAt.toMillis() : 0;
+                            const dateB = b.createdAt ? b.createdAt.toMillis() : 0;
+                            if (dateA > 0 && dateB > 0) return dateB - dateA;
+                            if (dateA > 0) return -1;
+                            if (dateB > 0) return 1;
+                            return 0;
+                        });
+
+                        window.fullDatabaseLoaded = true; 
+                        filterAdminUsers(); 
+                    } catch (e) {
+                        console.error("Error al buscar en toda la BD:", e);
                     }
-                    const list = document.getElementById('admin-inventory-list');
-                    if(list) list.innerHTML = html; 
-                    lucide.createIcons();
-            });
+                }
+            };
+
+            // Ejecutar la primera carga de caché al iniciar el panel
+            window.loadAdminUsers();
+
+
+            // 6. INVENTARIO (MOTOR DE CACHÉ INTELIGENTE)
+            window.inventoryLoaded = false;
+            window.inventoryCache = [];
+
+            window.renderAdminInventory = () => {
+                const items = window.inventoryCache;
+                const groupedItems = items.reduce((acc, item) => { const cat = item.category || 'varios'; if (!acc[cat]) acc[cat] = []; acc[cat].push(item); return acc; }, {});
+                let html = ''; const sortedCategories = Object.keys(groupedItems).sort();
+                if (items.length === 0) { html = '<div class="text-center py-10 opacity-50"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i><p class="text-gray-400 text-sm">El inventario está vacío</p></div>'; } 
+                else {
+                    sortedCategories.forEach(cat => {
+                        const displayTitle = cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ');
+                        html += `<div class="mt-6 mb-3 flex items-center gap-3 slide-up"><div class="h-px bg-gray-300 flex-1"></div><span class="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-bg-primary px-2">${displayTitle}</span><div class="h-px bg-gray-300 flex-1"></div></div><div class="space-y-3">`;
+                        groupedItems[cat].forEach(i => {
+                        let detailInfo = '';
+                        if (i.link) { detailInfo = `<p class="text-[10px] text-indigo-500 mt-1 truncate font-medium bg-indigo-50 inline-block px-2 py-0.5 rounded border border-indigo-100"><i data-lucide="link" class="w-3 h-3 inline align-middle"></i> Digital / Link</p>`; } else if (i.description && !i.email) { detailInfo = `<p class="text-[10px] text-gray-400 mt-1 line-clamp-1 italic">${i.description}</p>`; } else { detailInfo = `<p class="text-[10px] text-gray-400 mt-1 font-mono">Expira: <span class="text-gray-600 font-bold">${i.expiryDate || 'N/A'}</span></p>`; }
+                        html += `<div class="neumo-card p-3 flex flex-col gap-2 slide-up relative group hover:scale-[1.01] transition-transform"><div class="flex justify-between items-start"><div class="overflow-hidden pr-2"><p class="font-bold text-gray-800 text-sm truncate">${i.serviceName}</p>${detailInfo}</div><div class="flex gap-2 flex-shrink-0"><button onclick="openEditInventoryModal('${i.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-blue-500 hover:text-white hover:bg-blue-500 rounded-lg transition-colors shadow-sm"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteInventoryItem('${i.id}')" class="neumo-button w-8 h-8 flex items-center justify-center text-rose-500 hover:text-white hover:bg-rose-500 rounded-lg transition-colors shadow-sm"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div><div class="flex justify-between items-end border-t border-gray-100 pt-2 mt-1"><span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Creado: ${i.createdAt && i.createdAt.toDate ? i.createdAt.toDate().toLocaleDateString() : 'Reciente'}</span></div></div>`; 
+                        });
+                        html += `</div>`;
+                    });
+                }
+                const list = document.getElementById('admin-inventory-list');
+                if(list) list.innerHTML = html; 
+                if(typeof lucide !== 'undefined') lucide.createIcons();
+            };
+
+            window.loadAdminInventory = async (forceRefresh = false) => {
+                if (!forceRefresh && window.inventoryLoaded) {
+                    console.log("Cargando Inventario desde Memoria (Ahorro Firebase)");
+                    renderAdminInventory();
+                    return;
+                }
+
+                const list = document.getElementById('admin-inventory-list');
+                if (forceRefresh && list) {
+                    list.innerHTML = '<div class="text-center py-8"><span class="animate-spin inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></span><p class="text-[10px] text-gray-400 font-bold uppercase mt-2">Sincronizando Nube...</p></div>';
+                }
+
+                try {
+                    console.log("Consultando Inventario desde Firebase (Lectura cobrada)");
+                    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), where('status', '==', 'available'));
+                    const snapshot = await getDocs(q);
+                    window.inventoryCache = [];
+                    snapshot.forEach(doc => { 
+                        window.inventoryCache.push({ id: doc.id, ...doc.data() }); 
+                    });
+                    
+                    window.inventoryLoaded = true;
+                    renderAdminInventory();
+                    if(forceRefresh && typeof showToast === 'function') showToast('Inventario sincronizado', 'success');
+                } catch (e) {
+                    console.error("Error cargando inventario:", e);
+                    if(list) list.innerHTML = '<p class="text-center text-rose-500 text-xs py-4">Error al cargar datos.</p>';
+                }
+            };
+            
+            // Carga inicial
+            window.loadAdminInventory();
 
             
                         // 8. LISTENER PARA RECLAMACIONES (Claims)
@@ -2322,7 +2422,6 @@
                     status: 'available'
                 };
 
-                // Helper para leer valor solo si está visible
                 const val = (id) => {
                     const el = document.getElementById(id);
                     if(el && !el.closest('div[id^="field-"]').classList.contains('hidden')) {
@@ -2336,17 +2435,24 @@
                 itemData.profileName = val('inv-profile-name');
                 itemData.pin = val('inv-pin');
                 itemData.link = val('inv-link');
-                itemData.folio = val('inv-folio'); // <--- AQUÍ GUARDAMOS EL FOLIO
+                itemData.folio = val('inv-folio');
                 itemData.expiryDate = val('inv-expiry');
                 itemData.duration = val('inv-duration');
                 itemData.description = val('inv-description');
                 itemData.terms = val('inv-terms');
 
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), itemData); 
+                const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), itemData); 
                 
                 const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', productId); 
                 await updateDoc(productRef, { stock: increment(1) }); 
                 
+                // --- ACTUALIZACIÓN OPTIMISTA EN CACHÉ ---
+                if (window.inventoryLoaded && window.inventoryCache) {
+                    const tempItem = { id: docRef.id, ...itemData, createdAt: { toDate: () => new Date() } };
+                    window.inventoryCache.unshift(tempItem); 
+                    if(typeof renderAdminInventory === 'function') renderAdminInventory();
+                }
+
                 showToast('Item agregado correctamente', 'success'); 
                 closeModal(); 
             } catch(e) { 
@@ -2365,6 +2471,13 @@
                     if (s.data().status === 'available') {
                         await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', s.data().productId), { stock: increment(-1) }); 
                     }
+                    
+                    // --- ACTUALIZACIÓN OPTIMISTA EN CACHÉ ---
+                    if (window.inventoryLoaded && window.inventoryCache) {
+                        window.inventoryCache = window.inventoryCache.filter(item => item.id !== id);
+                        if(typeof renderAdminInventory === 'function') renderAdminInventory();
+                    }
+
                     showToast('Eliminado', 'success'); 
                 } 
             } 
@@ -3302,7 +3415,7 @@ window.sendAdminReply = async (rid, uid) => {
             `);
         };
 
-        // 2. Guardar el cambio
+               // 2. Guardar el cambio
         window.saveUserRole = async (e, docId) => {
             e.preventDefault();
             const newRole = document.getElementById('role-selector').value;
@@ -3310,6 +3423,16 @@ window.sendAdminReply = async (rid, uid) => {
             
             try {
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', docId), { role: newRole });
+                
+                // ACTUALIZACIÓN OPTIMISTA EN CACHÉ
+                if (window.allUsersCache) {
+                    const idx = window.allUsersCache.findIndex(u => u.id === docId);
+                    if (idx !== -1) {
+                        window.allUsersCache[idx].role = newRole;
+                        window.filterAdminUsers();
+                    }
+                }
+                
                 showToast(`Rol actualizado a ${roleLabel}`, 'success');
                 closeModal();
             } catch(error) {
@@ -3318,8 +3441,23 @@ window.sendAdminReply = async (rid, uid) => {
             }
         };
 
+        window.toggleSuspend = async (uid, val) => { 
+            try {
+                await updateDoc(doc(db,'artifacts',appId,'public','data','all_users',uid), {suspended: val}); 
+                
+                // ACTUALIZACIÓN OPTIMISTA EN CACHÉ
+                if (window.allUsersCache) {
+                    const idx = window.allUsersCache.findIndex(u => u.id === uid);
+                    if (idx !== -1) {
+                        window.allUsersCache[idx].suspended = val;
+                        window.filterAdminUsers();
+                    }
+                }
+            } catch (e) {
+                showToast('Error al suspender', 'error');
+            }
+        };
 
-        window.toggleSuspend = async (uid, val) => { await updateDoc(doc(db,'artifacts',appId,'public','data','all_users',uid), {suspended: val}); };
                         // 5. USUARIOS: HISTORIAL CON ESTADOS DINÁMICOS
         window.openUserHistory = async (uid, email) => { 
             const walletSnap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'wallet', 'main')); 
@@ -3930,31 +4068,46 @@ window.toggleForbiddenField = () => {
     }
 };
 
-window.saveProduct = async (e) => { 
-    e.preventDefault(); 
-    try { 
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), { 
-            category: document.getElementById('p-category').value, 
-            name: document.getElementById('p-name').value, 
-            isForbidden: document.getElementById('p-forbidden').value === 'true',
-            
-            // GUARDAR TIEMPO DE ENTREGA
-            deliveryTime: document.getElementById('p-delivery-time').value,
-
-            imageUrl: document.getElementById('p-image').value, 
-                                priceClient: Number(document.getElementById('p-price-client').value),
+        window.saveProduct = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = "Guardando...";
+            try {
+                const newData = {
+                    category: document.getElementById('p-category').value,
+                    name: document.getElementById('p-name').value,
+                    isForbidden: document.getElementById('p-forbidden').value === 'true',
+                    deliveryTime: document.getElementById('p-delivery-time').value,
+                    imageUrl: document.getElementById('p-image').value,
+                    priceClient: Number(document.getElementById('p-price-client').value),
                     priceReseller: Number(document.getElementById('p-price-reseller').value),
+                    priceLeader: Number(document.getElementById('p-price-leader').value),
+                    price: Number(document.getElementById('p-price-client').value),
+                    description: document.getElementById('p-desc').value,
+                    stock: 0,
+                    createdAt: serverTimestamp()
+                };
 
-            priceLeader: Number(document.getElementById('p-price-leader').value),
-            price: Number(document.getElementById('p-price-client').value), 
-            description: document.getElementById('p-desc').value, 
-            stock: 0, 
-            createdAt: serverTimestamp() 
-        }); 
-        showToast('Producto agregado correctamente', 'success'); 
-        closeModal(); 
-    } catch(err) { showToast('Error al guardar', 'error'); } 
-};
+                // 1. Guardar en la nube (Firebase)
+                const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), newData);
+                
+                // 2. INYECCIÓN CACHÉ: Agregar a la memoria local sin volver a descargar nada
+                if (window.productosCache) {
+                    window.productosCache.push({ id: docRef.id, ...newData });
+                    window.renderProductsFromCache(); 
+                }
+
+                showToast('Producto agregado correctamente', 'success');
+                closeModal();
+            } catch(err) {
+                showToast('Error al guardar', 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+
         // ======================================================
         // FIN BLOQUE 1
         // ======================================================
@@ -4044,37 +4197,48 @@ window.toggleEditForbiddenField = () => {
     else fieldDelivery.classList.add('hidden');
 };
 
-window.updateProduct = async (e, pid) => { 
-    e.preventDefault(); 
-    const btn = e.target.querySelector('button[type="submit"]');
-    const originalText = btn.innerText;
-    btn.disabled = true; btn.innerText = "Guardando...";
-
-    try {
-        await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), { 
-            name: document.getElementById('e-name').value, 
-            isForbidden: document.getElementById('e-forbidden').value === 'true',
-            
-            // ACTUALIZAR TIEMPO ENTREGA
-            deliveryTime: document.getElementById('e-delivery-time').value,
-
-                                priceClient: Number(document.getElementById('e-price-client').value),
+        window.updateProduct = async (e, pid) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Guardando...";
+            try {
+                const updatedData = {
+                    name: document.getElementById('e-name').value,
+                    isForbidden: document.getElementById('e-forbidden').value === 'true',
+                    deliveryTime: document.getElementById('e-delivery-time').value,
+                    priceClient: Number(document.getElementById('e-price-client').value),
                     priceReseller: Number(document.getElementById('e-price-reseller').value),
+                    priceLeader: Number(document.getElementById('e-price-leader').value),
+                    price: Number(document.getElementById('e-price-client').value),
+                    category: document.getElementById('e-cat').value,
+                    imageUrl: document.getElementById('e-img').value,
+                    description: document.getElementById('e-desc').value,
+                    updatedAt: serverTimestamp()
+                };
 
-            priceLeader: Number(document.getElementById('e-price-leader').value),
-            price: Number(document.getElementById('e-price-client').value), 
-            category: document.getElementById('e-cat').value, 
-            imageUrl: document.getElementById('e-img').value, 
-            description: document.getElementById('e-desc').value,
-            updatedAt: serverTimestamp()
-        }); 
-        showToast('Producto actualizado correctamente', 'success'); 
-        closeModal(); 
-    } catch (error) {
-        showToast('Error: ' + error.message, 'error');
-        btn.disabled = false; btn.innerText = originalText;
-    }
-};
+                // 1. Enviar orden a Firebase
+                await updateDoc(doc(db,'artifacts',appId,'public','data','profiles',pid), updatedData);
+                
+                // 2. INYECCIÓN CACHÉ: Editamos la memoria local y se repinta sola
+                if (window.productosCache) {
+                    const idx = window.productosCache.findIndex(p => p.id === pid);
+                    if (idx !== -1) {
+                        window.productosCache[idx] = { ...window.productosCache[idx], ...updatedData };
+                        window.renderProductsFromCache(); 
+                    }
+                }
+
+                showToast('Producto actualizado', 'success');
+                closeModal();
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        };
+
         // ======================================================
         // FIN BLOQUE 2
         // ======================================================
@@ -5616,7 +5780,24 @@ window.openModal = (h) => {
             }
         };
 
-        window.deleteProfile = async (id) => { if(confirm("¿Borrar producto?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', id)); };
+                window.deleteProfile = async (id) => {
+            if(confirm("¿Borrar producto de la vitrina?")) {
+                try {
+                    // 1. Borrar en Firebase silenciosamente
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', id));
+                    
+                    // 2. INYECCIÓN CACHÉ: Borramos de la memoria local para que la fila desaparezca al instante
+                    if (window.productosCache) {
+                        window.productosCache = window.productosCache.filter(p => p.id !== id);
+                        window.renderProductsFromCache();
+                    }
+                    showToast('Producto eliminado', 'success');
+                } catch(e) {
+                    showToast('Error al borrar', 'error');
+                }
+            }
+        };
+
 
                 document.getElementById('login-form').addEventListener('submit', async(e)=>{
             e.preventDefault(); 
@@ -5922,70 +6103,222 @@ window.openModal = (h) => {
             });
         }
 
-        // --- NUEVAS FUNCIONES PARA ADMINISTRAR EL CARRUSEL ---
-        window.renderBannersAdmin = () => {
-            const list = document.getElementById('admin-banners-list');
-            if(!list) return;
-            let html = '';
-            if(bannerData.length === 0) {
-                html = '<div class="col-span-full text-center py-10 opacity-50"><i data-lucide="image-off" class="w-10 h-10 mx-auto text-gray-300 mb-2"></i><p class="text-xs text-gray-400">No hay imágenes en el carrusel</p></div>';
-            } else {
-                bannerData.forEach(b => {
-                    html += `
-                    <div class="neumo-card p-3 flex flex-col gap-3 relative group border border-gray-100">
-                        <div class="w-full aspect-[21/9] bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
-                            <img src="${b.imageUrl}" class="w-full h-full object-cover">
-                        </div>
-                        <button onclick="deleteBanner('${b.id}')" class="absolute top-4 right-4 bg-white text-rose-500 p-2 rounded-full shadow-lg hover:bg-rose-50 hover:scale-110 transition-transform">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </div>`;
-                });
-            }
-            list.innerHTML = html;
-            if(window.lucide) lucide.createIcons();
-        };
+                    // --- NUEVAS FUNCIONES PARA ADMINISTRAR EL CARRUSEL ---
+            window.renderBannersAdmin = () => {
+                const list = document.getElementById('admin-banners-list');
+                if(!list) return;
+                let html = '';
+                
+                if(bannerData.length === 0) {
+                    html = '<div class="col-span-full text-center py-10 opacity-50"><i data-lucide="image-off" class="w-10 h-10 mx-auto text-gray-300 mb-2"></i><p class="text-xs text-gray-400">No hay imágenes en el carrusel</p></div>';
+                } else {
+                    bannerData.forEach(b => {
+                        html += `
+                        <div class="neumo-card p-3 flex flex-col gap-3 relative group border border-gray-100">
+                            <div class="w-full aspect-[21/9] bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+                                <img src="${b.imageUrl}" class="w-full h-full object-cover">
+                            </div>
+                            
+                            <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <button onclick="openEditBannerModal('${b.id}')" class="bg-white text-blue-500 p-2.5 rounded-full shadow-lg hover:bg-blue-500 hover:text-white hover:scale-110 transition-all" title="Editar Imagen">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteBanner('${b.id}')" class="bg-white text-rose-500 p-2.5 rounded-full shadow-lg hover:bg-rose-500 hover:text-white hover:scale-110 transition-all" title="Eliminar Imagen">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>`;
+                    });
+                }
+                list.innerHTML = html;
+                if(window.lucide) lucide.createIcons();
+            };
 
-        window.openAddBannerModal = () => {
-            openModal(`
-            <div class="text-left bounce-enter">
-                <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 neumo-inset">
-                    <i data-lucide="image-plus" class="w-6 h-6"></i>
-                </div>
-                <h3 class="text-lg font-bold text-gray-800 mb-1">Nueva Imagen Carrusel</h3>
-                <p class="text-xs text-gray-400 mb-4">Aparecerá en el slider automático de inicio.</p>
-                <form onsubmit="saveBanner(event)" class="space-y-3">
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">URL de la Imagen</label>
-                        <input type="url" id="banner-img" class="neumo-inset w-full rounded-xl p-3 text-sm border-none bg-transparent" placeholder="https://..." required>
+            window.openAddBannerModal = () => {
+                openModal(`
+                <div class="text-left bounce-enter">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 neumo-inset shadow-sm">
+                        <i data-lucide="image-plus" class="w-6 h-6"></i>
                     </div>
-                    <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg mt-2 hover:bg-indigo-700">Guardar Imagen</button>
-                </form>
-            </div>`);
-            if(window.lucide) lucide.createIcons();
-        };
+                    <h3 class="text-lg font-bold text-gray-800 mb-1 tracking-tight">Nueva Imagen Carrusel</h3>
+                    <p class="text-xs text-gray-400 mb-5 leading-tight">Sube una imagen de tu galería o pega el link directamente.</p>
+                    
+                    <form onsubmit="saveBanner(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Imagen (Subir o URL)</label>
+                            <div class="flex gap-2">
+                                <input type="url" id="banner-img" class="neumo-inset flex-1 rounded-xl p-3.5 text-sm border-none bg-transparent font-medium" placeholder="https://..." required>
+                                <label class="neumo-button bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl flex items-center justify-center cursor-pointer hover:bg-indigo-100 transition-colors shadow-sm" title="Subir desde galería">
+                                    <i data-lucide="upload" class="w-5 h-5"></i>
+                                    <input type="file" class="hidden" accept="image/*" onchange="uploadImageToAPI_Banner(event, 'banner-img', 'banner-status')">
+                                </label>
+                            </div>
+                            <p id="banner-status" class="text-[10px] text-indigo-500 font-bold mt-2 hidden animate-pulse"><i data-lucide="loader-2" class="w-3 h-3 inline animate-spin"></i> Subiendo a la nube...</p>
+                        </div>
+                        
+                        <button type="submit" class="neumo-button w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-lg mt-2 hover:bg-indigo-700 uppercase tracking-wide text-xs">Guardar Imagen</button>
+                    </form>
+                </div>`);
+                if(window.lucide) lucide.createIcons();
+            };
 
-        window.saveBanner = async (e) => {
-            e.preventDefault();
-            const img = document.getElementById('banner-img').value;
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'banners'), {
-                    imageUrl: img,
-                    createdAt: serverTimestamp()
-                });
-                showToast('Imagen agregada al carrusel', 'success');
-                closeModal();
-            } catch(err) {
-                showToast('Error: ' + err.message, 'error');
-            }
-        };
+            window.openEditBannerModal = (id) => {
+                const banner = bannerData.find(b => b.id === id);
+                if (!banner) return showToast('Banner no encontrado', 'error');
 
-        window.deleteBanner = async (id) => {
-            if(confirm("¿Eliminar esta imagen del carrusel?")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'banners', id));
-                showToast('Imagen eliminada', 'success');
-            }
-        };
+                openModal(`
+                <div class="text-left bounce-enter">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4 neumo-inset shadow-sm">
+                        <i data-lucide="pencil" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-1 tracking-tight">Editar Imagen Carrusel</h3>
+                    <p class="text-xs text-gray-400 mb-5 leading-tight">Actualiza la imagen subiendo una nueva o pegando el link.</p>
+                    
+                    <form onsubmit="updateBanner(event, '${id}')" class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Imagen (Subir o URL)</label>
+                            <div class="flex gap-2">
+                                <input type="url" id="edit-banner-img" class="neumo-inset flex-1 rounded-xl p-3.5 text-sm border-none bg-transparent font-medium" value="${banner.imageUrl}" required>
+                                <label class="neumo-button bg-blue-50 text-blue-600 px-4 py-2 rounded-xl flex items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors shadow-sm" title="Subir desde galería">
+                                    <i data-lucide="upload" class="w-5 h-5"></i>
+                                    <input type="file" class="hidden" accept="image/*" onchange="uploadImageToAPI_Banner(event, 'edit-banner-img', 'edit-banner-status')">
+                                </label>
+                            </div>
+                            <p id="edit-banner-status" class="text-[10px] text-blue-500 font-bold mt-2 hidden animate-pulse"><i data-lucide="loader-2" class="w-3 h-3 inline animate-spin"></i> Subiendo a la nube...</p>
+                        </div>
+                        
+                        <div class="flex gap-3 mt-4">
+                            <button type="button" onclick="closeModal()" class="neumo-button flex-1 bg-gray-100 text-gray-600 font-bold py-3.5 rounded-xl hover:bg-gray-200 uppercase tracking-wide text-xs">Cancelar</button>
+                            <button type="submit" class="neumo-button flex-1 bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-blue-700 uppercase tracking-wide text-xs">Guardar</button>
+                        </div>
+                    </form>
+                </div>`);
+                if(window.lucide) lucide.createIcons();
+            };
+
+            // --- MOTOR DE SUBIDA A LA API CON COMPRESOR (Para el Carrusel) ---
+            window.uploadImageToAPI_Banner = async (event, targetInputId, statusTextId) => {
+                const fileInput = event.target;
+                const file = fileInput.files[0];
+                if (!file) return;
+
+                const targetInput = document.getElementById(targetInputId);
+                const statusText = document.getElementById(statusTextId);
+                
+                if(statusText) {
+                    statusText.classList.remove('hidden');
+                    if(window.lucide) lucide.createIcons();
+                }
+                if(targetInput) targetInput.disabled = true;
+
+                try {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = function(e) {
+                        const img = new Image();
+                        img.src = e.target.result;
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            
+                            // COMPRESOR INVISIBLE: Ajusta el tamaño sin perder calidad visual
+                            let width = img.width;
+                            let height = img.height;
+                            const MAX_WIDTH = 1200;
+                            const MAX_HEIGHT = 1200;
+
+                            if (width > height) {
+                                if (width > MAX_WIDTH) {
+                                    height *= MAX_WIDTH / width;
+                                    width = MAX_WIDTH;
+                                }
+                            } else {
+                                if (height > MAX_HEIGHT) {
+                                    width *= MAX_HEIGHT / height;
+                                    height = MAX_HEIGHT;
+                                }
+                            }
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            // Convierte a JPG ligero y lo envía a la API
+                            canvas.toBlob(async function(blob) {
+                                try {
+                                    const apiKey = '68c353d2d9ab634d1931eaab08f65cc9'; 
+                                    const formData = new FormData();
+                                    formData.append('image', blob, 'banner.jpg');
+
+                                    const response = await fetch('https://api.imgbb.com/1/upload?key=' + apiKey, {
+                                        method: 'POST',
+                                        body: formData
+                                    });
+                                    
+                                    const data = await response.json();
+                                    
+                                    if (data.success) {
+                                        if(targetInput) targetInput.value = data.data.url;
+                                        if(typeof showToast === 'function') showToast('Imagen subida con éxito', 'success');
+                                    } else {
+                                        throw new Error('Error del servidor de imágenes');
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                    if(typeof showToast === 'function') showToast('Error al subir. Intenta de nuevo.', 'error');
+                                } finally {
+                                    if(statusText) statusText.classList.add('hidden');
+                                    if(targetInput) targetInput.disabled = false;
+                                    fileInput.value = '';
+                                }
+                            }, 'image/jpeg', 0.8); // 0.8 es la calidad perfecta (80%)
+                        };
+                    };
+                } catch (error) {
+                    console.error('Error procesando imagen:', error);
+                    if(typeof showToast === 'function') showToast('Error al procesar la imagen.', 'error');
+                    if(statusText) statusText.classList.add('hidden');
+                    if(targetInput) targetInput.disabled = false;
+                    fileInput.value = '';
+                }
+            };
+
+            window.updateBanner = async (e, id) => {
+                e.preventDefault();
+                const newImg = document.getElementById('edit-banner-img').value;
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'banners', id), {
+                        imageUrl: newImg
+                    });
+                    showToast('Carrusel actualizado con éxito', 'success');
+                    closeModal();
+                } catch(err) {
+                    showToast('Error: ' + err.message, 'error');
+                }
+            };
+
+            window.saveBanner = async (e) => {
+                e.preventDefault();
+                const img = document.getElementById('banner-img').value;
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'banners'), {
+                        imageUrl: img,
+                        createdAt: serverTimestamp()
+                    });
+                    showToast('Imagen agregada al carrusel', 'success');
+                    closeModal();
+                } catch(err) {
+                    showToast('Error: ' + err.message, 'error');
+                }
+            };
+
+            window.deleteBanner = async (id) => {
+                if(confirm("¿Estás seguro de eliminar esta imagen del carrusel?")) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'banners', id));
+                    showToast('Imagen eliminada', 'success');
+                }
+            };
+
         
                         // --- INICIO DEL BLOQUE DE BANNERS CORREGIDO ---
 
@@ -6329,71 +6662,7 @@ window.filterExpirations = (mode) => {
     let filtered = (mode === 'soon') ? window.expirationCache.filter(x => x.daysLeft <= 5 && x.daysLeft >= 0) : window.expirationCache;
     renderExpirationList(filtered);
 };
-        // --- 👇 PEGA AQUÍ EL BLOQUE DE CÓDIGO DEL ADMINISTRADOR 👇 ---
-
-        function renderBannersAdmin() {
-            const list = document.getElementById('admin-banners-list');
-            if(!list) return;
-            
-            let html = '';
-            bannerData.forEach(b => {
-                html += `
-                <div class="neumo-card p-0 rounded-xl overflow-hidden relative h-20 flex mb-3">
-                    <div class="w-24 h-full bg-gray-200">
-                        <img src="${b.imageUrl}" class="w-full h-full object-cover">
-                    </div>
-                    <div class="flex-1 p-3 flex flex-col justify-center">
-                        <h4 class="font-bold text-gray-800 text-xs">${b.title}</h4>
-                        <p class="text-[10px] text-gray-400">Activo</p>
-                    </div>
-                    <button onclick="deleteBanner('${b.id}')" class="absolute top-2 right-2 text-rose-500 bg-white rounded-full p-1 shadow hover:bg-rose-50">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                </div>`;
-            });
-            
-            list.innerHTML = html || '<p class="text-center text-xs text-gray-400 py-4">Sin banners activos</p>';
-            lucide.createIcons();
-        }
-
-        window.openAddBannerModal = () => {
-            openModal(`
-            <div class="text-left bounce-enter">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Nuevo Banner</h3>
-                <form onsubmit="saveBanner(event)" class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500">Título (Referencia interna)</label>
-                        <input type="text" id="ban-title" class="neumo-inset w-full rounded-xl p-2 text-sm" placeholder="Ej: Promo Navidad" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500">URL Imagen</label>
-                        <input type="url" id="ban-img" class="neumo-inset w-full rounded-xl p-2 text-sm" required>
-                    </div>
-                    <button type="submit" class="neumo-button w-full bg-blue-600 text-white font-bold py-3 rounded-xl mt-2">Guardar</button>
-                </form>
-            </div>`);
-        };
-
-        window.saveBanner = async (e) => {
-            e.preventDefault();
-            try { 
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'banners'), { 
-                    title: document.getElementById('ban-title').value, 
-                    imageUrl: document.getElementById('ban-img').value, 
-                    createdAt: serverTimestamp() 
-                }); 
-                showToast('Publicado', 'success'); 
-                closeModal(); 
-            } catch (err) { 
-                showToast('Error al guardar', 'error'); 
-            }
-        };
-
-        window.deleteBanner = async (id) => { 
-            if(confirm("¿Eliminar este banner?")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'banners', id)); 
-            }
-        };
+        
         
                        // ======================================================
         // FUNCIÓN: COCINA EXPRESS (PANTALLA COMPLETA REAL)
@@ -7901,22 +8170,48 @@ window.renderReferralsView = async () => {
                         timestamp: serverTimestamp()
                     });
 
-                    // D. BLOQUEAMOS LA CLAVE AL FINAL (Si algo falla arriba, la clave no se quema)
-                    await setDoc(globalKeyRef, {
-                        uid: currentUser.uid,
-                        monto: parseFloat(monto),
-                        timestamp: serverTimestamp()
-                    });
+                                    // D. BLOQUEAMOS LA CLAVE AL FINAL (Si algo falla arriba, la clave no se quema)
+                await setDoc(globalKeyRef, { uid: currentUser.uid, monto: parseFloat(monto), timestamp: serverTimestamp() });
 
-                    resultBox.className = "p-4 rounded-xl border-2 border-emerald-100 bg-emerald-50 text-emerald-800 flex flex-col items-center gap-1 w-full";
-                    resultBox.innerHTML = `
-                        <i data-lucide="check-circle" class="w-6 h-6 text-emerald-600"></i>
-                        <span class="font-black text-sm uppercase">Saldo acreditado</span>
-                        <p class="text-[10px] opacity-80">Pago validado con éxito. El saldo de <b>$${parseFloat(monto).toFixed(2)}</b> ya está disponible en tu cuenta.</p>
-                    `;
-                    if(typeof showToast === 'function') showToast(`¡Saldo de $${parseFloat(monto).toFixed(2)} agregado!`, 'success');
+                // ========================================================
+                // AUTO-LIMPIEZA: ELIMINAR SOLICITUDES DEL PANEL ADMIN
+                // ========================================================
+                try {
+                    // 1. Buscamos y eliminamos de la bandeja del panel admin
+                    const reqQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'pending_recharges'), 
+                        where('uid', '==', currentUser.uid), 
+                        where('status', '==', 'pending')
+                    );
+                    const reqSnap = await getDocs(reqQuery);
+                    const promesasReq = [];
+                    reqSnap.forEach((d) => promesasReq.push(deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pending_recharges', d.id))));
+                    await Promise.all(promesasReq);
                     
-                } else {
+                    // 2. Limpiar el historial del usuario (Cambiar "Pendiente" a "Acreditado automático")
+                    const txQuery = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), 
+                        where('status', '==', 'Pending')
+                    );
+                    const txSnap = await getDocs(txQuery);
+                    const promesasTx = [];
+                    txSnap.forEach((d) => promesasTx.push(updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions', d.id), { status: 'Acreditado', description: 'Recarga Acreditada Automáticamente' })));
+                    await Promise.all(promesasTx);
+                    
+                    console.log("Limpieza completada: Solicitudes pendientes eliminadas del admin.");
+                } catch (cleanError) {
+                    console.error("Error al limpiar el panel admin:", cleanError);
+                }
+                // ========================================================
+
+                resultBox.className = "p-4 rounded-xl border-2 border-emerald-100 bg-emerald-50 text-emerald-800 flex flex-col items-center gap-1 w-full";
+                resultBox.innerHTML = `
+                    <i data-lucide="check-circle" class="w-6 h-6 text-emerald-600"></i>
+                    <span class="font-black text-sm uppercase">Saldo acreditado</span>
+                    <p class="text-[10px] opacity-80">Pago validado con éxito. El saldo de <b>$${parseFloat(monto).toFixed(2)}</b> ya está disponible en tu cuenta.</p>
+                `;
+                
+                if(typeof showToast === 'function') showToast(`¡Saldo de $${parseFloat(monto).toFixed(2)} agregado!`, 'success');
+            } else {
+
                     resultBox.className = "p-4 rounded-xl border-2 border-rose-100 bg-rose-50 text-rose-800 flex flex-col items-center gap-1 w-full text-center";
                     resultBox.innerHTML = `
                         <i data-lucide="x-circle" class="w-6 h-6 text-rose-600"></i>
@@ -9306,234 +9601,6 @@ Pin: ${currentDetails.pin || 'N/A'}`;
         btn.disabled = false; btn.innerText = "Reintentar";
     }
 };
-
-    // ======================================================
-    // SISTEMA SPOTLIGHT ADS (POP-UP INICIO) - PRO
-    // ======================================================
-    
-    let spotlightData = [];
-    let spotlightInterval;
-    let currentSpotlightIndex = 0;
-    let slTouchStart = 0;
-    let slTouchEnd = 0;
-
-    // 1. Inicializar (Llamar esto en onAuthStateChanged)
-    window.initSpotlight = () => {
-    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'spotlight_ads'), orderBy('createdAt', 'desc'));
-    
-    onSnapshot(q, (snapshot) => {
-        spotlightData = [];
-        snapshot.forEach(doc => spotlightData.push({ id: doc.id, ...doc.data() }));
-
-        // 1. ESTO MUESTRA EL ANUNCIO A TODOS (Clientes, VIP, etc.)
-        if(spotlightData.length > 0) {
-            renderSpotlightPopup();
-        }
-
-        // 2. ESTO ACTUALIZA EL PANEL DE CONTROL (Solo si eres Admin y estás en tu panel)
-        if(isAdmin && document.getElementById('admin-spotlight-list')) {
-            renderAdminSpotlightList();
-        }
-    });
-};
-
-
-    // 2. Renderizar Pop-up Usuario
-    function renderSpotlightPopup() {
-        const modal = document.getElementById('startup-modal');
-        const track = document.getElementById('startup-track');
-        const indicators = document.getElementById('startup-indicators');
-        
-        if(!modal || !track) return;
-
-        // Mostrar modal (Quitamos hidden)
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-
-        // Construir HTML Carrusel
-        let html = '';
-                let dots = '';
-        spotlightData.forEach((ad, index) => {
-            // CAMBIO: Fondo transparente para lucir el BLUR, imagen al 100%
-            html += `
-            <div class="min-w-full h-full relative flex-shrink-0 flex items-center justify-center bg-transparent">
-                <img src="${ad.imageUrl}" class="w-full h-full object-contain drop-shadow-lg" draggable="false">
-                ${ad.link ? `<a href="${ad.link}" target="_blank" class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-8 py-3 rounded-full text-[11px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 transition-transform flex items-center gap-2 z-40">Ver Más <i data-lucide="external-link" class="w-4 h-4"></i></a>` : ''}
-            </div>`;
-            // Puntitos blancos brillantes para que resalten sobre el blur
-            dots += `<div id="sl-dot-${index}" class="w-2 h-2 rounded-full bg-white/80 transition-all duration-300 z-40 shadow-sm"></div>`;
-        });
-
-        // Clonar el primero al final para efecto infinito (si hay más de 1)
-        if(spotlightData.length > 1) {
-            html += `
-            <div class="min-w-full h-full relative flex-shrink-0 flex items-center justify-center bg-transparent">
-                <img src="${spotlightData[0].imageUrl}" class="w-full h-full object-contain drop-shadow-lg">
-            </div>`;
-        }
-
-
-        track.innerHTML = html;
-        if(indicators) indicators.innerHTML = dots;
-        
-        // Reiniciar variables
-        currentSpotlightIndex = 0;
-        updateSpotlightSlider();
-        startSpotlightAuto();
-        
-        // Eventos Táctiles (Swipe)
-        track.addEventListener('touchstart', (e) => {
-            slTouchStart = e.changedTouches[0].screenX;
-            clearInterval(spotlightInterval);
-        }, {passive: true});
-        
-        track.addEventListener('touchend', (e) => {
-            slTouchEnd = e.changedTouches[0].screenX;
-            handleSpotlightSwipe();
-            startSpotlightAuto();
-        }, {passive: true});
-
-        lucide.createIcons();
-    }
-
-    // 3. Lógica del Slider
-    function updateSpotlightSlider() {
-        const track = document.getElementById('startup-track');
-        if(!track) return;
-        
-        track.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
-        track.style.transform = `translateX(-${currentSpotlightIndex * 100}%)`;
-
-        // Actualizar puntos
-        const totalReal = spotlightData.length;
-        for(let i=0; i<totalReal; i++) {
-            const dot = document.getElementById(`sl-dot-${i}`);
-            if(dot) {
-                // El punto activo corresponde al índice actual (ajustando el clon)
-                const isActive = (currentSpotlightIndex % totalReal) === i;
-                dot.className = isActive ? "w-6 h-2 rounded-full bg-white shadow-md transition-all" : "w-2 h-2 rounded-full bg-white/40 transition-all";
-            }
-        }
-    }
-
-    function nextSpotlight() {
-        if(spotlightData.length < 2) return;
-        const track = document.getElementById('startup-track');
-        currentSpotlightIndex++;
-        updateSpotlightSlider();
-
-        // Si llegamos al clon
-        if(currentSpotlightIndex === spotlightData.length) {
-            setTimeout(() => {
-                track.style.transition = 'none';
-                currentSpotlightIndex = 0;
-                track.style.transform = `translateX(0%)`;
-            }, 500);
-        }
-    }
-
-    function prevSpotlight() {
-        if(spotlightData.length < 2) return;
-        const track = document.getElementById('startup-track');
-        if(currentSpotlightIndex === 0) {
-            currentSpotlightIndex = spotlightData.length - 1;
-        } else {
-            currentSpotlightIndex--;
-        }
-        updateSpotlightSlider();
-    }
-
-    function startSpotlightAuto() {
-        clearInterval(spotlightInterval);
-        spotlightInterval = setInterval(nextSpotlight, 3000); // 3 Segundos
-    }
-
-    function handleSpotlightSwipe() {
-        if (slTouchStart - slTouchEnd > 50) nextSpotlight();
-        if (slTouchEnd - slTouchStart > 50) prevSpotlight();
-    }
-
-    window.closeStartupModal = () => {
-        clearInterval(spotlightInterval);
-        const m = document.getElementById('startup-modal');
-        m.classList.remove('flex');
-        m.classList.add('hidden');
-    };
-
-    // --- FUNCIONES ADMINISTRADOR ---
-
-    window.renderAdminSpotlightList = () => {
-        const list = document.getElementById('admin-spotlight-list');
-        if(!list) return;
-        
-        let html = '';
-        if(spotlightData.length === 0) {
-            html = '<div class="col-span-2 text-center py-10 opacity-50"><i data-lucide="image-off" class="w-10 h-10 mx-auto text-gray-300 mb-2"></i><p class="text-xs text-gray-400">No hay anuncios activos</p></div>';
-        } else {
-            spotlightData.forEach(ad => {
-                html += `
-                <div class="relative group rounded-2xl overflow-hidden aspect-[3/4] shadow-md border border-gray-100">
-                    <img src="${ad.imageUrl}" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
-                    <button onclick="deleteSpotlight('${ad.id}')" class="absolute top-2 right-2 bg-white text-rose-500 p-1.5 rounded-full shadow-lg scale-0 group-hover:scale-100 transition-transform">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                    ${ad.link ? '<div class="absolute bottom-2 left-2 bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 rounded-lg shadow-sm">LINK ACTIVO</div>' : ''}
-                </div>`;
-            });
-        }
-        list.innerHTML = html;
-        lucide.createIcons();
-    };
-
-    window.openAddSpotlightModal = () => {
-        openModal(`
-        <div class="text-left bounce-enter">
-            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mb-4 neumo-inset">
-                <i data-lucide="megaphone" class="w-6 h-6"></i>
-            </div>
-            <h3 class="text-lg font-bold text-gray-800 mb-1">Nuevo Anuncio Pop-up</h3>
-            <p class="text-xs text-gray-400 mb-4">Esta imagen aparecerá al abrir la app.</p>
-            
-            <form onsubmit="saveSpotlight(event)" class="space-y-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">URL de la Imagen (Vertical recomendada)</label>
-                    <input type="url" id="sl-img" class="neumo-inset w-full rounded-xl p-3 text-sm border-none bg-transparent" placeholder="https://..." required>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-indigo-400 uppercase mb-1">Enlace de Acción (Opcional)</label>
-                    <input type="url" id="sl-link" class="neumo-inset w-full rounded-xl p-3 text-sm border-none bg-transparent" placeholder="https://tu-web.com">
-                </div>
-                <button type="submit" class="neumo-button w-full bg-rose-600 text-white font-bold py-3 rounded-xl shadow-lg mt-2 hover:bg-rose-700">Publicar Ahora</button>
-            </form>
-        </div>`);
-        lucide.createIcons();
-    };
-
-    window.saveSpotlight = async (e) => {
-        e.preventDefault();
-        const img = document.getElementById('sl-img').value;
-        const link = document.getElementById('sl-link').value;
-        
-        try {
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'spotlight_ads'), {
-                imageUrl: img,
-                link: link || null,
-                createdAt: serverTimestamp()
-            });
-            showToast('Anuncio publicado con éxito', 'success');
-            closeModal();
-        } catch(err) {
-            showToast('Error: ' + err.message, 'error');
-        }
-    };
-
-    window.deleteSpotlight = async (id) => {
-        if(confirm("¿Eliminar este anuncio?")) {
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'spotlight_ads', id));
-            showToast('Anuncio eliminado', 'success');
-        }
-    };
     
            
 // ======================================================
@@ -9662,153 +9729,164 @@ window.openTicket = (itemStr, buyerEmail, priceDisplay) => {
 }
 
 
-// ======================================================
-// 2. HISTORIAL GENERAL (ACTUALIZADO CON CLIC)
-// ======================================================
-window.openGeneralHistory = async () => {
-    openModal(`
-        <div class="text-center py-12 bounce-enter">
-            <span class="animate-spin inline-block w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full mb-3"></span>
-            <p class="text-xs font-black text-teal-600 uppercase tracking-widest">Cargando ventas...</p>
-        </div>
-    `);
+        // ======================================================
+        // 2. HISTORIAL GENERAL (CACHÉ INTELIGENTE)
+        // ======================================================
+        window.historialGeneralCacheHtml = null;
 
-    try {
-        const productsSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'));
-        const productsMap = {};
-        productsSnap.forEach(doc => {
-            const p = doc.data();
-            if (p.name) productsMap[p.name.trim().toLowerCase()] = p; 
-        });
+        window.openGeneralHistory = async (forceRefresh = false) => {
+            // MAGIA: Si ya tenemos la memoria y no piden forzar recarga, mostramos el caché
+            if (!forceRefresh && window.historialGeneralCacheHtml) {
+                console.log("Cargando Historial desde Memoria (Ahorro Firebase)");
+                openModal(window.historialGeneralCacheHtml);
+                if(typeof lucide !== 'undefined') lucide.createIcons();
+                return;
+            }
 
-        const q = query(
-            collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'), 
-            where('status', '==', 'sold'), 
-            orderBy('soldAt', 'desc'), 
-            limit(50)
-        );
-        
-        const snapshot = await getDocs(q);
-        const historyItems = [];
-        const userIds = new Set();
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            historyItems.push({ id: doc.id, ...data });
-            if(data.soldTo) userIds.add(data.soldTo);
-        });
-
-        const userMap = {};
-        if(userIds.size > 0) {
-            const ids = Array.from(userIds);
-            const userPromises = ids.map(uid => getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid)));
-            const userSnaps = await Promise.all(userPromises);
-            userSnaps.forEach(snap => {
-                if(snap.exists()) userMap[snap.id] = snap.data();
-            });
-        }
-
-        const rolePriceFields = {
-            'client': 'priceClient', 'vip': 'priceVip', 'reseller': 'priceReseller', 'lider': 'priceLeader'
-        };
-
-        let html = `
-        <div class="flex flex-col h-[80vh] bg-white rounded-[2rem] overflow-hidden bounce-enter relative">
-            <div class="bg-teal-600 p-6 flex-shrink-0 shadow-lg z-10 text-white flex justify-between items-center">
-                <div>
-                    <h3 class="text-xl font-black tracking-tight">Historial General</h3>
-                    <p class="text-[10px] text-teal-100 font-medium uppercase tracking-widest">Toque un item para ver Ticket</p>
+            openModal(`
+                <div class="text-center py-12 bounce-enter">
+                    <span class="animate-spin inline-block w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full mb-3"></span>
+                    <p class="text-xs font-black text-teal-600 uppercase tracking-widest">Sincronizando Nube...</p>
                 </div>
-                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                    <i data-lucide="scroll-text" class="w-5 h-5 text-white"></i>
-                </div>
-            </div>
+            `);
 
-            <div class="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-3 bg-gray-50">`;
+            try {
+                console.log("Consultando Historial desde Firebase (Lectura cobrada)");
+                const productsSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'));
+                const productsMap = {};
+                productsSnap.forEach(doc => {
+                    const p = doc.data();
+                    if (p.name) productsMap[p.name.trim().toLowerCase()] = p;
+                });
 
-        if(historyItems.length === 0) {
-            html += `<div class="text-center py-20 opacity-50"><p class="font-bold text-gray-400">Sin ventas</p></div>`;
-        } else {
-            historyItems.forEach(item => {
-                const user = userMap[item.soldTo] || {};
-                const email = user.email || 'Usuario Desconocido';
-                const userRole = user.role || 'client';
-                const date = item.soldAt ? item.soldAt.toDate().toLocaleString() : 'N/A';
+                const q = query(
+                    collection(db, 'artifacts', appId, 'public', 'data', 'inventory_items'),
+                    where('status', '==', 'sold'),
+                    orderBy('soldAt', 'desc'),
+                    limit(50)
+                );
+                const snapshot = await getDocs(q);
+                const historyItems = [];
+                const userIds = new Set();
                 
-                let finalPrice = 0;
-                const productNameKey = (item.serviceName || '').trim().toLowerCase();
-                const product = productsMap[productNameKey];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    historyItems.push({ id: doc.id, ...data });
+                    if(data.soldTo) userIds.add(data.soldTo);
+                });
 
-                if (product) {
-                    const priceField = rolePriceFields[userRole] || 'priceClient';
-                    finalPrice = Number(product[priceField] || 0);
-                } else {
-                    finalPrice = Number(item.price || 0);
+                const userMap = {};
+                if(userIds.size > 0) {
+                    const ids = Array.from(userIds);
+                    const userPromises = ids.map(uid => getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'all_users', uid)));
+                    const userSnaps = await Promise.all(userPromises);
+                    userSnaps.forEach(snap => {
+                        if(snap.exists()) userMap[snap.id] = snap.data();
+                    });
                 }
-                if (item.soldPrice) finalPrice = Number(item.soldPrice);
 
-                const priceDisplay = `$${finalPrice.toLocaleString()}`;
-                const initial = (item.serviceName || '?').substring(0,1).toUpperCase();
-                
-                // --- PREPARAR DATOS PARA EL TICKET ---
-                // Codificamos el objeto item a un string seguro para pasarlo en el onclick
-                const itemStr = encodeURIComponent(JSON.stringify(item));
+                const rolePriceFields = {
+                    'client': 'priceClient',
+                    'vip': 'priceVip',
+                    'reseller': 'priceReseller',
+                    'lider': 'priceLeader'
+                };
 
-                                        let roleBadgeColor = 'bg-gray-100 text-gray-500';
+                let html = `
+                <div class="flex flex-col h-[80vh] bg-white rounded-[2rem] overflow-hidden bounce-enter relative">
+                    <div class="bg-teal-600 p-6 flex-shrink-0 shadow-lg z-10 text-white flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-black tracking-tight">Historial General</h3>
+                            <p class="text-[10px] text-teal-200 font-bold uppercase tracking-widest flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Caché Activo</p>
+                        </div>
+                        <button onclick="openGeneralHistory(true)" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-white/30 transition-colors active:scale-90" title="Actualizar Datos">
+                            <i data-lucide="refresh-cw" class="w-5 h-5 text-white"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-3 bg-gray-50">`;
+
+                if(historyItems.length === 0) {
+                    html += `<div class="text-center py-20 opacity-50"><p class="font-bold text-gray-400">Sin ventas</p></div>`;
+                } else {
+                    historyItems.forEach(item => {
+                        const user = userMap[item.soldTo] || {};
+                        const email = user.email || 'Usuario Desconocido';
+                        const userRole = user.role || 'client';
+                        
+                        let finalPrice = 0;
+                        const productNameKey = (item.serviceName || '').trim().toLowerCase();
+                        const product = productsMap[productNameKey];
+                        
+                        if (product) {
+                            const priceField = rolePriceFields[userRole] || 'priceClient';
+                            finalPrice = Number(product[priceField] || 0);
+                        } else {
+                            finalPrice = Number(item.price || 0);
+                        }
+                        
+                        if (item.soldPrice) finalPrice = Number(item.soldPrice);
+                        
+                        const priceDisplay = `$${finalPrice.toLocaleString()}`;
+                        const initial = (item.serviceName || '?').substring(0,1).toUpperCase();
+
+                        // Codificamos el objeto item
+                        const itemStr = encodeURIComponent(JSON.stringify(item));
+
+                        let roleBadgeColor = 'bg-gray-100 text-gray-500';
                         if(userRole === 'reseller') roleBadgeColor = 'bg-indigo-100 text-indigo-600';
                         if(userRole === 'lider') roleBadgeColor = 'bg-amber-100 text-amber-600';
 
-
-                // Agregamos onclick y cursor-pointer
-                html += `
-                <div onclick="openTicket('${itemStr}', '${email}', '${priceDisplay}')" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 relative group hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="flex items-center gap-1.5 mb-1">
-                                <i data-lucide="user" class="w-3 h-3 text-teal-500"></i>
-                                <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-gray-200 ${roleBadgeColor}">
-                                    ${userRole}
-                                </span>
+                        html += `
+                        <div onclick="openTicket('${itemStr}', '${email}', '${priceDisplay}')" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 relative group hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="flex items-center gap-1.5 mb-1">
+                                        <i data-lucide="user" class="w-3 h-3 text-teal-500"></i>
+                                        <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-gray-200 ${roleBadgeColor}">
+                                            ${userRole}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs font-black text-gray-800 break-all leading-tight">${email}</p>
+                                </div>
+                                <div class="text-right bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-100 min-w-[70px]">
+                                    <span class="text-[9px] font-bold text-teal-500 uppercase block">Precio</span>
+                                    <span class="text-sm font-black text-teal-700 block">${priceDisplay}</span>
+                                </div>
                             </div>
-                            <p class="text-xs font-black text-gray-800 break-all leading-tight">${email}</p>
-                        </div>
-                        <div class="text-right bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-100 min-w-[70px]">
-                            <span class="text-[9px] font-bold text-teal-500 uppercase block">Precio</span>
-                            <span class="text-sm font-black text-teal-700 block">${priceDisplay}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center gap-3 border-t border-gray-50 pt-2">
-                        <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs flex-shrink-0 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                            ${initial}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-xs font-bold text-gray-700 truncate">${item.serviceName}</p>
-                            <div class="flex items-center gap-1 text-[10px] text-gray-400 mt-0.5">
-                                <i data-lucide="mouse-pointer-click" class="w-3 h-3"></i>
-                                <span>Ver Ticket</span>
+                            <div class="flex items-center gap-3 border-t border-gray-50 pt-2">
+                                <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs flex-shrink-0 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                    ${initial}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-bold text-gray-700 truncate">${item.serviceName}</p>
+                                    <div class="flex items-center gap-1 text-[10px] text-gray-400 mt-0.5">
+                                        <i data-lucide="mouse-pointer-click" class="w-3 h-3"></i>
+                                        <span>Ver Ticket</span>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </div>`;
+                    });
+                }
+                
+                html += `</div>
+                    <div class="p-4 bg-white border-t border-gray-200 z-20">
+                        <button onclick="closeModal()" class="w-full py-3.5 rounded-xl text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Cerrar Historial</button>
                     </div>
                 </div>`;
-            });
-        }
-        
-        html += `</div>
-            <div class="p-4 bg-white border-t border-gray-200 z-20">
-                <button onclick="closeModal()" class="w-full py-3.5 rounded-xl text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Cerrar Historial</button>
-            </div>
-        </div>`;
 
-        openModal(html);
-        lucide.createIcons();
+                // Guardar en la Memoria Caché Global
+                window.historialGeneralCacheHtml = html;
 
-    } catch (e) {
-        console.error(e);
-        showToast('Error: ' + e.message, 'error');
-        closeModal();
-    }
-};
+                openModal(html);
+                if(forceRefresh && typeof showToast === 'function') showToast('Historial actualizado', 'success');
+                if(typeof lucide !== 'undefined') lucide.createIcons();
+            } catch (e) {
+                console.error(e);
+                showToast('Error: ' + e.message, 'error');
+                closeModal();
+            }
+        };
 
 
 // ==========================================
